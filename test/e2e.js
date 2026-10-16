@@ -30,7 +30,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   ok(sql.driver === 'libsql' && String(process.env.TURSO_DATABASE_URL).startsWith('file:'), 'com TURSO_DATABASE_URL o app usa libSQL');
   const srv = spawn('node', ['server.js'], { cwd: path.join(__dirname, '..'), env: { ...process.env, PORT, TURSO_DATABASE_URL: 'file:' + LIB, TURSO_AUTH_TOKEN: '', ADMIN_EMAIL: 'dono@teste.com', ADMIN_PASSWORD: 'admin123', MP_ACCESS_TOKEN: '', STRIPE_SECRET_KEY: '' }, stdio: 'inherit' });
   await sleep(1200);
-  const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--use-fake-ui-for-media-stream'] });
+    const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
   const phone = { width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
   try {
     // ---- personal
@@ -66,8 +66,12 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await a.type('#lgNome', 'Pamela'); await a.type('#lgUser', 'pamela'); await a.type('#lgPw', 'aluna123'); await a.type('#lgPw2', 'aluna123');
     await a.screenshot({ path: SHOTS + '/05-cadastro-aluno-convite.png' });
     await Promise.all([a.waitForNavigation(), a.click('#lgGo')]);
-    await a.waitForSelector('#t-aluno:not(.hide)'); await a.evaluate(() => { document.querySelector('#tts').checked = false; document.querySelector('#autoL').checked = false; });
+    await a.waitForSelector('#t-aluno:not(.hide)'); await a.evaluate(() => { document.querySelector('#tts').checked = false; });
+    ok(!(await a.$('#autoL')), 'não existe mais a opção de ouvir automaticamente');
     await a.waitForFunction(() => /Olá, Pamela/.test(document.querySelector('#chat').textContent), { timeout: 15000 }); ok(true, 'coach cumprimenta "Olá, Pamela" sem perguntar o nome');
+    await sleep(700);
+    const micIdle = await a.evaluate(() => ({ live: document.querySelector('#mic').classList.contains('live'), listening }));
+    ok(!micIdle.live && micIdle.listening === false, 'o microfone não liga sozinho depois que o coach fala');
     ok(/Seu personal ainda não cadastrou o WhatsApp/.test(await a.$eval('#waTop', e => e.innerText)) && !(await a.$('#waTop .waPers')), 'sem número, o aluno vê que o personal ainda não cadastrou o WhatsApp');
     ok((await a.evaluate(async () => (await fetch('/api/personal/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status)) === 401, 'aluno não cadastra o WhatsApp do personal');
     const answers = ['19 anos', 'ganho de massa muscular', 'ver o braço crescer e a roupa servir melhor', 'glúteos', 'errei, a prioridade é o peito', 'em 3 meses', 'quando eu aumentar a carga no supino', 'treino há 1 ano', '2 dias', 'errei, posso treinar quatro vezes por semana', '1 hora', 'não', 'não tenho'];
@@ -239,6 +243,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await an.goto(URL, { waitUntil: 'networkidle0' }); await an.waitForSelector('#voiceGo');
     ok(/Toque aqui para conversar por voz/.test(await an.$eval('#voiceGo', e => e.innerText)), 'aluno vê o botão para iniciar a conversa por voz');
     await an.$eval('#voiceGo', e => e.click()); await sleep(300); ok(!(await an.$('#voiceGo')), 'toque inicia a voz (botão some)');
+    ok(await an.evaluate(() => !$('#mic').classList.contains('live') && listening === false), 'destravar a voz do coach não liga o microfone');
     const fg = await (await browser.createBrowserContext()).newPage(); await fg.goto(URL + '/?area=personal', { waitUntil: 'networkidle0' });
     await fg.waitForSelector('#pForgot'); await fg.$eval('#pForgot', e => e.click()); await fg.type('#fgEmail', 'igor@teste.com'); await fg.$eval('#fgGo', e => e.click()); await fg.waitForSelector('#fgMsg .alert');
     ok(/link/.test(await fg.$eval('#fgMsg', e => e.innerText)), 'personal pede nova senha em "Esqueci a senha"');
@@ -247,6 +252,50 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await an.waitForSelector('#ttsPlay', { timeout: 8000 }); ok(/Tocar para ouvir/.test(await an.$eval('#ttsPlay', e => e.innerText)), 'se o navegador bloquear a fala aparece "Tocar para ouvir"');
     const vz = await an.evaluate(() => ({ lang: (curVoice() || { lang: 'pt-BR' }).lang, sr: !!SR }));
     ok(/^pt/i.test(vz.lang), 'voz escolhida é português (' + vz.lang + ')');
+    // push-to-talk: o microfone só abre no toque e não religa sozinho
+    const vp = await an.browserContext().newPage(); await vp.setViewport(phone);
+    await vp.evaluateOnNewDocument(() => {
+      function FakeSR() { window.__srN = (window.__srN || 0) + 1; window.__sr = this; }
+      FakeSR.prototype.start = function () { if (this.onstart) this.onstart(); };
+      FakeSR.prototype.stop = function () { if (this.onend) this.onend(); };
+      FakeSR.prototype.abort = function () {};
+      FakeSR.prototype.emit = function (transcript, confidence) {
+        const alt = { transcript, confidence };
+        const row = { 0: alt, isFinal: true, length: 1 };
+        if (this.onresult) this.onresult({ resultIndex: 0, results: { 0: row, length: 1 } });
+      };
+      window.SpeechRecognition = window.webkitSpeechRecognition = FakeSR;
+    });
+    await vp.goto(URL, { waitUntil: 'networkidle0' }); await vp.waitForSelector('#mic');
+    await vp.evaluate(() => new Promise(ok => { if (!('speechSynthesis' in window) || speechSynthesis.getVoices().length) return ok(); const t = setTimeout(ok, 1600); speechSynthesis.addEventListener('voiceschanged', () => { clearTimeout(t); ok(); }, { once: true }); }));
+    ok(await vp.evaluate(() => !window.__srN && listening === false && !$('#mic').classList.contains('live') && !$('#autoL')), 'ao abrir a tela o microfone continua desligado');
+    const said = await vp.evaluate(() => { spkId++; clearTimeout(ttsWD); try { speechSynthesis.cancel(); } catch (e) {} $('#mic').classList.remove('ai'); updMode(); $('#tts').checked = false; const n = window.__srN || 0; say('Pergunta sem ligar o microfone.'); return n; });
+    await sleep(500);
+    const afterSay = await vp.evaluate(n => ({ n: window.__srN || 0, same: (window.__srN || 0) === n, listening, live: $('#mic').classList.contains('live'), mode: $('#vmode').textContent }), said);
+    ok(afterSay.same && afterSay.listening === false && !afterSay.live && /Toque para falar/.test(afterSay.mode), 'depois que o coach fala o microfone não religa');
+    const coach = await vp.evaluate(() => new Promise(ok => { $('#tts').checked = true; speak('Olá'); const t0 = Date.now(); (function poll() { const m = $('#mic'); if (m.classList.contains('ai') || Date.now() - t0 > 2500) ok({ ai: m.classList.contains('ai'), live: m.classList.contains('live'), mode: $('#vmode').textContent, listening }); else setTimeout(poll, 30); })(); }));
+    ok(coach.ai && !coach.live && /Coach falando/.test(coach.mode) && coach.listening === false, 'o coach fala sozinho sem abrir o microfone');
+    await sleep(80);
+    await vp.evaluate(() => { spkId++; clearTimeout(ttsWD); $('#tts').checked = false; $('#mic').classList.remove('ai'); updMode(); try { speechSynthesis.cancel(); } catch (e) {} const b = $('#voiceGo'); if (b) b.remove(); $('#anamCard').classList.remove('hide'); window.__got = []; handle = t => window.__got.push(t); });
+    const tapMic = async () => { await vp.evaluate(() => { $('#anamCard').classList.remove('hide'); $('#mic').scrollIntoView({ block: 'center' }); }); await vp.click('#mic'); };
+    await tapMic();
+    await vp.waitForFunction(() => { const m = document.querySelector('#mic'); return m.classList.contains('live') && !m.classList.contains('ai') && [...document.querySelectorAll('#wave span')].some(s => parseFloat(s.style.height) > 0); });
+    const on = await vp.evaluate(() => ({ mode: $('#vmode').textContent, live: $('#live').textContent, listening }));
+    ok(/Ouvindo você/.test(on.mode) && on.listening && /parar/.test(on.live), 'toque em Toque para falar liga o microfone');
+    await tapMic();
+    await vp.waitForFunction(() => !document.querySelector('#mic').classList.contains('live') && listening === false);
+    const off = await vp.evaluate(() => ({ mode: $('#vmode').textContent, idle: [...document.querySelectorAll('#wave span')].every(b => !b.style.height), ai: $('#mic').classList.contains('ai') }));
+    ok(/Toque para falar/.test(off.mode) && off.idle && !off.ai, 'tocar de novo para e a onda volta ao repouso');
+    await tapMic(); await vp.waitForFunction(() => listening === true);
+    await vp.evaluate(() => { window.__sr.emit('a', 0.95); window.__sr.stop(); }); await sleep(250);
+    ok(await vp.evaluate(() => window.__got.length === 0 && listening === false && !$('#mic').classList.contains('live')), 'fala curtíssima é ignorada e o microfone não religa');
+    await tapMic(); await vp.waitForFunction(() => listening === true);
+    const nLow = await vp.evaluate(() => window.__srN);
+    await vp.evaluate(() => { window.__sr.emit('quero hipertrofia', 0.15); window.__sr.stop(); }); await sleep(400);
+    ok(await vp.evaluate(n => window.__got.length === 0 && listening === false && window.__srN === n, nLow), 'confiança baixa é ignorada e o microfone não reinicia');
+    await tapMic(); await vp.waitForFunction(() => listening === true);
+    await vp.evaluate(() => { window.__sr.emit('quero hipertrofia', 0); window.__sr.stop(); }); await sleep(200);
+    ok(await vp.evaluate(() => window.__got.length === 1 && /quero hipertrofia/.test(window.__got[0]) && listening === false), 'uma frase clara vira resposta e o microfone desliga');
     ok(!!(await an.$('#ptr')), 'indicador de puxar para atualizar presente');
     // ---- admin
     const ad = await browser.newPage(); await ad.authenticate({ username: 'dono@teste.com', password: 'admin123' }); await ad.setViewport({ width: 1200, height: 800 });

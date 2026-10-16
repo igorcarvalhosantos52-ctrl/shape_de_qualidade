@@ -158,7 +158,7 @@ if (ME.role === "student" && !ME.active) {
   const go = () => { box.remove();
     if (hasTTS) { try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch (e) {} }
     const last = [...(S.chat || [])].reverse().find(m => m[0] === "c");
-    if (S.status === "none" && last) speak(last[1], () => listen("anam", true)); else listen("anam"); };
+    if (S.status === "none" && last) speak(last[1]); };
   box.onclick = go; mic.addEventListener("click", () => box.remove(), { once: true });
 })();
 

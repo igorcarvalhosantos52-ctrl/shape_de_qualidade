@@ -492,38 +492,40 @@ function speak(t,onEnd){const id=++spkId;let done=false;setAI(true);const fin=()
   ttsWD=setTimeout(adv,1800+txt.length*90/rate);/* watchdog: segue mesmo se o onend não disparar */
   try{speechSynthesis.speak(u)}catch(e){adv()}};
  setTimeout(next,40)}
-function canAutoListen(){return $("#autoL").checked&&SR&&!listening&&S.status==="none"&&!document.hidden&&!$("#t-aluno").classList.contains("hide")}
-function say(t){if(!t)return;addMsg("c",t);noSpeechTries=0;speak(t,()=>{if(canAutoListen())setTimeout(()=>{if(canAutoListen())listen("anam",true)},250)})}
+function say(t){if(!t)return;addMsg("c",t);speak(t)}
 function addMsg(w,t){if(target==="anam"&&S.status==="none"||w==="a"&&target==="anam"){S.chat.push([w,t]);save()}renderChat()}
 function renderChat(){$("#chat").innerHTML="";S.chat.forEach(([w,t])=>{const d=document.createElement("div");d.className="msg "+w;d.textContent=t;$("#chat").appendChild(d)});$("#chat").scrollTop=1e6}
 const MOBILE=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
-async function startWave(){/* no celular, abrir o microfone em paralelo (getUserMedia) derruba o reconhecimento de voz: usa onda animada */if(MOBILE||!navigator.mediaDevices){fakeWave();return}try{stream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx=new(window.AudioContext||window.webkitAudioContext)();an=audioCtx.createAnalyser();an.fftSize=64;audioCtx.createMediaStreamSource(stream).connect(an);const data=new Uint8Array(an.frequencyBinCount),bars=[...$("#wave").children];(function loop(){an.getByteFrequencyData(data);bars.forEach((b,i)=>b.style.height=(6+data[i*2]/255*34)+"px");raf=requestAnimationFrame(loop)})()}catch(e){fakeWave()}}
-function fakeWave(){const bars=[...$("#wave").children];(function loop(){bars.forEach(b=>b.style.height=(6+Math.random()*28)+"px");raf=setTimeout(loop,120)})()}
-function stopWave(){cancelAnimationFrame(raf);clearTimeout(raf);if(stream)stream.getTracks().forEach(t=>t.stop());if(audioCtx)audioCtx.close().catch(()=>{});stream=audioCtx=null;[...$("#wave").children].forEach(b=>b.style.height="")}
-let recWD=null,noSpeechTries=0,startFails=0;
-function setAI(on){const m=$("#mic");m.classList.toggle("ai",on);updMode()}
-function updMode(){const m=$("#mic"),v=$("#vmode");if(!v)return;v.className=m.classList.contains("ai")?"ai":m.classList.contains("live")?"user":"";v.textContent=m.classList.contains("ai")?"🔊 Coach falando":m.classList.contains("live")?"● Ouvindo você":"Toque para falar"}
+let waveGen=0;
+async function startWave(){/* no celular, abrir o microfone em paralelo (getUserMedia) derruba o reconhecimento de voz: usa onda animada */const g=++waveGen;if(MOBILE||!navigator.mediaDevices){fakeWave();return}try{const s=await navigator.mediaDevices.getUserMedia({audio:true});if(g!==waveGen){s.getTracks().forEach(t=>t.stop());return}stream=s;audioCtx=new(window.AudioContext||window.webkitAudioContext)();an=audioCtx.createAnalyser();an.fftSize=64;audioCtx.createMediaStreamSource(stream).connect(an);const data=new Uint8Array(an.frequencyBinCount),bars=[...$("#wave").children];(function loop(){if(g!==waveGen)return;an.getByteFrequencyData(data);bars.forEach((b,i)=>b.style.height=(6+data[i*2]/255*34)+"px");raf=requestAnimationFrame(loop)})()}catch(e){if(g===waveGen)fakeWave()}}
+function fakeWave(){const g=waveGen,bars=[...$("#wave").children];(function loop(){if(g!==waveGen)return;bars.forEach(b=>b.style.height=(6+Math.random()*28)+"px");raf=setTimeout(loop,120)})()}
+function stopWave(){waveGen++;cancelAnimationFrame(raf);clearTimeout(raf);if(stream)stream.getTracks().forEach(t=>t.stop());if(audioCtx)audioCtx.close().catch(()=>{});stream=audioCtx=null;[...$("#wave").children].forEach(b=>b.style.height="")}
+let recWD=null;
+function setAI(on){const m=$("#mic");if(!m)return;m.classList.toggle("ai",!!on);if(on)m.classList.remove("live");if(on)stopWave();updMode()}
+function updMode(){const m=$("#mic"),v=$("#vmode");if(!v||!m)return;const live=m.classList.contains("live"),ai=m.classList.contains("ai");v.className=live?"user":ai?"ai":"";v.textContent=live?"● Ouvindo você":ai?"🔊 Coach falando":"Toque para falar"}
 function resetRec(){listening=false;clearTimeout(recWD);$("#mic").classList.remove("live");stopWave();updMode()}
-function listen(tgt,auto){if(!SR){$("#nosup").classList.remove("hide");return}
- if(listening){if(auto)return;const r=rec;try{r.stop()}catch(e){}setTimeout(()=>{if(rec===r&&listening&&r.__finish)r.__finish()},1500);return}
- if(!auto)noSpeechTries=0;target=tgt;spkId++;clearTimeout(ttsWD);try{speechSynthesis.cancel()}catch(e){}
+/* Ruído de fundo vira texto curtíssimo ou com confiança baixa. Confiança 0 = o navegador não informou: não descarta. */
+function speechOk(text,conf){const t=String(text||"").replace(/\s+/g," ").trim();if(t.length<2)return false;if(/^(a+|e+|o+|h+|ah+|eh+|hm+|hum+|hmm+|uh+|u+|é+|né|ne|hã|ham|ahn)$/i.test(t))return false;if(typeof conf==="number"&&conf>0&&conf<0.4)return false;return true}
+function listen(tgt){if(!SR){$("#nosup").classList.remove("hide");return}
+ if(listening){const r=rec;try{r.stop()}catch(e){}setTimeout(()=>{if(rec===r&&listening&&r.__finish)r.__finish()},1500);return}
+ target=tgt;spkId++;clearTimeout(ttsWD);try{speechSynthesis.cancel()}catch(e){}
+ $("#mic").classList.remove("ai");
  if(rec){try{rec.onend=rec.onerror=rec.onresult=rec.onstart=null;rec.abort()}catch(e){}}
  const r=new SR();rec=r;r.lang="pt-BR";r.interimResults=true;r.continuous=false;r.maxAlternatives=1;
- let final="",interim="",err="",ended=false;
+ let final="",interim="",err="",ended=false,conf=0;
  const finish=()=>{if(ended)return;ended=true;if(rec===r)resetRec();
-  const text=(final||interim).trim();/* aceita respostas curtas ("não", "sim") mesmo que só tenham vindo como resultado parcial */
-  if(text){noSpeechTries=0;startFails=0;$("#live").textContent="“"+text+"”";tgt==="adj"?adjust(text):handle(text);return}
+  const text=(final||interim).trim();
+  if(text&&speechOk(text,conf)){$("#live").textContent="“"+text+"”";tgt==="adj"?adjust(text):handle(text);return}
   if(["not-allowed","service-not-allowed","audio-capture","network"].includes(err))return;
-  if(tgt==="anam"&&S.status==="none"&&$("#autoL").checked&&noSpeechTries<3){noSpeechTries++;$("#live").textContent="Não ouvi nada. Ouvindo de novo...";setTimeout(()=>{if(!listening&&canAutoListen())listen("anam",true)},300);return}
-  $("#live").textContent="Toque na onda para responder (ou digite)."};
+  $("#live").textContent=text?"Não entendi. Toque para falar de novo.":"Toque para falar"};
  r.__finish=finish;
- r.onstart=()=>{$("#mic").classList.add("live");updMode();$("#live").textContent="Ouvindo...";startWave()};
- r.onresult=e=>{interim="";for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript;else interim+=e.results[i][0].transcript}$("#live").textContent=(final+interim)||"Ouvindo...";if(tgt==="adj")$("#adjTxt").value=final+interim};
- r.onerror=e=>{err=e.error||"";const M={"not-allowed":"🎤 O microfone está bloqueado. Libere o microfone para este site (cadeado ao lado do endereço) ou responda digitando abaixo.","service-not-allowed":"🎤 Este navegador não liberou o reconhecimento de voz. Use o Chrome (Android/PC) ou o Safari (iPhone), ou digite abaixo.","audio-capture":"🎤 Não encontrei microfone. Verifique o microfone ou digite abaixo.","network":"📶 O reconhecimento de voz precisa de internet. Verifique a conexão ou digite abaixo."};if(M[err]){$("#live").textContent=M[err];if(err!=="network"){$("#autoL").checked=false}}else if(err!=="no-speech"&&err!=="aborted")$("#live").textContent="Não entendi, tente de novo ou digite."};
+ r.onstart=()=>{$("#mic").classList.add("live");$("#mic").classList.remove("ai");updMode();$("#live").textContent="Ouvindo... toque de novo para parar";startWave()};
+ r.onresult=e=>{interim="";for(let i=e.resultIndex;i<e.results.length;i++){const alt=e.results[i][0];if(e.results[i].isFinal){final+=alt.transcript;if(alt&&typeof alt.confidence==="number"&&alt.confidence>conf)conf=alt.confidence}else interim+=alt.transcript}const show=(final||interim).trim();$("#live").textContent=show||"Ouvindo... toque de novo para parar";if(tgt==="adj")$("#adjTxt").value=final||interim};
+ r.onerror=e=>{err=e.error||"";const M={"not-allowed":"🎤 O microfone está bloqueado. Libere o microfone para este site (cadeado ao lado do endereço) ou responda digitando abaixo.","service-not-allowed":"🎤 Este navegador não liberou o reconhecimento de voz. Use o Chrome (Android/PC) ou o Safari (iPhone), ou digite abaixo.","audio-capture":"🎤 Não encontrei microfone. Verifique o microfone ou digite abaixo.","network":"📶 O reconhecimento de voz precisa de internet. Verifique a conexão ou digite abaixo."};if(M[err])$("#live").textContent=M[err];else if(err!=="no-speech"&&err!=="aborted")$("#live").textContent="Não entendi. Toque para falar de novo."};
  r.onend=finish;
- listening=true;$("#mic").classList.add("live");updMode();
- recWD=setTimeout(()=>{try{r.stop()}catch(e){}setTimeout(finish,1500)},12000);/* watchdog: reconhecimento travado */
- try{r.start();startFails=0}catch(e){resetRec();ended=true;if(++startFails<3)setTimeout(()=>listen(tgt,true),400);else $("#live").textContent="Toque na onda para responder (ou digite)."}}
+ listening=true;$("#mic").classList.add("live");$("#mic").classList.remove("ai");updMode();startWave();
+ recWD=setTimeout(()=>{try{r.stop()}catch(e){}setTimeout(finish,1500)},12000);/* watchdog: reconhecimento travado, não religa sozinho */
+ try{r.start()}catch(e){ended=true;resetRec();$("#live").textContent="Toque para falar de novo."}}
 
 /* ---------- Senha do personal (SHA-256 + sal) ---------- */
 const PKEY="coachvoz_senha";let unlocked=false;try{const ps=sessionStorage.getItem("sq_personal_sessao"),pa=JSON.parse(localStorage.getItem("sq_personal")||"null");unlocked=!!(ps&&pa&&pa.email===ps)}catch(e){}

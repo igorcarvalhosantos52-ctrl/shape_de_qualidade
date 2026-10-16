@@ -1,4 +1,4 @@
-const C = "sq-v6", ASSETS = ["/", "/index.html", "/shim.js", "/app.js", "/glue.js", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
+const C = "sq-v7", ASSETS = ["/", "/index.html", "/shim.js", "/app.js", "/glue.js", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(C).then(c => c.addAll(ASSETS))); self.skipWaiting(); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== C).map(x => caches.delete(x))))); self.clients.claim(); });
 // rede primeiro (sempre a versão nova); cache só quando estiver offline. A API nunca é cacheada.

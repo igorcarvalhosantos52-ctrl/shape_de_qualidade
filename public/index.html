@@ -133,13 +133,12 @@ header h1 .logo{font-family:'Anton','Bebas Neue',Impact,'Arial Black','Helvetica
     <div class="micwrap">
       <button id="mic" aria-label="Toque para falar"><div id="wave"></div></button>
       <div id="vmode">Toque para falar</div>
-      <div id="live">Toque na onda dourada e responda falando</div>
+      <div id="live">Toque para falar. O microfone só abre quando você toca.</div>
       <div id="nosup" class="alert warn hide">Seu navegador não suporta reconhecimento de voz. Use o campo de texto abaixo (Chrome/Edge funcionam melhor).</div>
     </div>
     <div class="row"><input id="txt" placeholder="Ou digite sua resposta..."><button class="btn" id="send">Enviar</button></div>
     <details class="cfg"><summary>⚙️ Configurações de voz</summary>
 <label style="display:flex;gap:6px;margin-top:8px;font-size:.9rem"><input type="checkbox" id="tts" checked style="width:auto"> Coach fala as perguntas em voz alta</label>
-<label style="display:flex;gap:6px;margin-top:6px;font-size:.9rem"><input type="checkbox" id="autoL" checked style="width:auto"> Ouvir automaticamente depois que o coach falar</label>
 <label style="font-size:.9rem;display:block;margin-top:8px">Voz<select id="voiceSel"></select></label>
 <label style="font-size:.9rem;display:block;margin-top:8px">Velocidade: <b id="rateV">1.15</b>x<input type="range" id="rate" min="0.8" max="1.6" step="0.05" value="1.15"></label>
 <button class="btn sec sm" id="testV" style="margin-top:8px">Testar voz</button></details>
