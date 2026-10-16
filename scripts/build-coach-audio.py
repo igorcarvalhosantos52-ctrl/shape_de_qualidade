@@ -20,6 +20,8 @@ PHRASES = [
     "Quantos dias por semana você consegue treinar?",
     "Quanto tempo você tem por treino?",
     "Sente alguma dor ou tem alguma lesão?",
+    "Você tem alguma orientação médica?",
+    "Qual?",
     "Em qual parte do corpo?",
     "De 0 a 10, quanto dói?",
     "Não peguei seu nome. Pode repetir?",

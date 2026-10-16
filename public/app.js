@@ -51,7 +51,8 @@ function baseQueue(){
  {id:"nivel",q:"Você já treina? Se sim, há quanto tempo?"},
  {id:"dias",q:"Quantos dias por semana você consegue treinar?"},
  {id:"tempo",q:"Quanto tempo você tem por treino?"},
- {id:"dor",q:"Sente alguma dor ou tem alguma lesão?"});
+ {id:"dor",q:"Sente alguma dor ou tem alguma lesão?"},
+ {id:"med",q:"Você tem alguma orientação médica?"});
  q.push({id:"fim",q:""});return q}
 function ask(){const it=S.queue[S.step];if(!it)return;if(it.id==="fim"){finishAnam();return}say(it.q)}
 function insertNext(items){S.queue.splice(S.step+1,0,...items)}
@@ -161,7 +162,8 @@ function handle(ans){
   case it.id.startsWith("int:"):{const p=it.id.slice(4);A.dores[p].int=num(ans)??5;if(A.dores[p].int>=7)A.obs.push("Dor intensa ("+A.dores[p].int+"/10) no "+p);break}
   case it.id.startsWith("qdo:"):A.dores[it.id.slice(4)].quando=ans;if(/repouso|noite|parado/.test(n))A.obs.push("Dor em repouso no "+it.id.slice(4));break;
   case it.id.startsWith("dx:"):A.dores[it.id.slice(3)].dx=yes(ans)||/[a-z]{6,}/.test(n)&&!/^nao/.test(n)?ans:"Sem diagnóstico";break;
-  case it.id==="med"||it.id==="med2":{const mi=parseMed(ans);A.med=it.id==="med2"?(A.med+" → "+ans):ans;A.medInfo=it.id==="med2"?parseMed(A.med):mi;break}
+  case it.id==="med":{const mi=parseMed(ans);if(medNo(ans)){mi.nenhuma=true;mi.vazio=false}A.med=ans;A.medInfo=mi;if(medFollow(ans))insertNext([{id:"med2",q:"Qual?"}]);break}
+  case it.id==="med2":{A.med=ans;A.medInfo=parseMed(ans);if(medNo(ans)){A.medInfo.nenhuma=true;A.medInfo.vazio=false}break}
   case it.id==="c:hipertensao":A.cond.hipertensao=ans;if(!yes(ans)||/nao/.test(n))A.obs.push("Hipertensão possivelmente não controlada");break;
   case it.id==="c:diabetes":A.cond.diabetes=ans;if(/hipoglic|sim/.test(n)&&/hipoglic/.test(n))A.obs.push("Histórico de hipoglicemia");break;
   case it.id==="c:meds":A.meds=ans;if(/beta|atenolol|propranolol|insulina|anticoagul|varfarina/.test(n))A.obs.push("Medicamento que afeta a resposta ao exercício: "+ans);break;
@@ -194,10 +196,20 @@ function parseMed(t){const n=norm(t),r={texto:t,conds:[],tags:[],low:false,grave
  const parts=bodyIn(t);if(parts.length&&(r.tags.length||r.conds.length)){r.tags.push(...parts);r.atencao.push("Poupar: "+parts.join(", "))}
  r.tags=[...new Set(r.tags)];
  const sinal=r.conds.length||r.tags.length||r.soCaminhada;
- if(!sinal){if(/^(nao|nenhuma?|nada|sem|negativo)\b/.test(n)||/nenhuma|nao tenho|nao preciso/.test(n)||r.liberado)r.nenhuma=true;
-  else if(/^(sim|tenho|s)$/.test(n)||n.split(" ").length<=2)r.vazio=true;
+ if(!sinal){if(medNo(t)||r.liberado)r.nenhuma=true;
+  else if(medBareYes(t))r.vazio=true;
   else r.atencao.push("Orientação não reconhecida automaticamente – personal deve conferir")}
  return r}
+function medPlain(t){return String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[.,!?;]/g," ").replace(/\s+/g," ").trim()}
+function medWords(t){return medPlain(t).split(" ").filter(w=>w&&!/^(ah|eh|hm|hum|hmm|uh|ok|ta|e|oi|aham|por|favor)$/.test(w))}
+function medNo(t){const words=medWords(t);if(!words.length)return false;
+ const ok=new Set("nao no nenhuma nenhum nada sem negativo tenho preciso orientacao medica medico alguma uma".split(" "));
+ return words.some(w=>/^(nao|no|nenhuma|nenhum|nada|sem|negativo)$/.test(w))&&words.every(w=>ok.has(w))}
+function medBareYes(t){const words=medWords(t);if(!words.length||medNo(t))return false;
+ const ok=new Set("sim tenho s yes positivo isso afirmativo".split(" "));
+ return words.every(w=>ok.has(w))&&words.some(w=>/^(sim|tenho|s|yes|positivo|afirmativo|isso)$/.test(w))}
+/* Não repete a pergunta quando a resposta já é não, ou quando o aluno já explicou. "Qual?" só sai num sim sem detalhe. */
+function medFollow(t){return medNo(t)||!medBareYes(t)?"":"Qual?"}
 function risk(){const A=S.a;return((A.medInfo&&A.medInfo.graves)||[]).map(x=>"Orientação médica: "+x).concat(A.obs)}
 function attn(){const m=S.a.medInfo;return m?m.atencao.concat(m.conds.filter(c=>!m.graves.some(g=>g.startsWith(c))&&!m.atencao.some(a=>a.startsWith(c)))):[]}
 function medNoteHTML(){const m=S.a.medInfo;if(!m||m.nenhuma)return"";return `<div class="alert warn">🩺 Treino ajustado conforme a orientação médica informada: “${esc(S.a.med)}”.${m.low?" Intensidade reduzida (menos séries, mais repetições leves e descanso maior).":""}${m.tags.length?" Restrições aplicadas: "+esc(m.tags.join(", "))+".":""}</div>`}
