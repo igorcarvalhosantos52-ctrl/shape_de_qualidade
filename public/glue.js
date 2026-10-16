@@ -152,14 +152,11 @@ if (ME.role === "student" && !ME.active) {
   const hasTTS = "speechSynthesis" in window, mic = $("#mic"); if (!mic) return;
   const box = document.createElement("div"); box.id = "voiceGo"; box.className = "alert ok noprint";
   box.style.cssText = "text-align:center;cursor:pointer;font-weight:700";
-  box.innerHTML = SR ? "🎙️ Toque aqui para conversar por voz com o coach" : "⌨️ Seu navegador não tem reconhecimento de voz. Responda digitando abaixo (no Android use o Chrome; no iPhone, o Safari).";
+  box.innerHTML = "🎙️ Toque aqui para conversar por voz com o coach";
   mic.parentNode.insertBefore(box, mic);
-  if (!SR) return;
-  const go = () => { box.remove();
-    if (hasTTS) { try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch (e) {} }
-    const last = [...(S.chat || [])].reverse().find(m => m[0] === "c");
-    if (S.status === "none" && last) speak(last[1]); };
-  box.onclick = go; mic.addEventListener("click", () => box.remove(), { once: true });
+  box.onclick = () => { box.remove(); window.__ttsUnlocked = true; try { speechSynthesis.resume(); } catch (e) {}
+    const last = lastCoachText(); if (last && ttsEnabled()) speak(last, null, { interrupt: true }); };
+  if (!SR) { const tip = document.createElement("div"); tip.className = "alert warn"; tip.textContent = "Seu navegador não tem reconhecimento de voz. Responda digitando abaixo (no Android use o Chrome; no iPhone, o Safari)."; mic.parentNode.insertBefore(tip, mic); }
 })();
 
 /* ---------- Senhas ---------- */
@@ -231,28 +228,8 @@ if (!$("#t-personal").classList.contains("hide")) render();
 // nova versão do app publicada: recarrega só se já havia um service worker ao abrir a página (troca de versão), no máximo uma vez
 if ("serviceWorker" in navigator) { const hadController = !!navigator.serviceWorker.controller; let reloading = false; navigator.serviceWorker.addEventListener("controllerchange", () => { if (!hadController || reloading || !navigator.serviceWorker.controller) return; reloading = true; if (!document.querySelector("input:focus,textarea:focus")) location.reload(); }); navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => {}); }
 
-/* ---------- Voz do coach (falar): destrava no 1º toque, espera as vozes, pt-BR, e botão "Tocar para ouvir" se o navegador bloquear ---------- */
-(function ttsFix() {
+/* Chrome Android pausa a fala longa sozinho; resume() periódico segura. Não espera onvoiceschanged para falar. */
+(function ttsKeepAlive() {
   if (!("speechSynthesis" in window)) return;
-  const SS = window.speechSynthesis; let primed = false; window.__ttsStart = 0;
-  const _ssSpeak = SS.speak.bind(SS);
-  SS.speak = u => { try { u.addEventListener("start", () => (window.__ttsStart = Date.now())); } catch (e) {} return _ssSpeak(u); };
-  const prime = () => { if (primed) return; primed = true; try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; u.lang = "pt-BR"; SS.cancel(); _ssSpeak(u); SS.resume(); } catch (e) {} loadVoices(); };
-  ["pointerdown", "touchend", "keydown", "click"].forEach(ev => addEventListener(ev, prime, { capture: true, passive: true }));
-  // Chrome para a fala longa sozinho; resume() periódico mantém viva (no Android não usamos pause)
-  setInterval(() => { if (SS.speaking) try { SS.resume(); } catch (e) {} }, 5000);
-  const voicesReady = () => new Promise(ok => { if (SS.getVoices().length) return ok(); const t = setTimeout(ok, 1500); SS.addEventListener("voiceschanged", () => { clearTimeout(t); ok(); }, { once: true }); });
-  function playBtn(t, onEnd) {
-    let b = $("#ttsPlay"); if (!b) { b = document.createElement("button"); b.id = "ttsPlay"; b.className = "btn"; b.style.cssText = "width:100%;margin:6px 0"; const m = $("#mic"); (m ? m.parentNode : document.body).insertBefore(b, m || null); }
-    b.textContent = "🔊 Tocar para ouvir o coach"; b.onclick = () => { b.remove(); primed = false; prime(); _wrapped(t, onEnd, true); };
-  }
-  const _sp = speak;
-  function _wrapped(t, onEnd, fromTap) {
-    const b = $("#ttsPlay"); if (b) b.remove();
-    if (!$("#tts").checked) return _sp(t, onEnd);
-    const call = Date.now(), go = () => { _sp(t, onEnd);
-      setTimeout(() => { if (window.__ttsStart < call && !SS.speaking && $("#tts").checked) { playBtn(t, onEnd); if (!fromTap) $("#live").textContent = "O navegador bloqueou a voz do coach. Toque em “Tocar para ouvir”."; } }, 2500); };
-    if (VOICES.length || fromTap) go(); else voicesReady().then(() => { loadVoices(); go(); });
-  }
-  speak = (t, onEnd) => _wrapped(t, onEnd, false);
+  setInterval(() => { if (speechSynthesis.speaking) try { speechSynthesis.resume(); } catch (e) {} }, 5000);
 })();

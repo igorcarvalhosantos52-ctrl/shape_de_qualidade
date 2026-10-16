@@ -49,7 +49,6 @@ function baseQueue(){
  {id:"resultados",q:"Quais resultados você deseja alcançar?"},
  {id:"prioridade",q:"Existe alguma região do corpo ou alguma capacidade que você deseja priorizar? Se não tiver, é só dizer que não."},
  {id:"prazo",q:"Em quanto tempo você espera perceber resultados?"},
- {id:"progresso",q:"Como vamos saber que você está progredindo?"},
  {id:"nivel",q:"Você já treina? Se sim, há quanto tempo?"},
  {id:"dias",q:"Quantos dias por semana você consegue treinar?"},
  {id:"tempo",q:"Quanto tempo você tem por treino?"},
@@ -482,19 +481,39 @@ function loadVoices(){if(!("speechSynthesis"in window))return;VOICES=speechSynth
 function curVoice(){return VOICES.find(v=>v.name===vpref.name)||VOICES[0]||null}
 function chunks(t){return(t.match(/[^.!?…:]+[.!?…:]*/g)||[t]).flatMap(x=>{x=x.trim();if(x.length<=160)return[x];return x.split(/,\s*/).map(y=>y.trim())}).filter(Boolean)}
 let ttsWD=null,keepU=[];
-function speak(t,onEnd){const id=++spkId;let done=false;setAI(true);const fin=()=>{if(done||id!==spkId)return;done=true;clearTimeout(ttsWD);setAI(false);onEnd&&onEnd()};
- if(!$("#tts").checked||!("speechSynthesis"in window)){fin();return}
- try{speechSynthesis.cancel();speechSynthesis.resume()}catch(e){}
- const parts=chunks(t),v=curVoice(),rate=+vpref.rate||1.15;let i=0;
- const next=()=>{if(id!==spkId||done)return;clearTimeout(ttsWD);if(i>=parts.length){fin();return}const txt=parts[i++];let fired=false;const adv=()=>{if(fired)return;fired=true;next()};
-  const u=new SpeechSynthesisUtterance(txt);u.lang=v?v.lang:"pt-BR";if(v)u.voice=v;u.rate=rate;u.pitch=1;keepU=[u];/* mantém referência: evita bug do Chrome que perde o onend */
-  u.onend=adv;u.onerror=e=>{if(e.error!=="interrupted"&&e.error!=="canceled")adv()};
-  ttsWD=setTimeout(adv,1800+txt.length*90/rate);/* watchdog: segue mesmo se o onend não disparar */
-  try{speechSynthesis.speak(u)}catch(e){adv()}};
- setTimeout(next,40)}
+function ttsEnabled(){const c=$("#tts");return !c||c.checked}
+function syncTtsBtn(){const on=ttsEnabled(),b=$("#ttsToggle");if(b){b.textContent=on?"🔊 ligado":"🔇 desligado";b.setAttribute("aria-pressed",on?"true":"false")}}
+function lastCoachText(){const m=[...(S.chat||[])].reverse().find(x=>x[0]==="c"&&x[1]);return m?m[1]:""}
+function showTtsPlay(t,onEnd){if(!ttsEnabled())return;let b=$("#ttsPlay");
+ if(!b){b=document.createElement("button");b.id="ttsPlay";b.type="button";b.className="btn";b.style.cssText="width:100%;margin:6px 0";const m=$("#mic");(m&&m.parentNode?m.parentNode:document.body).insertBefore(b,m||null)}
+ b.textContent="🔊 Tocar para ouvir o coach";
+ b.onclick=()=>{b.remove();window.__ttsUnlocked=true;try{speechSynthesis.resume()}catch(e){}speak(t||lastCoachText(),onEnd,{interrupt:true})}}
+/* Não chama cancel() no mesmo instante de speak(): no Chrome Android a fala seguinte some. Sem voz pt-BR, fala mesmo assim com lang pt-BR e sem u.voice. */
+function speak(t,onEnd,opts){const id=++spkId;let done=false;setAI(true);
+ const fin=()=>{if(done||id!==spkId)return;done=true;clearTimeout(ttsWD);setAI(false);onEnd&&onEnd()};
+ if(!t||!ttsEnabled()||!("speechSynthesis"in window)){fin();return}
+ const SS=speechSynthesis;try{SS.resume()}catch(e){}
+ const parts=chunks(String(t)),rate=+vpref.rate||1.15;let i=0;
+ const voices=typeof SS.getVoices==="function"?SS.getVoices()||[]:[];
+ if(!voices.length)showTtsPlay(t,onEnd);
+ const step=()=>{if(id!==spkId||done)return;clearTimeout(ttsWD);if(i>=parts.length){fin();return}
+  const txt=parts[i++];let fired=false;const adv=()=>{if(fired||id!==spkId)return;fired=true;step()};
+  const u=new SpeechSynthesisUtterance(txt);u.lang="pt-BR";const v=curVoice();if(v)u.voice=v;u.rate=rate;u.pitch=1;keepU=[u];
+  const mark=()=>{window.__ttsHeard=true;window.__ttsStart=Date.now()};u.onstart=mark;try{u.addEventListener("start",mark)}catch(e){}
+  u.onend=adv;u.onerror=e=>{if(e.error==="interrupted"||e.error==="canceled")return;showTtsPlay(t,onEnd);adv()};
+  const startedAt=Date.now();
+  ttsWD=setTimeout(()=>{if(id!==spkId||done)return;if(!(window.__ttsStart>=startedAt)&&!SS.speaking)showTtsPlay(t,onEnd);adv()},1800+txt.length*90/rate);
+  const go=()=>{if(id!==spkId||done)return;try{SS.resume();SS.speak(u)}catch(e){showTtsPlay(t,onEnd);adv()}};
+  if(i===1&&(SS.speaking||SS.pending)){try{SS.cancel()}catch(e){}setTimeout(go,120);return}
+  go()};
+ step()}
 function say(t){if(!t)return;addMsg("c",t);speak(t)}
 function addMsg(w,t){if(target==="anam"&&S.status==="none"||w==="a"&&target==="anam"){S.chat.push([w,t]);save()}renderChat()}
-function renderChat(){$("#chat").innerHTML="";S.chat.forEach(([w,t])=>{const d=document.createElement("div");d.className="msg "+w;d.textContent=t;$("#chat").appendChild(d)});$("#chat").scrollTop=1e6}
+function renderChat(){$("#chat").innerHTML="";S.chat.forEach(([w,t])=>{const d=document.createElement("div");d.className="msg "+w;if(w==="c"&&t){const s=document.createElement("span");s.textContent=t;d.appendChild(s);const b=document.createElement("button");b.type="button";b.className="btn sm sec repetir";b.textContent="Repetir";b.onclick=()=>speak(t,null,{interrupt:true});d.appendChild(b)}else d.textContent=t;$("#chat").appendChild(d)});$("#chat").scrollTop=1e6}
+function unlockTts(ev){if(window.__ttsUnlocked)return;window.__ttsUnlocked=true;try{speechSynthesis.resume()}catch(e){}
+ if(!ttsEnabled()||window.__ttsHeard)return;const el=ev&&ev.target;if(el&&el.closest&&el.closest("#ttsToggle,#voiceGo,#ttsPlay,.repetir"))return;
+ const last=lastCoachText();if(last)speak(last)}
+["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,unlockTts,true));
 const MOBILE=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
 let waveGen=0;
 async function startWave(){/* no celular, abrir o microfone em paralelo (getUserMedia) derruba o reconhecimento de voz: usa onda animada */const g=++waveGen;if(MOBILE||!navigator.mediaDevices){fakeWave();return}try{const s=await navigator.mediaDevices.getUserMedia({audio:true});if(g!==waveGen){s.getTracks().forEach(t=>t.stop());return}stream=s;audioCtx=new(window.AudioContext||window.webkitAudioContext)();an=audioCtx.createAnalyser();an.fftSize=64;audioCtx.createMediaStreamSource(stream).connect(an);const data=new Uint8Array(an.frequencyBinCount),bars=[...$("#wave").children];(function loop(){if(g!==waveGen)return;an.getByteFrequencyData(data);bars.forEach((b,i)=>b.style.height=(6+data[i*2]/255*34)+"px");raf=requestAnimationFrame(loop)})()}catch(e){if(g===waveGen)fakeWave()}}
@@ -578,7 +597,11 @@ function objSectionHTML(A){A=A||S.a;if(!A.objTxt&&!goalSet(A).length&&!A.resulta
  <li><b>Resultados que deseja alcançar:</b> ${esc(A.resultados||"—")}</li>
  <li><b>Região ou capacidade para priorizar:</b> ${esc(A.prioridade||"—")}</li>
  <li><b>Em quanto tempo espera resultados:</b> ${esc(A.prazo||"—")}${note?` <small>${esc(note)}</small>`:""}</li>
- <li><b>Como saberemos que está progredindo:</b> ${esc(A.progresso||"—")}</li></ul>`}
+ <li><b>Como vamos medir o progresso:</b> ${esc(A.progresso||"—")}</li></ul>`}
+function progEditorHTML(){if(!unlocked||!viewing)return"";const sug=["Peso","Medidas","Fotos","Cargas","Testes"];
+ return `<div class="noprint" id="progBox"><p style="margin:8px 0 4px"><b>Como vamos medir o progresso</b></p><p style="color:var(--mut);font-size:.85rem;margin:0 0 6px">O personal preenche. Sugestões: peso, medidas, fotos, cargas, testes.</p><textarea id="progIn" rows="2" placeholder="Ex.: peso, fotos e cargas">${esc(S.a.progresso||"")}</textarea><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${sug.map(s=>`<button type="button" class="btn sm sec progSug" data-s="${esc(s)}">${s}</button>`).join("")}</div></div>`}
+function bindProg(){const pi=$("#progIn");if(!pi)return;const apply=v=>{S.a.progresso=v;save()};pi.onchange=()=>apply(pi.value.trim());
+ document.querySelectorAll(".progSug").forEach(b=>b.onclick=()=>{const s=b.dataset.s,cur=pi.value.trim();const next=!cur?s:(cur.toLowerCase().includes(s.toLowerCase())?cur:cur+", "+s);pi.value=next;apply(next)})}
 function dayExp(d){if(!d||!d.blocos||!d.blocos.length)return"";const A=S.a,M=A.medInfo||{},gs=d.blocos.map(b=>b.g);if(gs[0]==="caminhada"||(gs.length===1&&gs[0]==="cardio"))return"";
  const ex=d.blocos.flatMap(b=>b.ex);if(!ex.length)return"";const strength=d.blocos.filter(b=>b.g!=="mobilidade"&&b.g!=="cardio"&&b.g!=="caminhada");
  const e0=(strength[0]&&strength[0].ex[0])||ex[0]||{s:4,d:"60s",r:"10–12"};
@@ -640,6 +663,7 @@ function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.stat
  if(!S.plan){pc.innerHTML='<h2>Painel do Personal</h2><div class="alert warn">ℹ️ O CREF é opcional. Quando informado, é verificado só pelo formato; confira o registro na consulta pública do sistema CONFEF/CREF.</div><p style="color:var(--mut)">Nenhum treino aguardando aprovação. O aluno precisa concluir a anamnese primeiro.</p>'}
  else pc.innerHTML=`<h2>Painel do Personal ${badge()}</h2>${S.mudancas&&S.mudancas.length?`<div class="alert warn">✏️ O aluno corrigiu respostas e o treino foi recalculado: ${S.mudancas.slice(-5).map(esc).join(" · ")}</div>`:""}<div class="alert warn">ℹ️ O CREF é opcional. Quando informado, é verificado só pelo formato; confira o registro na consulta pública do sistema CONFEF/CREF.</div>${S.adjLog&&S.adjLog.length?`<div class="alert warn">🩹 <b>Ajustes do aluno:</b> ${S.adjLog.slice(-8).map(esc).join(" · ")}</div>`:""}<p><b>Aluno:</b> ${esc(S.a.nome)} · ${esc(S.a.idade)} anos · ${esc(objShow())}${S.a.objetivo?` <small style="color:var(--mut)">(${esc(goalLabels().join(", ")||S.a.objetivo)})</small>`:""} · ${esc(S.a.nivel)} · ${S.a.dias}x/semana</p>
  ${objSectionHTML()}
+ ${progEditorHTML()}
  ${r.length?`<div class="alert bad">⚠️ ${r.length} ponto(s) de risco. Confirme a <b>liberação médica</b> antes de aprovar.<ul>${r.map(x=>"<li>"+esc(x)+"</li>").join("")}</ul><label style="display:flex;gap:6px"><input type="checkbox" id="libmed" style="width:auto"> Recebi e conferi a liberação médica</label></div>`:'<div class="alert ok">Sem pontos de risco na anamnese.</div>'}${S.a.med?`<p><b>Orientação médica:</b> “${esc(S.a.med)}”</p>`:""}${attn().length?`<div class="alert warn">Atenção: ${attn().map(esc).join(" · ")}</div>`:""}
  ${S.status!=="aprovado"?`<div class="noprint"><input id="pNome" placeholder="Nome do personal" value="${esc((pAcc()||{}).nome||"")}" style="margin-bottom:8px"><input id="pCref" value="${esc((pAcc()||{}).cref||"")}" placeholder="CREF (opcional, ex.: 012345-G/SP)" style="margin-bottom:8px"><div id="pErr"></div><button class="btn ok" id="aprovar" style="width:100%">✓ Aprovar treino</button></div>`:`<div class="alert ok">Aprovado por ${esc(S.aprov.nome)}${S.aprov.cref?" – CREF "+esc(S.aprov.cref):" (sem CREF informado)"} em ${esc(S.aprov.data)} <button class="btn sm bad noprint" id="revogar">Revogar</button></div>`}
  <div id="splitSlot"></div>
@@ -666,6 +690,7 @@ function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.stat
  pc.onchange=ev=>{if(ev.target.id==="revF"||ev.target.id==="revD")return;planEdit(ev)};
  pc.onclick=ev=>{const t=ev.target.closest&&ev.target.closest("button[data-act]");if(t)planEdit(ev)};
  const ap=$("#aprovar");if(ap)ap.onclick=approve;const rv=$("#revogar");if(rv)rv.onclick=()=>{if(!unlocked)return;S.status=risk().length?"bloqueado":"pendente";S.aprov=null;S.adj=[];save();render()};
+ bindProg();
 }
 function approve(){if(!unlocked)return;const nome=$("#pNome").value.trim(),cref=$("#pCref").value.trim().toUpperCase();const err=m=>$("#pErr").innerHTML=`<div class="alert bad">${m}</div>`;
  if(nome.length<3)return err("Informe o nome do personal.");
@@ -719,4 +744,6 @@ $("#rate").value=vpref.rate;$("#rateV").textContent=(+vpref.rate).toFixed(2);
 $("#rate").oninput=e=>{vpref.rate=+e.target.value;$("#rateV").textContent=vpref.rate.toFixed(2);localStorage.setItem(VKEY,JSON.stringify(vpref))};
 $("#voiceSel").onchange=e=>{vpref.name=e.target.value;localStorage.setItem(VKEY,JSON.stringify(vpref))};
 $("#testV").onclick=()=>speak("Oi! Eu sou o coach do Shape de Qualidade. Bora treinar? Vou te fazer algumas perguntas rápidas.");
+$("#ttsToggle").onclick=()=>{const c=$("#tts");if(!c)return;c.checked=!c.checked;syncTtsBtn();if(!c.checked){spkId++;clearTimeout(ttsWD);try{speechSynthesis.cancel()}catch(e){}setAI(false)}};
+$("#tts").onchange=syncTtsBtn;syncTtsBtn();
 function boot(){try{S=load();if(curUser&&!accounts()[curUser])curUser=null;if(!curUser)localStorage.removeItem(SESS);if(curUser)showTab("aluno");start()}catch(e){console.error("Shape de Qualidade init:",e);try{if(curUser&&CK){localStorage.setItem(CK+"_bak"+Date.now(),localStorage.getItem(CK)||"");localStorage.removeItem(CK)}}catch(_){}curUser=null;CK=null;try{localStorage.removeItem(SESS)}catch(_){}S=fresh();viewing=null;["login","aluno","personal"].forEach(x=>{const el=document.getElementById("t-"+x);if(el)el.classList.toggle("hide",x!=="login")});try{render()}catch(_){}}}

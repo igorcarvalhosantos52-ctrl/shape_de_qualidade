@@ -61,24 +61,53 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     // ---- aluno
     const ctxA = await browser.createBrowserContext(), a = await ctxA.newPage(); await a.setViewport(phone);
     a.on('pageerror', e => console.error('erro na página (aluno):', e.message));
+    await a.evaluateOnNewDocument(() => {
+      window.__spoken = [];
+      const hook = () => {
+        const ss = window.speechSynthesis; if (!ss || ss.__hooked) return;
+        const orig = ss.speak.bind(ss);
+        ss.speak = function (u) {
+          window.__spoken.push({ text: String(u && u.text || ''), lang: (u && u.lang) || '', voice: (u && u.voice && u.voice.name) || '' });
+          try { if (u && typeof u.onstart === 'function') u.onstart(); } catch (e) {}
+          setTimeout(() => { try { if (u && typeof u.onend === 'function') u.onend(); } catch (e) {} }, 5);
+          try { return orig(u); } catch (e) {}
+        };
+        ss.__hooked = true;
+      };
+      hook(); document.addEventListener('DOMContentLoaded', hook);
+    });
     await a.goto(URL + '/convite/' + code, { waitUntil: 'networkidle0' });
     await a.waitForFunction(() => /convidado por/.test(document.querySelector('#lgInfo').textContent));
     await a.type('#lgNome', 'Pamela'); await a.type('#lgUser', 'pamela'); await a.type('#lgPw', 'aluna123'); await a.type('#lgPw2', 'aluna123');
     await a.screenshot({ path: SHOTS + '/05-cadastro-aluno-convite.png' });
     await Promise.all([a.waitForNavigation(), a.click('#lgGo')]);
-    await a.waitForSelector('#t-aluno:not(.hide)'); await a.evaluate(() => { document.querySelector('#tts').checked = false; });
+    await a.waitForSelector('#t-aluno:not(.hide)');
     ok(!(await a.$('#autoL')), 'não existe mais a opção de ouvir automaticamente');
     await a.waitForFunction(() => /Olá, Pamela/.test(document.querySelector('#chat').textContent), { timeout: 15000 }); ok(true, 'coach cumprimenta "Olá, Pamela" sem perguntar o nome');
+    await a.waitForFunction(() => (window.__spoken || []).some(s => /Quantos anos você tem/.test(s.text) && /pt-BR/i.test(s.lang)), { timeout: 8000 });
+    ok(true, 'depois do login, com a página recarregada, o coach fala a primeira pergunta');
+    ok(/ligado/.test(await a.$eval('#ttsToggle', e => e.textContent)) && (await a.$eval('#tts', e => e.checked)) && /volume de mídia/.test(await a.$eval('#volHint', e => e.textContent)), 'alto-falante começa ligado e avisa para checar o volume de mídia');
+    const nRep = await a.evaluate(() => window.__spoken.length);
+    await a.evaluate(() => document.querySelector('#chat .repetir').click());
+    await a.waitForFunction(n => window.__spoken.length > n && window.__spoken.some(s => /Quantos anos você tem/.test(s.text)), { timeout: 4000 }, nRep);
+    ok(true, 'repetir fala de novo a pergunta do coach');
+    await a.click('#ttsToggle');
+    ok(/desligado/.test(await a.$eval('#ttsToggle', e => e.textContent)) && !(await a.$eval('#tts', e => e.checked)), 'alterna o alto-falante para desligado');
+    await a.click('#ttsToggle');
+    ok(/ligado/.test(await a.$eval('#ttsToggle', e => e.textContent)) && (await a.$eval('#tts', e => e.checked)), 'alterna o alto-falante de volta para ligado');
     await sleep(700);
     const micIdle = await a.evaluate(() => ({ live: document.querySelector('#mic').classList.contains('live'), listening }));
     ok(!micIdle.live && micIdle.listening === false, 'o microfone não liga sozinho depois que o coach fala');
     ok(/Seu personal ainda não cadastrou o WhatsApp/.test(await a.$eval('#waTop', e => e.innerText)) && !(await a.$('#waTop .waPers')), 'sem número, o aluno vê que o personal ainda não cadastrou o WhatsApp');
     ok((await a.evaluate(async () => (await fetch('/api/personal/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status)) === 401, 'aluno não cadastra o WhatsApp do personal');
-    const answers = ['19 anos', 'ganho de massa muscular', 'ver o braço crescer e a roupa servir melhor', 'glúteos', 'errei, a prioridade é o peito', 'em 3 meses', 'quando eu aumentar a carga no supino', 'treino há 1 ano', '2 dias', 'errei, posso treinar quatro vezes por semana', '1 hora', 'não', 'não tenho'];
+    const answers = ['19 anos', 'ganho de massa muscular', 'ver o braço crescer e a roupa servir melhor', 'glúteos', 'errei, a prioridade é o peito', 'em 3 meses', 'treino há 1 ano', '2 dias', 'errei, posso treinar quatro vezes por semana', '1 hora', 'não', 'não tenho'];
     for (const t of answers) { const n = await a.$$eval('#chat .msg', x => x.length); await a.type('#txt', t); await a.keyboard.press('Enter');
       await a.waitForFunction(n => document.querySelectorAll('#chat .msg').length > n + 1 || !document.querySelector('#anamCard') || document.querySelector('#anamCard').classList.contains('hide'), { timeout: 15000 }, n); await sleep(300); }
     const chatObj = await a.$eval('#chat', e => e.textContent);
-    ok(/Parte 2, objetivos e expectativas/i.test(chatObj) && /Quais resultados você deseja alcançar/.test(chatObj) && /Como vamos saber que você está progredindo/.test(chatObj), 'coach pergunta a parte 2, objetivos e expectativas');
+    const spokenAll = await a.evaluate(() => (window.__spoken || []).map(s => s.text).join('\n'));
+    ok(/Quantos anos você tem/.test(spokenAll) && /objetivo principal/.test(spokenAll) && /Quais resultados você deseja alcançar/.test(spokenAll) && /priorizar/.test(spokenAll) && /Em quanto tempo você espera perceber resultados/.test(spokenAll) && /Você já treina/.test(spokenAll) && /Quantos dias por semana/.test(spokenAll) && /Quanto tempo você tem por treino/.test(spokenAll) && /dor ou tem alguma lesão/.test(spokenAll) && /orientação médica/.test(spokenAll) && !/Como vamos saber que você está progredindo/.test(spokenAll), 'cada pergunta da anamnese é falada em pt-BR');
+    await a.evaluate(() => { document.querySelector('#tts').checked = false; });
+    ok(/Parte 2, objetivos e expectativas/i.test(chatObj) && /Quais resultados você deseja alcançar/.test(chatObj) && /Em quanto tempo você espera perceber resultados/.test(chatObj) && !/Como vamos saber que você está progredindo/.test(chatObj), 'coach pergunta o prazo e não pergunta como medir o progresso');
     ok(/corrigi/i.test(chatObj) && /peito/i.test(chatObj), 'eu errei troca a prioridade para o peito');
     await a.screenshot({ path: SHOTS + '/06-anamnese.png', fullPage: false });
     await a.waitForSelector('#genBtn', { visible: true, timeout: 15000 }); await a.click('#genBtn'); await sleep(1200);
@@ -91,7 +120,13 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     // ---- personal aprova
     await p.reload({ waitUntil: 'networkidle0' }); await p.waitForSelector('.stu'); await p.click('.stu[data-u="pamela"]'); await sleep(500);
     const ficha = await p.evaluate(() => ({ txt: document.querySelector('#persCard').textContent + document.querySelector('#repCard').textContent, a: S.a, blocos: S.plan.treinos[0].blocos.map(b => ({ g: b.g, n: b.ex.length, s: b.ex[0].s })), exp: dayExp(S.plan.treinos[0]) }));
-    ok(/2\. OBJETIVOS E EXPECTATIVAS/.test(ficha.txt) && /Ganho de massa muscular/.test(ficha.txt) && /braço crescer/.test(ficha.txt) && /peito/i.test(ficha.txt) && /3 meses/.test(ficha.txt) && /supino/.test(ficha.txt) && /realista/.test(ficha.txt), 'ficha do personal mostra objetivos, resultados, prioridade, prazo com nota e progresso');
+    ok(/2\. OBJETIVOS E EXPECTATIVAS/.test(ficha.txt) && /Ganho de massa muscular/.test(ficha.txt) && /braço crescer/.test(ficha.txt) && /peito/i.test(ficha.txt) && /3 meses/.test(ficha.txt) && /Como vamos medir o progresso/.test(ficha.txt) && /realista/.test(ficha.txt), 'ficha do personal mostra objetivos, resultados, prioridade e prazo com nota');
+    ok(!ficha.a.progresso, 'o aluno não responde como medir o progresso');
+    await p.waitForSelector('#progIn');
+    await p.click('#progBox .progSug[data-s="Fotos"]');
+    await p.click('#progBox .progSug[data-s="Cargas"]');
+    const prog = await p.evaluate(() => ({ v: document.querySelector('#progIn').value, a: S.a.progresso }));
+    ok(prog.v === 'Fotos, Cargas' && prog.a === prog.v, 'personal preenche como vamos medir o progresso');
     ok(ficha.a.objetivos.includes('hipertrofia') && ficha.a.prioGs[0] === 'peito' && !ficha.a.prioGs.includes('gluteo'), 'prioridade corrigida fica gravada como peito');
     ok(ficha.blocos[0].g === 'peito' && ficha.blocos[0].s === 5 && ficha.blocos[0].n === 5 && ficha.blocos[1].s === 4, 'peito abre o treino com mais séries e mais um exercício');
     ok(/prioridade/i.test(ficha.exp) && /peito/i.test(ficha.exp) && /objetivo/i.test(ficha.exp) && /realista/.test(ficha.exp), 'Sobre este treino cita prioridade, objetivo e prazo');
@@ -252,6 +287,31 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await an.waitForSelector('#ttsPlay', { timeout: 8000 }); ok(/Tocar para ouvir/.test(await an.$eval('#ttsPlay', e => e.innerText)), 'se o navegador bloquear a fala aparece "Tocar para ouvir"');
     const vz = await an.evaluate(() => ({ lang: (curVoice() || { lang: 'pt-BR' }).lang, sr: !!SR }));
     ok(/^pt/i.test(vz.lang), 'voz escolhida é português (' + vz.lang + ')');
+    const emptyVoice = await an.evaluate(() => new Promise(res => {
+      const got = [];
+      speechSynthesis.getVoices = () => [];
+      loadVoices();
+      speechSynthesis.speak = u => { got.push({ text: u.text, lang: u.lang, voice: u.voice || null }); try { u.onend && setTimeout(() => u.onend(), 5); } catch (e) {} };
+      const old = document.querySelector('#ttsPlay'); if (old) old.remove();
+      document.querySelector('#tts').checked = true;
+      speak('Pergunta sem voz local');
+      setTimeout(() => res({ got, btn: !!document.querySelector('#ttsPlay') && /Tocar para ouvir/.test(document.querySelector('#ttsPlay').textContent) }), 400);
+    }));
+    ok(emptyVoice.got.some(s => /Pergunta sem voz local/.test(s.text) && s.lang === 'pt-BR' && !s.voice) && emptyVoice.btn, 'sem voz pt-BR ainda fala com lang pt-BR e mostra Tocar para ouvir');
+    const gap = await an.evaluate(() => new Promise(res => {
+      const log = [];
+      speechSynthesis.cancel = () => log.push(['cancel', performance.now()]);
+      speechSynthesis.speak = u => log.push(['speak', performance.now(), u.text]);
+      try {
+        Object.defineProperty(speechSynthesis, 'speaking', { configurable: true, get: () => true });
+        Object.defineProperty(speechSynthesis, 'pending', { configurable: true, get: () => true });
+      } catch (e) { log.push(['define', 0, String(e)]); }
+      document.querySelector('#tts').checked = true;
+      speak('Frase interrompida');
+      setTimeout(() => res(log), 500);
+    }));
+    const ci = gap.findIndex(x => x[0] === 'cancel'), si = gap.findIndex(x => x[0] === 'speak');
+    ok(ci >= 0 && si > ci && gap[si][1] - gap[ci][1] >= 80, 'cancel espera um instante antes de falar de novo');
     // push-to-talk: o microfone só abre no toque e não religa sozinho
     const vp = await an.browserContext().newPage(); await vp.setViewport(phone);
     await vp.evaluateOnNewDocument(() => {

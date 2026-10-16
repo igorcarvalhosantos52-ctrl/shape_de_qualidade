@@ -94,6 +94,8 @@ h2{color:#111}h3{color:var(--gold)}.cfg summary{color:var(--gold)}a{color:var(--
 @keyframes aiw{0%,100%{height:10px}50%{height:46px}}
 #mic.live:not(.ai) #wave span{background:#fff;box-shadow:0 0 4px #0006}
 #vmode{font-weight:700;font-size:14px;color:#8a6d1f;letter-spacing:.5px}#vmode.ai{color:#b38728}#vmode.user{color:#111}
+#ttsBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px}#ttsBar small{color:var(--mut);font-size:.8rem;line-height:1.3}
+.msg .repetir{margin-top:6px}
 header h1 .logo{font-family:'Anton','Bebas Neue',Impact,'Arial Black','Helvetica Neue',sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.05em;font-size:2rem;line-height:1;filter:drop-shadow(0 2px 0 #5a420a) drop-shadow(0 0 10px #d4af3766)}
 @media(max-width:480px){header h1 .logo{font-size:1.65rem}}
 .hbtns{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
@@ -129,6 +131,7 @@ header h1 .logo{font-family:'Anton','Bebas Neue',Impact,'Arial Black','Helvetica
 <section id="t-aluno" class="hide"><div class="whoami"><span id="whoName"></span><button class="btn sm sec" id="logout">Sair</button></div>
   <div class="card" id="anamCard">
     <h2>Anamnese por voz</h2>
+    <div id="ttsBar"><button type="button" id="ttsToggle" class="btn sec sm" aria-pressed="true">🔊 ligado</button><small id="volHint">Se não ouvir, aumente o volume de mídia do celular.</small></div>
     <div class="chat" id="chat"></div>
     <div class="micwrap">
       <button id="mic" aria-label="Toque para falar"><div id="wave"></div></button>
