@@ -9,7 +9,7 @@ const SLANG=[
  [/\b(joei|joelio|juelho|jueio)\b/g,"joelho"],[/\b(ombrinho|omb)\b/g,"ombro"],[/\b(lombar|cacunda|costa baixa|espinhela|coluna)\b/g,"lombar"],
  [/\b(tch[eê]|oxe|oxente|uai|bah|vixe|eita|mano|v[eé]i|v[eé]io|meu rei|cara|trem|bora|partiu)\b/g," "],
  [/\b(malhar|puxar ferro|treinar pesado|pegar peso)\b/g,"musculacao"],
- [/\b(ficar grande|ficar monstro|monstro|crescer|ganhar massa|bombar|ficar fortao|ficar forte|shape|hipertrofi\w*|massa muscular)\b/g,"hipertrofia"],
+ [/\b(ficar grande|ficar monstro|monstro|crescer|ganhar massa|bombar|shape|hipertrofi\w*|massa muscular)\b/g,"hipertrofia"],
  [/\b(secar|emagrec\w*|perder peso|perder barriga|queimar gordura|definir|tirar a pochete|pochete)\b/g,"emagrecimento"],
  [/\b(frango|novato|nunca treinei|come[cç]ando|iniciante|nunca malhei)\b/g,"iniciante"],
  [/\b(rato de academia|marombeiro|maromba|avancado|anos de treino)\b/g,"avancado"],
@@ -27,12 +27,12 @@ const num=t=>{const m=norm(t).match(/\d+/);return m?parseInt(m[0]):null};
 const BODY=["joelho","ombro","lombar","punho","cotovelo","quadril","tornozelo","pescoco"];
 const bodyIn=t=>BODY.filter(b=>norm(t).includes(b));
 
-function fresh(){return{step:0,queue:null,chat:[],a:{nome:"",idade:null,objetivo:"",nivel:"",dias:3,tempo:60,dores:{},med:"",medInfo:null,cond:{},meds:"",obs:[]},equip:EQUIP.slice(),plan:null,status:"none",aprov:null,adj:[]}}
+function fresh(){return{step:0,queue:null,chat:[],a:{nome:"",idade:null,objetivo:"",objetivos:[],objTxt:"",objOutro:"",resultados:"",prioridade:"",prioGs:[],prazo:"",progresso:"",nivel:"",dias:3,tempo:60,dores:{},med:"",medInfo:null,cond:{},meds:"",obs:[]},equip:EQUIP.slice(),plan:null,status:"none",aprov:null,adj:[]}}
 const fkey=u=>KEY+"_"+u;
 let S=fresh();
 function accounts(){try{const a=JSON.parse(localStorage.getItem(AKEY));return a&&typeof a==="object"&&!Array.isArray(a)?a:{}}catch(e){return{}}}
 function fixF(F){const D=fresh();if(!F||typeof F!=="object"||Array.isArray(F))return D;const o=Object.assign({},D,F);o.a=Object.assign({},D.a,F.a&&typeof F.a==="object"?F.a:{});
- ["dores","cond"].forEach(k=>{if(!o.a[k]||typeof o.a[k]!=="object")o.a[k]={}});if(!Array.isArray(o.a.obs))o.a.obs=[];if(!Array.isArray(o.chat))o.chat=[];if(!Array.isArray(o.equip))o.equip=D.equip;if(!Array.isArray(o.adj))o.adj=[];
+ ["dores","cond"].forEach(k=>{if(!o.a[k]||typeof o.a[k]!=="object")o.a[k]={}});if(!Array.isArray(o.a.obs))o.a.obs=[];if(!Array.isArray(o.a.objetivos))o.a.objetivos=[];if(!Array.isArray(o.a.prioGs))o.a.prioGs=[];if(!Array.isArray(o.chat))o.chat=[];if(!Array.isArray(o.equip))o.equip=D.equip;if(!Array.isArray(o.adj))o.adj=[];
  const okPlan=o.plan&&Array.isArray(o.plan.treinos)&&o.plan.treinos.length&&o.plan.treinos.every(t=>t&&Array.isArray(t.blocos)&&t.blocos.every(b=>b&&Array.isArray(b.ex)));
  if(o.plan&&!okPlan){o.plan=null;o.aprov=null;o.adj=[];o.status=o.queue?"none":"none";o.queue=null;o.step=0;o.chat=[]}
  if(o.queue&&(!Array.isArray(o.queue)||o.queue.some(q=>!q||typeof q.id!=="string"))){o.queue=null;o.step=0;o.chat=[];o.status=o.plan?o.status:"none"}
@@ -45,7 +45,11 @@ function save(){if(CK)localStorage.setItem(CK,JSON.stringify(S))}
 function baseQueue(){
  const q=[];if(!(curUser&&accounts()[curUser]))q.push({id:"nome",q:"Oi! Eu sou o coach do Shape de Qualidade. Qual é o seu nome?"});
  q.push({id:"idade",q:"Quantos anos você tem?"},
- {id:"objetivo",q:"Qual é o seu objetivo?"},
+ {id:"objetivo",q:"Parte 2, objetivos e expectativas. Qual é o seu objetivo principal? Pode ser mais de um: saúde e qualidade de vida, hipertrofia, emagrecimento, força, condicionamento cardiovascular, mobilidade e flexibilidade, ou outro. Me conta com as suas palavras."},
+ {id:"resultados",q:"Quais resultados você deseja alcançar?"},
+ {id:"prioridade",q:"Existe alguma região do corpo ou alguma capacidade que você deseja priorizar? Se não tiver, é só dizer que não."},
+ {id:"prazo",q:"Em quanto tempo você espera perceber resultados?"},
+ {id:"progresso",q:"Como vamos saber que você está progredindo?"},
  {id:"nivel",q:"Você já treina? Se sim, há quanto tempo?"},
  {id:"dias",q:"Quantos dias por semana você consegue treinar?"},
  {id:"tempo",q:"Quanto tempo você tem por treino?"},
@@ -55,14 +59,45 @@ function baseQueue(){
 function ask(){const it=S.queue[S.step];if(!it)return;if(it.id==="fim"){finishAnam();return}say(it.q)}
 function insertNext(items){S.queue.splice(S.step+1,0,...items)}
 /* ---------- Correções durante a conversa ---------- */
-function objOf(n){return /hipertrofia|musculacao|forca|forte|musculo/.test(n)?"hipertrofia":/emagrecimento|gordura|peso|barriga|magr/.test(n)?"emagrecimento":/condicionamento|cansar menos|disposicao|aguentar|maratona|corrida/.test(n)?"condicionamento":/saude|postura|qualidade/.test(n)?"saude":""}
+const GOAL_ORDER=["forca","hipertrofia","emagrecimento","condicionamento","mobilidade","saude","outro"];
+const GOAL_LAB={saude:"Saúde/qualidade de vida",hipertrofia:"Hipertrofia",emagrecimento:"Emagrecimento",forca:"Força",condicionamento:"Condicionamento cardiovascular",mobilidade:"Mobilidade/flexibilidade",outro:"Outro"};
+function goalsOf(n){const g=[];const add=(id,re)=>{if(re.test(n)&&!g.includes(id))g.push(id)};
+ add("mobilidade",/mobilidade|flexibil|alongamento/);
+ add("forca",/\bforca\b|mais forte|ficar forte|fortalecer/);
+ add("hipertrofia",/hipertrofia/);
+ add("emagrecimento",/emagrecimento/);
+ add("condicionamento",/condicionamento|cardiovascular/);
+ add("saude",/\bsaude\b/);
+ return g}
+function dominant(gs){return GOAL_ORDER.find(x=>gs.includes(x))||gs[0]||""}
+function objOf(n){return dominant(goalsOf(n))}
+function goalSet(A){A=A||S.a;if(Array.isArray(A.objetivos)&&A.objetivos.length)return A.objetivos;return A.objetivo?[A.objetivo]:[]}
+function stripCorr(t){return String(t||"").replace(/^.*?\b(errei|na verdade|corrigindo|quis dizer|me enganei|falei errado)[,:]?\s*/i,"")}
+function cleanSay(t){let x=String(t||"").trim().replace(/[.!?;]+$/,"").replace(/^(ah|eh|bom|entao|então|olha|tipo)[,\s]+/i,"").trim();return x?x.charAt(0).toUpperCase()+x.slice(1):""}
+function prioGroups(t){const n=norm(t);if(/^(nao|nenhum|nenhuma|nada|tanto faz)\b/.test(n)&&!/peito|costa|ombro|biceps|triceps|glute|perna|abdomen|pantur|posterior|cardio|mobil|condicionamento/.test(n))return[];
+ const specs=[["gluteo",/gluteo|bumbum|nadega/],["abdomen",/abdomen|abdominal|\bcore\b|\bbarriga\b/],["peito",/peito|peitoral/],["costas",/\bcostas\b|dorsal/],["ombro",/ombro/],["biceps",/biceps/],["triceps",/triceps/],["post",/posterior/],["quad",/quadriceps|\bperna\b|\bpernas\b|\bcoxa\b/],["pant",/panturrilha|gemeo/],["cardio",/\bcardio\b|\bfolego\b|condicionamento/],["mobilidade",/mobilidade|flexibil/]];
+ const out=[];specs.forEach(([id,re])=>{if(re.test(n)&&!out.includes(id))out.push(id)});return out}
+function applyPrio(ans){const raw=stripCorr(ans),gs=prioGroups(raw),n=norm(raw);S.a.prioGs=gs;
+ if(!gs.length&&/^(nao|nenhum|nenhuma|nada|tanto faz)\b/.test(n))S.a.prioridade="Nenhuma";else S.a.prioridade=cleanSay(raw)}
+function applyGoals(ans){const n=norm(ans),gs=goalsOf(n);if(/\boutro\b/.test(n)&&!gs.includes("outro"))gs.push("outro");
+ const outro=cleanObj(stripCorr(ans).replace(/^.*?outro[:\s-]*/i,""));S.a.objetivos=gs;S.a.objetivo=dominant(gs)||(gs.includes("outro")?"outro":"");S.a.objTxt=cleanObj(stripCorr(ans))||cleanObj(ans);if(gs.includes("outro"))S.a.objOutro=outro||S.a.objTxt;return gs}
+function prazoNote(t){const n=norm(t||"");let months=null;const m=n.match(/(\d+)\s*(mes|meses)/);if(m)months=+m[1];else if(/semana/.test(n))months=(num(t)||1)/4;else if(/\bano/.test(n))months=(num(t)||1)*12;else if(/\bdia/.test(n))months=(num(t)||1)/30;
+ if(months===null)return "Um prazo realista: disposição em 2 a 4 semanas, força em 4 a 8 semanas, e mudança visível no corpo em geral entre 8 e 12 semanas, com treino, sono e alimentação.";
+ if(months<1.5)return "Esse prazo é curto para mudar o corpo. É realista sentir o hábito e a técnica em 2 a 4 semanas; a força costuma aparecer em 4 a 8 semanas, e a mudança visível entre 8 e 12 semanas.";
+ if(months<2)return "Em cerca de um mês dá para sentir mais disposição e um pouco de força. A mudança visível costuma pedir de 8 a 12 semanas. É um começo realista, não o resultado final.";
+ if(months<=4)return "Esse prazo é realista para notar mais força e alguma mudança no espelho, se o treino, o sono e a alimentação forem constantes.";
+ return "Esse prazo está alinhado com um resultado consistente. A força aparece antes da mudança visível, e o progresso segue enquanto o treino continuar."}
 const WHERE_Q="Sem problema! Em qual pergunta você errou?";
-const WHERE_RETRY="Não entendi. Foi no nome, idade, objetivo, tempo de treino, dias por semana, tempo por treino, dor ou lesão, ou orientação médica?";
-const STEP_NAMES={nome:"nome",idade:"idade",objetivo:"objetivo",nivel:"tempo de treino",dias:"dias por semana",tempo:"tempo por treino",dor:"dor ou lesão",med:"orientação médica"};
+const WHERE_RETRY="Não entendi. Foi no nome, idade, objetivo, resultados, prioridade, prazo, progresso, tempo de treino, dias por semana, tempo por treino, dor ou lesão, ou orientação médica?";
+const STEP_NAMES={nome:"nome",idade:"idade",objetivo:"objetivo",resultados:"resultados",prioridade:"prioridade",prazo:"prazo",progresso:"como medir o progresso",nivel:"tempo de treino",dias:"dias por semana",tempo:"tempo por treino",dor:"dor ou lesão",med:"orientação médica"};
 function placeOf(n){
  if(/\b(comeco|inicio|tudo|do zero|primeira pergunta)\b/.test(n))return"nome";
  if(/\bnome\b|me chamo|chamar/.test(n))return"nome";
- if(/idade|\banos?\b(?! de treino)/.test(n)&&!/treino|treinando|treina|tempo/.test(n))return"idade";
+ if(/\bprioridad|\bprioriz|\bprioritar|regiao do corpo|capacidade/.test(n))return"prioridade";
+ if(/\bidade\b|\banos?\b(?! de treino)/.test(n)&&!/treino|treinando|treina|tempo/.test(n))return"idade";
+ if(/\bresultado/.test(n))return"resultados";
+ if(/\bprazo\b|em quanto tempo|perceber resultado/.test(n))return"prazo";
+ if(/progred|como saber|como medir/.test(n))return"progresso";
  if(/objetivo|meta|foco|\bquero\b(?!.*(refazer|corrigir))/.test(n))return"objetivo";
  if(/orientacao|medic|doenca|saude|remedio/.test(n))return"med";
  if(/\bdor(es)?\b|lesao|lesoes|machucad/.test(n))return"dor";
@@ -76,7 +111,7 @@ function firstId(){return baseQueue()[0].id}
 function greet(){const nm=S.a.nome||(curUser&&accounts()[curUser]?accounts()[curUser].nome:"");return nm?"Olá, "+nm+"! Eu sou o coach do Shape de Qualidade.":""}
 function rewind(id){const q=baseQueue();let idx=q.findIndex(x=>x.id===id);if(idx<0&&id==="nome"){q.unshift({id:"nome",q:"Qual é o seu nome?"});idx=0}if(idx<0)return;
  const A=S.a,F=fresh().a,wasApr=S.status==="aprovado",hadPlan=!!S.plan;
- q.slice(idx).forEach(x=>{if(x.id==="nome")A.nome="";else if(x.id==="idade")A.idade=null;else if(x.id==="objetivo"){A.objetivo="";A.objTxt="";S.objTry=0}else if(x.id==="nivel"){A.nivel="";delete A.retorno}else if(x.id==="dias")A.dias=F.dias;else if(x.id==="tempo")A.tempo=F.tempo;else if(x.id==="dor"){A.dores={};A.obs=[]}else if(x.id==="med"){A.med="";A.medInfo=null;A.cond={};A.meds=""}});
+ q.slice(idx).forEach(x=>{if(x.id==="nome")A.nome="";else if(x.id==="idade")A.idade=null;else if(x.id==="objetivo"){A.objetivo="";A.objetivos=[];A.objTxt="";A.objOutro="";S.objTry=0}else if(x.id==="resultados")A.resultados="";else if(x.id==="prioridade"){A.prioridade="";A.prioGs=[]}else if(x.id==="prazo")A.prazo="";else if(x.id==="progresso")A.progresso="";else if(x.id==="nivel"){A.nivel="";delete A.retorno}else if(x.id==="dias")A.dias=F.dias;else if(x.id==="tempo")A.tempo=F.tempo;else if(x.id==="dor"){A.dores={};A.obs=[]}else if(x.id==="med"){A.med="";A.medInfo=null;A.cond={};A.meds=""}});
  S.askWhere=false;S.queue=q;S.step=idx;
  if(hadPlan&&S.status!=="none"){S.mudancas=(S.mudancas||[]).concat(["aluno refez a anamnese a partir de: "+STEP_NAMES[id]+(wasApr?" — treino aprovado voltou para pendente":"")+" ("+new Date().toLocaleString("pt-BR")+")"]);S.aprov=null;S.adj=[];S.plan=null;}
  S.status="none";target="anam";hdr();save();render();
@@ -89,7 +124,11 @@ function correction(t){const n=norm(t);
  if((m=n.match(/(\d+)\s*(dias|dia|vezes|vez|x)\b/))){const d=Math.min(6,Math.max(2,+m[1]));A.dias=d;ch.push(d+" dias por semana");field="dias"}
  if((m=n.match(/(\d+)\s*(min|minuto|minutos)\b/))||/hora/.test(n)&&!/\d+\s*(dias|vezes)/.test(n)){let v=m?+m[1]:null;if(/meia hora/.test(n)&&!/e meia/.test(n))v=30;else if(/hora/.test(n)&&!m)v=((num(n.replace(/\d+\s*(dias|vezes|x)\b/g,""))||1)*60)+(/e meia/.test(n)?30:0);if(v){A.tempo=v;ch.push(v+" minutos por treino");field=field||"tempo"}}
  if(/meu nome|me chamo|pode me chamar|me chama de/.test(n)){const nm=parseName(t.replace(/.*?(meu nome|me chamo|pode me chamar|me chama de)/i,"$1"));if(nm){A.nome=nm;ch.push("nome "+nm);field=field||"nome"}}
- if(/objetivo|quero|meu foco/.test(n)&&!ch.length){const o=objOf(n);if(o){A.objetivo=o;A.objTxt=cleanObj(t.replace(/^.*?(objetivo (e|é|eh)?|meu foco (e|é)?|na verdade|errei)[,:]?\s*/i,""));ch.push("objetivo “"+A.objTxt+"”");field="objetivo"}}
+ if(/\bresultado/.test(n)&&!ch.length){A.resultados=cleanSay(stripCorr(t));if(A.resultados){ch.push("resultados “"+A.resultados+"”");field="resultados"}}
+ if(/\bprioridad|\bprioriz|\bprioritar/.test(n)&&!ch.length){applyPrio(t);ch.push("prioridade “"+A.prioridade+"”");field="prioridade"}
+ if(/(\bprazo\b|em quanto tempo|perceber resultado)/.test(n)&&!ch.length){A.prazo=cleanSay(stripCorr(t));if(A.prazo){ch.push("prazo “"+A.prazo+"”");field="prazo"}}
+ if(/(progred|como saber)/.test(n)&&!ch.length){A.progresso=cleanSay(stripCorr(t));if(A.progresso){ch.push("progresso “"+A.progresso+"”");field="progresso"}}
+ if(/objetivo|quero|meu foco/.test(n)&&!ch.length){const gs=applyGoals(t);if(gs.length){ch.push("objetivo “"+A.objTxt+"”");field="objetivo"}}
  if(/orientacao|medic|liberad|pressao|hipertens|diabet|cirurgi|coracao|gravid|hernia|impacto/.test(n)&&!ch.length){A.med=t.replace(/^.*?(errei|na verdade|corrigindo|quis dizer|me enganei)[,:]?\s*/i,"");A.medInfo=parseMed(A.med);ch.push("orientação médica “"+A.med+"”");field="med"}
  if((m=n.match(/(\d+)\s*anos de idade|tenho (\d+) anos\b/))&&!/treino|treinando/.test(n)){A.idade=+(m[1]||m[2]);ch.push(A.idade+" anos");field=field||"idade"}
  if(!ch.length){const pl=placeOf(n.replace(/\b(errei|erro meu|me enganei|falei errado|quero|refazer|corrigir|corrige|na verdade|corrigindo|eu)\b/g," "));if(pl){rewind(pl);return true}S.askWhere=true;save();say(WHERE_Q);return true}
@@ -107,8 +146,11 @@ function handle(ans){
  switch(true){
   case it.id==="nome":{const nm=parseName(ans);if(!nm){say("Não peguei seu nome. Pode repetir?");return}A.nome=nm;hdr();break}
   case it.id==="idade":A.idade=num(ans);if(A.idade===null){say("Não entendi a idade. Pode repetir só o número?");return}break;
-  case it.id==="objetivo":{const o=/hipertrofia|musculacao|forca|forte|musculo/.test(n)?"hipertrofia":/emagrecimento|gordura|peso|barriga|magr/.test(n)?"emagrecimento":/condicionamento|cansar menos|disposicao|aguentar|maratona|corrida/.test(n)?"condicionamento":/saude|dor nas costas|postura|ativo|medico mandou|envelhecer|qualidade/.test(n)?"saude":"";
-   if(!o){S.objTry=(S.objTry||0)+1;say(S.objTry>1?"Sem problema! Por exemplo: ficar mais forte, perder peso, ter mais fôlego ou cuidar da saúde.":"Pode me contar com outras palavras?");if(S.objTry>2){A.objetivo="saude";A.objTxt=cleanObj(ans);break}return}A.objetivo=o;A.objTxt=cleanObj(ans);break}
+  case it.id==="objetivo":{const gs=applyGoals(ans);if(!gs.length){S.objTry=(S.objTry||0)+1;say(S.objTry>1?"Sem problema. Pode dizer saúde, hipertrofia, emagrecimento, força, condicionamento, mobilidade, ou outro e explicar com as suas palavras.":"Pode me contar com outras palavras? Vale mais de um.");if(S.objTry>2){A.objetivos=["outro"];A.objetivo="outro";A.objOutro=cleanObj(ans);A.objTxt=cleanObj(ans);break}return}break}
+  case it.id==="resultados":{const x=cleanSay(ans);if(!x){say("Me conta, mesmo em poucas palavras, o resultado que você quer ver.");return}A.resultados=x;break}
+  case it.id==="prioridade":applyPrio(ans);break;
+  case it.id==="prazo":{const x=cleanSay(ans);if(!x){say("Pode ser uma ideia: duas semanas, três meses, um ano...");return}A.prazo=x;break}
+  case it.id==="progresso":{const x=cleanSay(ans);if(!x){say("O que você vai notar quando estiver melhorando?");return}A.progresso=x;break}
   case it.id==="nivel"||it.id==="nivel2":{
    if(/parei|parado|parada|faz tempo que nao|voltando|retorn|larguei/.test(n)){A.nivel="iniciante";A.retorno=true;break}
    const k=num(ans);let m=null;
@@ -195,26 +237,37 @@ const EX={
  post:[{n:"Mesa flexora",e:"Mesa flexora"},{n:"Stiff com halteres",e:"Halteres",t:"lombar pesado"},{n:"Elevação pélvica no banco",e:"Banco",j:"Glúteo forte estabiliza joelho e lombar"},{n:"Glúteo na polia (coice)",e:"Polia/Crossover"},{n:"Levantamento terra romeno com barra",e:"Barra livre",t:"lombar pesado"},{n:"Afundo reverso com halteres",e:"Halteres",t:"joelho"},{n:"Ponte de glúteo no colchonete",e:null,j:"Sem carga na coluna nem no joelho"},{n:"Abdução de quadril com elástico",e:"Elásticos",j:"Glúteo médio, estabiliza o joelho"},{n:"Flexão de joelho com elástico",e:"Elásticos"}],
  gluteo:[{n:"Elevação pélvica no banco",e:"Banco",j:"Glúteo forte estabiliza joelho e lombar"},{n:"Glúteo na polia (coice)",e:"Polia/Crossover"},{n:"Ponte de glúteo no colchonete",e:null,j:"Sem carga na coluna nem no joelho"},{n:"Abdução de quadril com elástico",e:"Elásticos",j:"Glúteo médio, estabiliza o joelho"},{n:"Agachamento sumô com halter",e:"Halteres",j:"Ênfase em glúteo e parte interna da coxa"}],
  abdomen:[{n:"Prancha abdominal",e:"Colchonete",j:"Estabiliza o tronco sem flexão repetida da lombar"},{n:"Abdominal crunch no colchonete",e:"Colchonete"},{n:"Elevação de pernas deitado",e:"Colchonete",t:"lombar"},{n:"Abdominal na polia",e:"Polia/Crossover"},{n:"Dead bug (abdominal deitado)",e:"Colchonete",j:"Controle do abdômen com a lombar apoiada"}],
- cardio:[{n:"Caminhada (esteira ou ao ar livre)",e:null,min:"20–40"},{n:"Caminhada ou trote leve na esteira",e:"Esteira",min:"15–30"},{n:"Bicicleta ergométrica",e:"Bicicleta ergométrica",min:"15–30"}]
+ cardio:[{n:"Caminhada (esteira ou ao ar livre)",e:null,min:"20–40"},{n:"Caminhada ou trote leve na esteira",e:"Esteira",min:"15–30"},{n:"Bicicleta ergométrica",e:"Bicicleta ergométrica",min:"15–30"}],
+ mobilidade:[{n:"Gato-camelo no colchonete",e:"Colchonete",j:"Mobiliza a coluna com controle"},{n:"Alongamento de peito no batente",e:null,j:"Abre o peitoral antes de empurrar"},{n:"Rotação de quadril em pé",e:null,j:"Solta o quadril para agachar e caminhar"},{n:"Alongamento de posterior de coxa em pé",e:null},{n:"World's greatest stretch (passo longo com rotação)",e:null,j:"Mobilidade de quadril e coluna torácica"},{n:"Mobilidade de ombro com elástico",e:"Elásticos",j:"Prepara o ombro sem carga alta"}]
 };
-const GN={peito:"Peito",triceps:"Tríceps",antebraco:"Antebraço",costas:"Costas",biceps:"Bíceps",ombro:"Ombro",quad:"Quadríceps (anterior de coxa)",post:"Posterior de coxa e glúteo",pant:"Panturrilha",caminhada:"Caminhada",gluteo:"Glúteos",abdomen:"Abdômen",cardio:"Cardio",descanso:"Descanso"};
-const WHY={peito:"trabalha peitoral, ombro anterior e tríceps",costas:"fortalece dorsais e melhora a postura",ombro:"desenvolve deltoides e estabilidade do ombro",antebraco:"fortalece antebraço e pegada, ajudando nos outros exercícios",biceps:"trabalha flexores do cotovelo",triceps:"trabalha extensores do cotovelo",quad:"fortalece quadríceps, essencial para joelho estável e força de perna",post:"fortalece posteriores e glúteos, protegendo joelho e lombar",pant:"fortalece panturrilhas, estabilidade do tornozelo e a caminhada",gluteo:"fortalece glúteos, estabiliza quadril, joelho e lombar",abdomen:"fortalece o abdômen e a estabilidade do tronco",cardio:"trabalha o condicionamento e o gasto calórico"};
+const GN={peito:"Peito",triceps:"Tríceps",antebraco:"Antebraço",costas:"Costas",biceps:"Bíceps",ombro:"Ombro",quad:"Quadríceps (anterior de coxa)",post:"Posterior de coxa e glúteo",pant:"Panturrilha",caminhada:"Caminhada",gluteo:"Glúteos",abdomen:"Abdômen",cardio:"Cardio",mobilidade:"Mobilidade",descanso:"Descanso"};
+const WHY={peito:"trabalha peitoral, ombro anterior e tríceps",costas:"fortalece dorsais e melhora a postura",ombro:"desenvolve deltoides e estabilidade do ombro",antebraco:"fortalece antebraço e pegada, ajudando nos outros exercícios",biceps:"trabalha flexores do cotovelo",triceps:"trabalha extensores do cotovelo",quad:"fortalece quadríceps, essencial para joelho estável e força de perna",post:"fortalece posteriores e glúteos, protegendo joelho e lombar",pant:"fortalece panturrilhas, estabilidade do tornozelo e a caminhada",gluteo:"fortalece glúteos, estabiliza quadril, joelho e lombar",abdomen:"fortalece o abdômen e a estabilidade do tronco",cardio:"trabalha o condicionamento e o gasto calórico",mobilidade:"prepara as articulações e a amplitude antes da carga"};
 const SPLIT_GS=[{id:"peito",label:"Peito"},{id:"costas",label:"Costas"},{id:"ombro",label:"Ombros"},{id:"biceps",label:"Bíceps"},{id:"triceps",label:"Tríceps"},{id:"quad",label:"Pernas / quadríceps"},{id:"post",label:"Posterior"},{id:"gluteo",label:"Glúteos"},{id:"pant",label:"Panturrilha"},{id:"abdomen",label:"Abdômen"},{id:"cardio",label:"Cardio"},{id:"descanso",label:"Descanso"}];
 const TREINOS=[{nome:"Treino 1",titulo:"Peito + Tríceps + Antebraço",gs:["peito","triceps","antebraco"]},{nome:"Treino 2",titulo:"Costas + Bíceps + Ombro",gs:["costas","biceps","ombro"]},{nome:"Treino 3",titulo:"Posterior de coxa (e glúteo)",gs:["post"]},{nome:"Treino 4",titulo:"Quadríceps + Panturrilha",gs:["quad","pant"]}];
 const NOW=()=>window.__fakeNow?new Date(window.__fakeNow):new Date();const dayKey=d=>d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
 const WKF=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 const DAYSETS={2:[1,4],3:[1,3,5],4:[1,2,3,4],5:[1,2,3,4,5],6:[1,2,3,4,5,6]};
 function params_old(){const o=S.a.objetivo,l=S.a.nivel;let p={hipertrofia:{s:4,r:"8–12",d:"60–90s"},emagrecimento:{s:3,r:"12–15",d:"30–45s"},condicionamento:{s:3,r:"15–20",d:"30s"},saude:{s:3,r:"10–15",d:"60s"}}[o]||{s:3,r:"10–12",d:"60s"};p={...p};if(l==="iniciante")p.s=Math.min(p.s,3);if(l==="avancado")p.s++;const m=S.a.medInfo;if(m&&m.low){p.s=Math.max(2,p.s-1);p.r="12–15 (carga leve)";p.d="90s"}return p}
-function params(){const o=S.a.objetivo;const r={hipertrofia:"8–12",emagrecimento:"12–15",condicionamento:"15–20",saude:"10–15"}[o]||"10–12";const p={s:4,r,d:"60s"};const m=S.a.medInfo;if(m&&m.low){p.s=3;p.r="12–15 (carga leve)";p.d="90s (1min30)"}return p}
+function params(){const gs=goalSet(),m=S.a.medInfo;const p={s:4,r:"10–12",d:"60s",circuit:false,cardio:false,mobility:false};
+ if(gs.includes("forca")&&gs.includes("hipertrofia")){p.r="6–8";p.d="2 min"}
+ else if(gs.includes("forca")){p.r="4–6";p.d="2–3 min"}
+ else if(gs.includes("hipertrofia")){p.r="8–12";p.d="60s"}
+ else if(gs.includes("emagrecimento")){p.r="12–15";p.d="30–45s"}
+ else if(gs.includes("condicionamento")){p.r="15–20";p.d="30s"}
+ else {p.r="10–15";p.d="60s"}
+ if(gs.includes("emagrecimento")){p.cardio=true;if(!gs.includes("forca")){p.circuit=true;p.d="30–45s";if(!gs.includes("hipertrofia"))p.r="12–15"}}
+ if(gs.includes("condicionamento")&&!gs.includes("forca"))p.cardio=true;
+ if(gs.includes("mobilidade"))p.mobility=true;
+ if(m&&m.low){p.s=3;p.r="12–15 (carga leve)";p.d="90s (1min30)";p.circuit=false}return p}
 function perGroup(){const t=S.a.tempo||60;return t<50?3:4}
 function curRestr(){const A=S.a,M=A.medInfo||{tags:[]};return Object.keys(A.dores).filter(k=>A.dores[k].int===undefined||A.dores[k].int===null||A.dores[k].int>=2).concat(M.tags||[])}
 function badTags(x,restr){return(x.t||"").split(" ").filter(t=>t&&restr.includes(t))}
 function whyAvoid(x,bad){const mt=(S.a.medInfo&&S.a.medInfo.tags)||[];return x.n+" (evitado"+(bad.some(b=>mt.includes(b))?" conforme orientação médica: “"+S.a.med+"”":" por restrição: "+bad.join(", "))+")"}
-function mkEx(x,g,P){const M=S.a.medInfo||{};const e={n:x.n,g,s:P.s,r:P.r,d:P.d,j:"Por que: "+(WHY[g]||"trabalha o grupo escolhido")+(x.j?". "+x.j:"")+" — ajuda no seu objetivo: “"+objShow()+"”."+(M.low?" Carga leve conforme orientação médica.":""),sub:""};if(g==="cardio"){e.s=1;e.r=(x.min||"20–30")+" min";e.d="—"}return e}
+function mkEx(x,g,P){const M=S.a.medInfo||{};const e={n:x.n,g,s:P.s,r:P.r,d:P.d,j:"Por que: "+(WHY[g]||"trabalha o grupo escolhido")+(x.j?". "+x.j:"")+" — ajuda no seu objetivo: “"+objShow()+"”."+(M.low?" Carga leve conforme orientação médica.":""),sub:""};if(g==="cardio"){e.s=1;e.r=(x.min||"20–30")+" min";e.d="—"}if(g==="mobilidade"){e.s=1;e.r="30–40 s";e.d="—"}return e}
 function buildBlock(g,restr,P,n){const ex=[],why=[];
  for(const x of (EX[g]||[])){if(ex.length>=n)break;if(x.e&&!S.equip.includes(x.e))continue;const b=badTags(x,restr);if(b.length){why.push(whyAvoid(x,b));continue}ex.push(mkEx(x,g,P))}
  if(why.length&&ex.length)ex[0].sub=why.join("; ");
- return{g,ex,aviso:ex.length<3?"Só "+ex.length+" exercício(s) compatível(is) com equipamentos/restrições.":""}}
+ return{g,ex,aviso:ex.length<Math.min(3,n)?"Só "+ex.length+" exercício(s) compatível(is) com equipamentos/restrições.":""}}
 function alts(g){return EX[g].filter(x=>!x.e||S.equip.includes(x.e))}
 function mondayOf(d){const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x}
 function planStart(){return S.aprov&&S.aprov.ts?S.aprov.ts:(S.plan&&S.plan.criado?Date.parse(S.plan.criado):Date.now())}
@@ -231,7 +284,15 @@ function todayTreino(){const now=NOW(),w=now.getDay(),wp=weekPlan(now),order=[1,
  for(let i=ti+1;i<7;i++)if(wp[i].t!==null)return{idx:wp[i].t,dia:wp[i].dia,hoje:false};
  const nx=weekPlan(new Date(now.getTime()+7*864e5)).find(x=>x.t!==null);return{idx:nx?nx.t:0,dia:(nx?nx.dia:"")+" (próx. semana)",hoje:false}}
 function walkingTreino(){const A=S.a;return{nome:"Treino 1",titulo:"Caminhada",blocos:[{g:"caminhada",ex:[{n:"Caminhada (esteira ou ao ar livre)",g:"caminhada",s:1,r:Math.min(60,Math.max(20,A.tempo-10))+" min",d:"—",j:"Por que: a orientação médica informada (“"+A.med+"”) permite apenas caminhada. Ritmo em que dá para conversar.",sub:"Musculação suspensa até nova orientação médica"}]}]}}
-function autoTreinos(){const M=S.a.medInfo||{},P=params(),restr=curRestr();if(M.soCaminhada)return[walkingTreino()];return TREINOS.map(T=>({nome:T.nome,titulo:T.titulo,blocos:T.gs.map(g=>buildBlock(g,restr,P,perGroup()))}))}
+function prioMain(){const A=S.a,gs=Array.isArray(A.prioGs)&&A.prioGs.length?A.prioGs:prioGroups(A.prioridade||"");return gs.find(g=>EX[g]&&g!=="mobilidade")||""}
+function autoTreinos(){const M=S.a.medInfo||{},P=params(),restr=curRestr();if(M.soCaminhada)return[walkingTreino()];
+ const prio=prioMain();let list=TREINOS.map(T=>({titulo:T.titulo,gs:T.gs.slice(),base:T.gs.join(",")} ));
+ if(prio){let idx=list.findIndex(t=>t.gs.includes(prio)||(prio==="gluteo"&&t.gs.includes("post")));if(idx<0)idx=0;if(!list[idx].gs.includes(prio))list[idx].gs=[prio,...list[idx].gs];else list[idx].gs=[prio,...list[idx].gs.filter(g=>g!==prio)];const day=list.splice(idx,1)[0];list.unshift(day)}
+ return list.map((T,i)=>{const blocks=[];if(P.mobility){const b=buildBlock("mobilidade",restr,{s:1,r:"30–40 s",d:"—"},3);if(b.ex.length)blocks.push(b)}
+  T.gs.forEach(g=>{const extra=g===prio,n=g==="cardio"?1:(extra?Math.min(perGroup()+1,5):perGroup()),PP=extra?{...P,s:Math.min((P.s||4)+1,6)}:P;blocks.push(buildBlock(g,restr,PP,n))});
+  if(P.cardio&&!T.gs.includes("cardio")){const b=buildBlock("cardio",restr,P,1);if(b.ex.length)blocks.push(b)}
+  const same=T.gs.join(",")===T.base&&!P.mobility&&!P.cardio;const titulo=same?T.titulo:T.gs.map(g=>GN[g]||g).join(" + ")+(P.circuit?" (circuito)":"");
+  return{nome:"Treino "+(i+1),titulo,gs:T.gs,blocos:blocks.filter(b=>b.ex.length)}})}
 function generate(quiet){const P=params(),restr=curRestr();
  S.plan={treinos:autoTreinos(),restr,params:P,criado:new Date().toISOString()};S.status=risk().length?"bloqueado":"pendente";save();render();
  if(!quiet)say(S.status==="bloqueado"?"Seu treino foi gerado, mas está bloqueado até você apresentar liberação médica ao personal.":"Treino gerado! Agora ele aguarda a aprovação do seu personal.")}
@@ -503,18 +564,39 @@ function todayHTML(){const td=todayTreino(),sw=activeSwap();
  return `<h3 style="font-size:1.1rem">Hoje: ${esc(td.dia)} — ${esc(T.nome)}</h3>`+(sw&&!A?`<div class="adjbadge">🔁 Treino de hoje trocado pelo personal. A divisão da semana não mudou.</div>`:"")+(A?`<div class="adjbadge">🩹 Ajustado hoje: ${esc(A.day.lbl||A.t)}</div><button class="btn sm sec" id="adjUndo" style="margin:4px 0 8px">↩ Voltar ao treino original</button>`:"")+planHTML([{...D,nome:T.nome,titulo:T.titulo||T.nome,adj:true}]).replace(/<h3>[\s\S]*?<\/h3>/,"")}
 function calHTML(){const now=NOW(),wp=weekPlan(now),T=S.plan.treinos,N=S.a.dias,custom=isCustomSplit();const nx=weekPlan(new Date(now.getTime()+7*864e5)).find(x=>x.t!==null);
  return `<h3>Semana</h3><ul class="wk">${wp.map(x=>`<li class="${x.t===null?"rest":"tr"}"><b>${x.dia}:</b> ${x.t===null?"Descanso":esc(T[x.t].nome+" – "+(T[x.t].titulo||""))}</li>`).join("")}</ul>${custom?`<p style="color:var(--mut);font-size:.85rem">Divisão personalizada: estes dias se repetem toda semana.</p>`:(N%T.length&&nx?`<p style="color:var(--mut);font-size:.85rem">A rotação continua na próxima semana, começando pelo ${esc(T[nx.t].nome)}.</p>`:"")}`}
-const MUSC={peito:"o peitoral (empurrar e abraçar), com ajuda do ombro anterior",triceps:"o tríceps, que estende o cotovelo e dá força a todo movimento de empurrar",antebraco:"o antebraço, responsável pela pegada firme que sustenta os outros exercícios",costas:"as dorsais e romboides, que puxam e mantêm a postura ereta",biceps:"o bíceps, que flexiona o cotovelo e participa de toda puxada",ombro:"os deltoides e o manguito rotador, que movem e estabilizam o ombro",post:"os posteriores de coxa e glúteos, que estendem o quadril, flexionam o joelho e protegem joelho e lombar",quad:"o quadríceps, que estende o joelho e dá estabilidade para agachar, subir escadas e correr",pant:"as panturrilhas, que impulsionam a passada e estabilizam o tornozelo",gluteo:"os glúteos, que estendem o quadril e estabilizam joelho e lombar",abdomen:"o abdômen, que estabiliza o tronco em todos os movimentos",cardio:"o condicionamento, com pernas, coração e pulmões"};
-const OBJX={hipertrofia:"o estímulo de 8 a 12 repetições perto da falha gera tensão mecânica, o principal sinal para o músculo crescer; com boa alimentação e sono, isso vira ganho de massa",emagrecimento:"as 12 a 15 repetições com descanso curto mantêm a frequência cardíaca alta, aumentam o gasto calórico e preservam a massa muscular enquanto a gordura diminui",forca:"o foco é progredir a carga com técnica perfeita, ensinando o sistema nervoso a recrutar mais fibras e ficar mais forte",condicionamento:"as 15 a 20 repetições trabalham a resistência muscular e o fôlego, para você aguentar mais tempo sem cansar",saude:"as 10 a 15 repetições com carga moderada fortalecem músculos e articulações, melhoram a postura e a disposição no dia a dia com segurança"};
+const MUSC={peito:"o peitoral (empurrar e abraçar), com ajuda do ombro anterior",triceps:"o tríceps, que estende o cotovelo e dá força a todo movimento de empurrar",antebraco:"o antebraço, responsável pela pegada firme que sustenta os outros exercícios",costas:"as dorsais e romboides, que puxam e mantêm a postura ereta",biceps:"o bíceps, que flexiona o cotovelo e participa de toda puxada",ombro:"os deltoides e o manguito rotador, que movem e estabilizam o ombro",post:"os posteriores de coxa e glúteos, que estendem o quadril, flexionam o joelho e protegem joelho e lombar",quad:"o quadríceps, que estende o joelho e dá estabilidade para agachar, subir escadas e correr",pant:"as panturrilhas, que impulsionam a passada e estabilizam o tornozelo",gluteo:"os glúteos, que estendem o quadril e estabilizam joelho e lombar",abdomen:"o abdômen, que estabiliza o tronco em todos os movimentos",cardio:"o condicionamento, com pernas, coração e pulmões",mobilidade:"a mobilidade, para a articulação chegar na posição do exercício sem compensar"};
+const OBJX={hipertrofia:"o estímulo de 8 a 12 repetições perto da falha gera tensão mecânica, o principal sinal para o músculo crescer; com boa alimentação e sono, isso vira ganho de massa",emagrecimento:"as 12 a 15 repetições com descanso curto mantêm a frequência cardíaca alta, aumentam o gasto calórico e preservam a massa muscular enquanto a gordura diminui",forca:"o foco é progredir a carga com técnica perfeita, poucas repetições e descanso longo, ensinando o sistema nervoso a recrutar mais fibras e ficar mais forte",condicionamento:"as 15 a 20 repetições trabalham a resistência muscular e o fôlego, para você aguentar mais tempo sem cansar",mobilidade:"a amplitude e o controle vêm antes da carga, para o corpo se mover bem e com menos compensação",saude:"as 10 a 15 repetições com carga moderada fortalecem músculos e articulações, melhoram a postura e a disposição no dia a dia com segurança",outro:"o plano segue o que você descreveu, com carga e descanso que dá para sustentar"};
 const NIVX={iniciante:"Como você está começando, a prioridade é aprender a técnica: comece com carga leve e aumente aos poucos quando as repetições ficarem fáceis.",intermediario:"No seu nível intermediário, busque aumentar carga ou repetições a cada semana, mantendo a execução controlada.",avancado:"Como você é avançado, use progressão de carga semanal e chegue perto da falha nas últimas séries, sem perder a técnica."};
-function dayExp(d){if(!d||!d.blocos||!d.blocos.length)return"";const A=S.a,M=A.medInfo||{},gs=d.blocos.map(b=>b.g);if(gs[0]==="caminhada"||gs[0]==="cardio")return"";
- const ex=d.blocos.flatMap(b=>b.ex);if(!ex.length)return"";const e0=ex[0]||{s:4,d:"60s",r:"10–12"},cat=/forc/.test(norm(A.objTxt||""))&&A.objetivo==="hipertrofia"?"forca":A.objetivo;
+function goalLabels(A){A=A||S.a;return goalSet(A).map(g=>g==="outro"&&A.objOutro?"Outro: "+A.objOutro:(GOAL_LAB[g]||g))}
+function objSectionHTML(A){A=A||S.a;if(!A.objTxt&&!goalSet(A).length&&!A.resultados&&!A.prioridade&&!A.prazo&&!A.progresso)return"";
+ const words=A.objTxt?` <small style="color:var(--mut)">(palavras do aluno: “${esc(A.objTxt)}”)</small>`:"";
+ const note=A.prazo?prazoNote(A.prazo):"";
+ return `<h3>2. OBJETIVOS E EXPECTATIVAS</h3><ul>
+ <li><b>Objetivo principal:</b> ${esc(goalLabels(A).join(", ")||"—")}${words}</li>
+ <li><b>Resultados que deseja alcançar:</b> ${esc(A.resultados||"—")}</li>
+ <li><b>Região ou capacidade para priorizar:</b> ${esc(A.prioridade||"—")}</li>
+ <li><b>Em quanto tempo espera resultados:</b> ${esc(A.prazo||"—")}${note?` <small>${esc(note)}</small>`:""}</li>
+ <li><b>Como saberemos que está progredindo:</b> ${esc(A.progresso||"—")}</li></ul>`}
+function dayExp(d){if(!d||!d.blocos||!d.blocos.length)return"";const A=S.a,M=A.medInfo||{},gs=d.blocos.map(b=>b.g);if(gs[0]==="caminhada"||(gs.length===1&&gs[0]==="cardio"))return"";
+ const ex=d.blocos.flatMap(b=>b.ex);if(!ex.length)return"";const strength=d.blocos.filter(b=>b.g!=="mobilidade"&&b.g!=="cardio"&&b.g!=="caminhada");
+ const e0=(strength[0]&&strength[0].ex[0])||ex[0]||{s:4,d:"60s",r:"10–12"};
+ const cat=goalSet(A).includes("forca")?"forca":(/forc/.test(norm(A.objTxt||""))&&A.objetivo==="hipertrofia"?"forca":(dominant(goalSet(A))||A.objetivo||"saude"));
  const lst=gs.map(g=>MUSC[g]).filter(Boolean);const mus=lst.length>1?lst.slice(0,-1).join("; ")+"; e "+lst[lst.length-1]:lst[0];
  const t=[];t.push("Este treino trabalha "+mus+".");
+ const P=params(),prio=prioMain(),hasPrio=!!(prio&&d.blocos.some(b=>b.g===prio));
+ if(d.blocos.some(b=>b.g==="mobilidade"))t.push("Começa com mobilidade, para preparar as articulações antes da carga.");
+ if(hasPrio)t.push("A prioridade que você pediu (“"+((A.prioridade)||GN[prio]||prio)+"”) entra primeiro na parte principal e com mais volume: mais séries e um exercício a mais do que o resto.");
  const light=ex.some(e=>/leve/.test(String(e.r)+" "+(e.sub||"")))||M.low,tiredD=d.adj&&ex.some(e=>e.s===3&&/90/.test(e.d));
- t.push("Cada exercício tem "+e0.s+" séries de "+e0.r+" repetições com "+String(e0.d).replace("60s","1 minuto")+" de descanso, "+(light||tiredD?"com carga leve, amplitude controlada e foco total na técnica; termine cada série sentindo que ainda daria para fazer várias repetições.":"executadas com controle na descida e carga que deixe as últimas repetições difíceis."));
+ const eRest=(strength.find(b=>b.g!==prio)||{}).ex,eR=eRest&&eRest[0],ePri=hasPrio&&d.blocos.find(b=>b.g===prio).ex[0];
+ const how=light||tiredD?"com carga leve, amplitude controlada e foco total na técnica; termine cada série sentindo que ainda daria para fazer várias repetições.":"executadas com controle na descida e carga que deixe as últimas repetições difíceis.";
+ if(hasPrio&&ePri&&eR&&ePri.s!==eR.s)t.push("No bloco prioritário, cada exercício tem "+ePri.s+" séries de "+ePri.r+" com "+ePri.d+" de descanso. Nos outros grupos, "+eR.s+" séries de "+eR.r+" com "+eR.d+" de descanso, "+how);
+ else t.push("Cada exercício de força tem "+e0.s+" séries de "+e0.r+" repetições com "+String(e0.d).replace("60s","1 minuto")+" de descanso, "+how);
+ if(P.circuit)t.push("A musculação entra em circuito, com descanso curto, para gastar mais energia.");
+ if(d.blocos.some(b=>b.g==="cardio"))t.push("Termina com cardio, para somar fôlego e gasto calórico ao objetivo de emagrecer ou condicionar.");
  if(light||tiredD){t.push("Para o seu objetivo, “"+objShow()+"”, hoje o importante é manter o hábito e o movimento sem se sobrecarregar: um treino leve e bem feito protege sua evolução.");t.push("Não busque a falha nem aumente a carga hoje; a progressão volta no próximo treino, quando você estiver recuperado.")}
- else{t.push("Para o seu objetivo, “"+objShow()+"”, "+(OBJX[cat]||OBJX.saude)+".");
+ else{t.push("Para o seu objetivo, “"+objShow()+"”"+(goalLabels(A).length?" ("+goalLabels(A).join(", ")+")":"")+", "+(OBJX[cat]||OBJX.saude)+".");
  const nk=norm(A.nivel||"");t.push(NIVX[nk]||NIVX.iniciante)}
+ if(A.prazo)t.push("Você espera perceber resultados em “"+A.prazo+"”. "+prazoNote(A.prazo));
  const ad=[];if(M.low||(M.tags&&M.tags.length))ad.push("conforme sua orientação médica (“"+A.med+"”), "+(M.low?"a intensidade foi reduzida para 3 séries com carga leve e 1min30 de descanso":"exercícios que forçam "+M.tags.join(", ")+" foram trocados por opções seguras"));
  if(d.adj&&!M.low&&ex.some(e=>e.s===3&&/90/.test(e.d)))ad.push("como você relatou cansaço hoje, o treino caiu para 3 séries com 1min30 de descanso para recuperar sem perder o estímulo");
  if(d.lbl&&/dor no/.test(d.lbl))ad.push("pela "+d.lbl.split(" + ").find(x=>/dor no/.test(x))+" relatada hoje, exercícios que forçam essa região foram trocados ou feitos em versão leve; não treine com dor")
@@ -522,7 +604,7 @@ function dayExp(d){if(!d||!d.blocos||!d.blocos.length)return"";const A=S.a,M=A.m
  if(ad.length)t.push("Adaptações: "+ad.join("; ")+".");return t.join(" ")}
 let DETMAP={},DETN=0;
 function planHTML(treinos,edit){const wp=S.plan?weekPlan(NOW()):[];return treinos.map((d,di)=>{const wk=d.adj?"":wp.filter(x=>x.t===di).map(x=>x.dia).join(", ");
- return `<h3>${esc(d.nome+(d.titulo&&d.titulo!==d.nome?" – "+d.titulo:""))}${wk?` <small style="color:var(--mut)">(${wk})</small>`:""}</h3>`+(dayExp(d)?`<div class="dexp">💡 <b>Sobre este treino:</b> ${esc(dayExp(d))}</div>`:"")+d.blocos.map((b,bi)=>`<div class="blk"><div class="blkh">${b.g==="caminhada"?"":"ABC"[bi]+" – "}${esc(GN[b.g]||b.g)}</div>${b.aviso?`<div class="sub">${esc(b.aviso)}</div>`:""}`+b.ex.map((e,ei)=>`<div class="ex"><b>${esc(e.n)}</b>${edit&&EX[e.g]?`<div class="edit"><select data-act="swap" data-d="${di}" data-b="${bi}" data-e="${ei}">${alts(e.g).map(x=>`<option ${x.n===e.n?"selected":""}>${esc(x.n)}</option>`).join("")}</select><label>Séries <input type="number" min="1" max="10" value="${e.s}" data-act="s" data-d="${di}" data-b="${bi}" data-e="${ei}"></label><label>Reps <input value="${esc(e.r)}" data-act="r" data-d="${di}" data-b="${bi}" data-e="${ei}"></label><label>Descanso <input value="${esc(e.d)}" data-act="d" data-d="${di}" data-b="${bi}" data-e="${ei}"></label><span class="exActs"><button type="button" class="btn sm sec" data-act="up" data-d="${di}" data-b="${bi}" data-e="${ei}">↑</button><button type="button" class="btn sm sec" data-act="down" data-d="${di}" data-b="${bi}" data-e="${ei}">↓</button><button type="button" class="btn sm bad" data-act="rm" data-d="${di}" data-b="${bi}" data-e="${ei}">Remover</button></span></div>`:""}${e.s} série(s) × ${esc(e.r)} · descanso ${esc(e.d)}<div class="j">${esc(e.j)}</div>${e.sub?`<div class="sub">↺ ${esc(e.sub)}</div>`:""}${!edit?(()=>{const k="d"+(++DETN);DETMAP[k]=e;return `<button class="detBtn" data-k="${k}">Detalhes</button>`})():""}</div>`).join("")+(edit&&EX[b.g]?`<div class="edit"><select data-act="add" data-d="${di}" data-b="${bi}" data-e="-1"><option value="">Adicionar exercício</option>${alts(b.g).filter(x=>!b.ex.some(e=>e.n===x.n)).map(x=>`<option>${esc(x.n)}</option>`).join("")}</select></div>`:"")+`</div>`).join("")}).join("")}
+ return `<h3>${esc(d.nome+(d.titulo&&d.titulo!==d.nome?" – "+d.titulo:""))}${wk?` <small style="color:var(--mut)">(${wk})</small>`:""}</h3>`+(dayExp(d)?`<div class="dexp">💡 <b>Sobre este treino:</b> ${esc(dayExp(d))}</div>`:"")+d.blocos.map((b,bi)=>`<div class="blk"><div class="blkh">${b.g==="caminhada"?"":("ABCDEFGHIJK"[bi]||"")+" – "}${esc(GN[b.g]||b.g)}</div>${b.aviso?`<div class="sub">${esc(b.aviso)}</div>`:""}`+b.ex.map((e,ei)=>`<div class="ex"><b>${esc(e.n)}</b>${edit&&EX[e.g]?`<div class="edit"><select data-act="swap" data-d="${di}" data-b="${bi}" data-e="${ei}">${alts(e.g).map(x=>`<option ${x.n===e.n?"selected":""}>${esc(x.n)}</option>`).join("")}</select><label>Séries <input type="number" min="1" max="10" value="${e.s}" data-act="s" data-d="${di}" data-b="${bi}" data-e="${ei}"></label><label>Reps <input value="${esc(e.r)}" data-act="r" data-d="${di}" data-b="${bi}" data-e="${ei}"></label><label>Descanso <input value="${esc(e.d)}" data-act="d" data-d="${di}" data-b="${bi}" data-e="${ei}"></label><span class="exActs"><button type="button" class="btn sm sec" data-act="up" data-d="${di}" data-b="${bi}" data-e="${ei}">↑</button><button type="button" class="btn sm sec" data-act="down" data-d="${di}" data-b="${bi}" data-e="${ei}">↓</button><button type="button" class="btn sm bad" data-act="rm" data-d="${di}" data-b="${bi}" data-e="${ei}">Remover</button></span></div>`:""}${e.s} série(s) × ${esc(e.r)} · descanso ${esc(e.d)}<div class="j">${esc(e.j)}</div>${e.sub?`<div class="sub">↺ ${esc(e.sub)}</div>`:""}${!edit?(()=>{const k="d"+(++DETN);DETMAP[k]=e;return `<button class="detBtn" data-k="${k}">Detalhes</button>`})():""}</div>`).join("")+(edit&&EX[b.g]?`<div class="edit"><select data-act="add" data-d="${di}" data-b="${bi}" data-e="-1"><option value="">Adicionar exercício</option>${alts(b.g).filter(x=>!b.ex.some(e=>e.n===x.n)).map(x=>`<option>${esc(x.n)}</option>`).join("")}</select></div>`:"")+`</div>`).join("")}).join("")}
 function splitHTML(){const custom=isCustomSplit(),by={};if(custom)S.plan.split.days.forEach(d=>{by[d.w]=d});
  const order=[1,2,3,4,5,6,0];
  if(!custom)return `<div id="splitBox" class="noprint"><h3>Divisão da semana</h3><p style="margin:.2em 0"><b>Usar sugestão automática</b></p><p style="color:var(--mut);font-size:.9rem">A divisão fixa do app, conforme os dias da anamnese. Personalize só se quiser mudar os dias, os grupos ou o nome de cada treino.</p><button type="button" class="btn sec" id="splitEdit">Personalizar dias</button></div>`;
@@ -554,7 +636,8 @@ function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.stat
  // Personal
  const pc=$("#persCard");
  if(!S.plan){pc.innerHTML='<h2>Painel do Personal</h2><div class="alert warn">ℹ️ O CREF é opcional. Quando informado, é verificado só pelo formato; confira o registro na consulta pública do sistema CONFEF/CREF.</div><p style="color:var(--mut)">Nenhum treino aguardando aprovação. O aluno precisa concluir a anamnese primeiro.</p>'}
- else pc.innerHTML=`<h2>Painel do Personal ${badge()}</h2>${S.mudancas&&S.mudancas.length?`<div class="alert warn">✏️ O aluno corrigiu respostas e o treino foi recalculado: ${S.mudancas.slice(-5).map(esc).join(" · ")}</div>`:""}<div class="alert warn">ℹ️ O CREF é opcional. Quando informado, é verificado só pelo formato; confira o registro na consulta pública do sistema CONFEF/CREF.</div>${S.adjLog&&S.adjLog.length?`<div class="alert warn">🩹 <b>Ajustes do aluno:</b> ${S.adjLog.slice(-8).map(esc).join(" · ")}</div>`:""}<p><b>Aluno:</b> ${esc(S.a.nome)} · ${esc(S.a.idade)} anos · ${esc(objShow())}${S.a.objetivo?` <small style="color:var(--mut)">(${esc(S.a.objetivo)})</small>`:""} · ${esc(S.a.nivel)} · ${S.a.dias}x/semana</p>
+ else pc.innerHTML=`<h2>Painel do Personal ${badge()}</h2>${S.mudancas&&S.mudancas.length?`<div class="alert warn">✏️ O aluno corrigiu respostas e o treino foi recalculado: ${S.mudancas.slice(-5).map(esc).join(" · ")}</div>`:""}<div class="alert warn">ℹ️ O CREF é opcional. Quando informado, é verificado só pelo formato; confira o registro na consulta pública do sistema CONFEF/CREF.</div>${S.adjLog&&S.adjLog.length?`<div class="alert warn">🩹 <b>Ajustes do aluno:</b> ${S.adjLog.slice(-8).map(esc).join(" · ")}</div>`:""}<p><b>Aluno:</b> ${esc(S.a.nome)} · ${esc(S.a.idade)} anos · ${esc(objShow())}${S.a.objetivo?` <small style="color:var(--mut)">(${esc(goalLabels().join(", ")||S.a.objetivo)})</small>`:""} · ${esc(S.a.nivel)} · ${S.a.dias}x/semana</p>
+ ${objSectionHTML()}
  ${r.length?`<div class="alert bad">⚠️ ${r.length} ponto(s) de risco. Confirme a <b>liberação médica</b> antes de aprovar.<ul>${r.map(x=>"<li>"+esc(x)+"</li>").join("")}</ul><label style="display:flex;gap:6px"><input type="checkbox" id="libmed" style="width:auto"> Recebi e conferi a liberação médica</label></div>`:'<div class="alert ok">Sem pontos de risco na anamnese.</div>'}${S.a.med?`<p><b>Orientação médica:</b> “${esc(S.a.med)}”</p>`:""}${attn().length?`<div class="alert warn">Atenção: ${attn().map(esc).join(" · ")}</div>`:""}
  ${S.status!=="aprovado"?`<div class="noprint"><input id="pNome" placeholder="Nome do personal" value="${esc((pAcc()||{}).nome||"")}" style="margin-bottom:8px"><input id="pCref" value="${esc((pAcc()||{}).cref||"")}" placeholder="CREF (opcional, ex.: 012345-G/SP)" style="margin-bottom:8px"><div id="pErr"></div><button class="btn ok" id="aprovar" style="width:100%">✓ Aprovar treino</button></div>`:`<div class="alert ok">Aprovado por ${esc(S.aprov.nome)}${S.aprov.cref?" – CREF "+esc(S.aprov.cref):" (sem CREF informado)"} em ${esc(S.aprov.data)} <button class="btn sm bad noprint" id="revogar">Revogar</button></div>`}
  <div id="splitSlot"></div>
@@ -564,6 +647,7 @@ function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.stat
  const A=S.a,rp=$("#repCard");
  rp.innerHTML=!A.nome?'<h2>Relatório de Anamnese</h2><p style="color:var(--mut)">Conclua a anamnese para gerar o relatório.</p>':`<h2>Relatório de Anamnese – Shape de Qualidade</h2><p style="color:var(--mut)">Gerado em ${new Date().toLocaleString("pt-BR")}</p>
  <h3>Resumo</h3><table><tr><th>Nome</th><td>${esc(A.nome)}</td></tr><tr><th>Idade</th><td>${esc(A.idade)}</td></tr><tr><th>Objetivo</th><td>${esc(objShow(A))}</td></tr><tr><th>Nível</th><td>${esc(A.nivel)}${A.retorno?" (retorno após pausa)":""}</td></tr><tr><th>Dias/semana</th><td>${A.dias}</td></tr><tr><th>Tempo por treino</th><td>${A.tempo} min</td></tr><tr><th>Medicamentos</th><td>${esc(A.meds||"Não informado")}</td></tr><tr><th>Status do treino</th><td>${badge()||"Não gerado"}</td></tr></table>
+ ${objSectionHTML(A)}
  <h3>Dores e lesões</h3>${Object.keys(A.dores).length?`<table><tr><th>Local</th><th>Intensidade</th><th>Quando</th><th>Diagnóstico</th></tr>${Object.entries(A.dores).map(([k,v])=>`<tr class="${v.int>=7?"risk":""}"><td>${k}</td><td>${v.int??"-"}/10</td><td>${esc(v.quando||"-")}</td><td>${esc(v.dx||"-")}</td></tr>`).join("")}</table>`:"<p>Nenhuma relatada.</p>"}
  <h3>Orientação médica</h3><p class="quote">“${esc(A.med||"Não informada")}”</p>${A.medInfo&&A.medInfo.conds.length?`<p><b>Condições detectadas:</b> ${A.medInfo.conds.map(esc).join(", ")}</p>`:""}${A.medInfo&&A.medInfo.tags.length?`<p><b>Restrições aplicadas no treino:</b> ${A.medInfo.tags.map(esc).join(", ")}</p>`:""}${attn().length?`<div class="alert warn">Pontos de atenção: ${attn().map(esc).join(" · ")}</div>`:""}
  ${Object.keys(A.cond).length?`<h3>Detalhes clínicos</h3><table>${Object.entries(A.cond).map(([k,v])=>`<tr><th>${k}</th><td>${esc(v)}</td></tr>`).join("")}</table>`:""}

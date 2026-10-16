@@ -70,9 +70,12 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await a.waitForFunction(() => /Olá, Pamela/.test(document.querySelector('#chat').textContent), { timeout: 15000 }); ok(true, 'coach cumprimenta "Olá, Pamela" sem perguntar o nome');
     ok(/Seu personal ainda não cadastrou o WhatsApp/.test(await a.$eval('#waTop', e => e.innerText)) && !(await a.$('#waTop .waPers')), 'sem número, o aluno vê que o personal ainda não cadastrou o WhatsApp');
     ok((await a.evaluate(async () => (await fetch('/api/personal/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status)) === 401, 'aluno não cadastra o WhatsApp do personal');
-    const answers = ['19 anos', 'ganho de massa muscular', 'treino há 1 ano', '2 dias', 'errei, posso treinar quatro vezes por semana', '1 hora', 'não', 'não tenho'];
+    const answers = ['19 anos', 'ganho de massa muscular', 'ver o braço crescer e a roupa servir melhor', 'glúteos', 'errei, a prioridade é o peito', 'em 3 meses', 'quando eu aumentar a carga no supino', 'treino há 1 ano', '2 dias', 'errei, posso treinar quatro vezes por semana', '1 hora', 'não', 'não tenho'];
     for (const t of answers) { const n = await a.$$eval('#chat .msg', x => x.length); await a.type('#txt', t); await a.keyboard.press('Enter');
       await a.waitForFunction(n => document.querySelectorAll('#chat .msg').length > n + 1 || !document.querySelector('#anamCard') || document.querySelector('#anamCard').classList.contains('hide'), { timeout: 15000 }, n); await sleep(300); }
+    const chatObj = await a.$eval('#chat', e => e.textContent);
+    ok(/Parte 2, objetivos e expectativas/i.test(chatObj) && /Quais resultados você deseja alcançar/.test(chatObj) && /Como vamos saber que você está progredindo/.test(chatObj), 'coach pergunta a parte 2, objetivos e expectativas');
+    ok(/corrigi/i.test(chatObj) && /peito/i.test(chatObj), 'eu errei troca a prioridade para o peito');
     await a.screenshot({ path: SHOTS + '/06-anamnese.png', fullPage: false });
     await a.waitForSelector('#genBtn', { visible: true, timeout: 15000 }); await a.click('#genBtn'); await sleep(1200);
     const txt = await a.$eval('#statusCard', e => e.innerText); ok(/aguard|pendente/i.test(txt), 'treino gerado e aguardando aprovação');
@@ -83,6 +86,19 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(self !== 'aprovado', 'servidor bloqueia autoaprovação do aluno');
     // ---- personal aprova
     await p.reload({ waitUntil: 'networkidle0' }); await p.waitForSelector('.stu'); await p.click('.stu[data-u="pamela"]'); await sleep(500);
+    const ficha = await p.evaluate(() => ({ txt: document.querySelector('#persCard').textContent + document.querySelector('#repCard').textContent, a: S.a, blocos: S.plan.treinos[0].blocos.map(b => ({ g: b.g, n: b.ex.length, s: b.ex[0].s })), exp: dayExp(S.plan.treinos[0]) }));
+    ok(/2\. OBJETIVOS E EXPECTATIVAS/.test(ficha.txt) && /Ganho de massa muscular/.test(ficha.txt) && /braço crescer/.test(ficha.txt) && /peito/i.test(ficha.txt) && /3 meses/.test(ficha.txt) && /supino/.test(ficha.txt) && /realista/.test(ficha.txt), 'ficha do personal mostra objetivos, resultados, prioridade, prazo com nota e progresso');
+    ok(ficha.a.objetivos.includes('hipertrofia') && ficha.a.prioGs[0] === 'peito' && !ficha.a.prioGs.includes('gluteo'), 'prioridade corrigida fica gravada como peito');
+    ok(ficha.blocos[0].g === 'peito' && ficha.blocos[0].s === 5 && ficha.blocos[0].n === 5 && ficha.blocos[1].s === 4, 'peito abre o treino com mais séries e mais um exercício');
+    ok(/prioridade/i.test(ficha.exp) && /peito/i.test(ficha.exp) && /objetivo/i.test(ficha.exp) && /realista/.test(ficha.exp), 'Sobre este treino cita prioridade, objetivo e prazo');
+    const mix = await p.evaluate(() => { const bak = JSON.stringify(S.a); try {
+      S.a.objetivos = ['emagrecimento', 'forca', 'mobilidade']; S.a.objetivo = 'forca'; S.a.objTxt = 'secar e ficar forte'; S.a.prioridade = 'glúteos'; S.a.prioGs = ['gluteo']; S.a.prazo = '2 semanas';
+      const P = params(), ts = autoTreinos(), exp = dayExp(ts[0]), g = ts[0].blocos.find(b => b.g === 'gluteo'), post = ts[0].blocos.find(b => b.g === 'post');
+      return { r: P.r, d: P.d, cardio: P.cardio, mob: P.mobility, circuit: P.circuit, order: ts[0].blocos.map(b => b.g), gSets: g && g.ex[0].s, gN: g && g.ex.length, oSets: post && post.ex[0].s, exp };
+    } finally { S.a = JSON.parse(bak); } });
+    ok(mix.r === '4–6' && /2–3 min/.test(mix.d) && mix.cardio && mix.mob && mix.circuit === false, 'força usa menos reps e mais descanso; emagrecimento põe cardio; mobilidade entra no aquecimento');
+    ok(mix.order[0] === 'mobilidade' && mix.order[1] === 'gluteo' && mix.order.includes('cardio') && mix.gSets === 5 && mix.gN === 5 && mix.oSets === 4, 'glúteo abre a semana depois da mobilidade, com mais volume, e o cardio fecha');
+    ok(/prioridade/i.test(mix.exp) && /glúteos/.test(mix.exp) && /secar e ficar forte/.test(mix.exp) && /curto|8 a 12|4 a 8/.test(mix.exp), 'explicação do treino misturado cita prioridade, objetivo e que duas semanas é cedo');
     await p.screenshot({ path: SHOTS + '/08-ficha-aluno-personal.png' });
     const lib = await p.$('#libmed'); if (lib) await lib.click();
     await p.click('#aprovar'); await sleep(1200);
