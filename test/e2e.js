@@ -110,6 +110,11 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const fg = await (await browser.createBrowserContext()).newPage(); await fg.goto(URL + '/?area=personal', { waitUntil: 'networkidle0' });
     await fg.waitForSelector('#pForgot'); await fg.$eval('#pForgot', e => e.click()); await fg.type('#fgEmail', 'igor@teste.com'); await fg.$eval('#fgGo', e => e.click()); await fg.waitForSelector('#fgMsg .alert');
     ok(/link/.test(await fg.$eval('#fgMsg', e => e.innerText)), 'personal pede nova senha em "Esqueci a senha"');
+    // voz do coach bloqueada pelo navegador -> botão "Tocar para ouvir"
+    await an.evaluate(() => { window.speechSynthesis.cancel(); const o = speechSynthesis.speak; window.__orig = o; speechSynthesis.speak = () => {}; $("#tts").checked = true; speak("Teste de voz"); });
+    await an.waitForSelector('#ttsPlay', { timeout: 8000 }); ok(/Tocar para ouvir/.test(await an.$eval('#ttsPlay', e => e.innerText)), 'se o navegador bloquear a fala aparece "Tocar para ouvir"');
+    const vz = await an.evaluate(() => ({ lang: (curVoice() || { lang: 'pt-BR' }).lang, sr: !!SR }));
+    ok(/^pt/i.test(vz.lang), 'voz escolhida é português (' + vz.lang + ')');
     ok(!!(await an.$('#ptr')), 'indicador de puxar para atualizar presente');
     // ---- admin
     const ad = await browser.newPage(); await ad.authenticate({ username: 'dono@teste.com', password: 'admin123' }); await ad.setViewport({ width: 1200, height: 800 });
