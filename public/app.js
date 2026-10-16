@@ -46,14 +46,12 @@ function baseQueue(){
  const q=[];if(!(curUser&&accounts()[curUser]))q.push({id:"nome",q:"Oi! Eu sou o coach do Shape de Qualidade. Qual é o seu nome?"});
  q.push({id:"idade",q:"Quantos anos você tem?"},
  {id:"objetivo",q:"Qual o seu principal objetivo? Por exemplo: Hipertrofia, Emagrecimento ou Saúde e qualidade de vida."},
- {id:"resultados",q:"Quais resultados você deseja alcançar?"},
  {id:"prioridade",q:"Existe alguma região do corpo ou alguma capacidade que você deseja priorizar? Se não tiver, é só dizer que não."},
  {id:"prazo",q:"Em quanto tempo você espera perceber resultados?"},
  {id:"nivel",q:"Você já treina? Se sim, há quanto tempo?"},
  {id:"dias",q:"Quantos dias por semana você consegue treinar?"},
  {id:"tempo",q:"Quanto tempo você tem por treino?"},
  {id:"dor",q:"Sente alguma dor ou tem alguma lesão?"});
- q.push({id:"med",q:"Você tem alguma orientação médica? Se sim, qual?"});
  q.push({id:"fim",q:""});return q}
 function ask(){const it=S.queue[S.step];if(!it)return;if(it.id==="fim"){finishAnam();return}say(it.q)}
 function insertNext(items){S.queue.splice(S.step+1,0,...items)}
@@ -87,14 +85,13 @@ function prazoNote(t){const n=norm(t||"");let months=null;const m=n.match(/(\d+)
  if(months<=4)return "Esse prazo é realista para notar mais força e alguma mudança no espelho, se o treino, o sono e a alimentação forem constantes.";
  return "Esse prazo está alinhado com um resultado consistente. A força aparece antes da mudança visível, e o progresso segue enquanto o treino continuar."}
 const WHERE_Q="Sem problema! Em qual pergunta você errou?";
-const WHERE_RETRY="Não entendi. Foi no nome, idade, objetivo, resultados, prioridade, prazo, progresso, tempo de treino, dias por semana, tempo por treino, dor ou lesão, ou orientação médica?";
+const WHERE_RETRY="Não entendi. Foi no nome, idade, objetivo, prioridade, prazo, progresso, tempo de treino, dias por semana, tempo por treino, dor ou lesão, ou orientação médica?";
 const STEP_NAMES={nome:"nome",idade:"idade",objetivo:"objetivo",resultados:"resultados",prioridade:"prioridade",prazo:"prazo",progresso:"como medir o progresso",nivel:"tempo de treino",dias:"dias por semana",tempo:"tempo por treino",dor:"dor ou lesão",med:"orientação médica"};
 function placeOf(n){
  if(/\b(comeco|inicio|tudo|do zero|primeira pergunta)\b/.test(n))return"nome";
  if(/\bnome\b|me chamo|chamar/.test(n))return"nome";
  if(/\bprioridad|\bprioriz|\bprioritar|regiao do corpo|capacidade/.test(n))return"prioridade";
  if(/\bidade\b|\banos?\b(?! de treino)/.test(n)&&!/treino|treinando|treina|tempo/.test(n))return"idade";
- if(/\bresultado/.test(n))return"resultados";
  if(/\bprazo\b|em quanto tempo|perceber resultado/.test(n))return"prazo";
  if(/progred|como saber|como medir/.test(n))return"progresso";
  if(/objetivo|meta|foco|\bquero\b(?!.*(refazer|corrigir))/.test(n))return"objetivo";
@@ -123,7 +120,6 @@ function correction(t){const n=norm(t);
  if((m=n.match(/(\d+)\s*(dias|dia|vezes|vez|x)\b/))){const d=Math.min(6,Math.max(2,+m[1]));A.dias=d;ch.push(d+" dias por semana");field="dias"}
  if((m=n.match(/(\d+)\s*(min|minuto|minutos)\b/))||/hora/.test(n)&&!/\d+\s*(dias|vezes)/.test(n)){let v=m?+m[1]:null;if(/meia hora/.test(n)&&!/e meia/.test(n))v=30;else if(/hora/.test(n)&&!m)v=((num(n.replace(/\d+\s*(dias|vezes|x)\b/g,""))||1)*60)+(/e meia/.test(n)?30:0);if(v){A.tempo=v;ch.push(v+" minutos por treino");field=field||"tempo"}}
  if(/meu nome|me chamo|pode me chamar|me chama de/.test(n)){const nm=parseName(t.replace(/.*?(meu nome|me chamo|pode me chamar|me chama de)/i,"$1"));if(nm){A.nome=nm;ch.push("nome "+nm);field=field||"nome"}}
- if(/\bresultado/.test(n)&&!ch.length){A.resultados=cleanSay(stripCorr(t));if(A.resultados){ch.push("resultados “"+A.resultados+"”");field="resultados"}}
  if(/\bprioridad|\bprioriz|\bprioritar/.test(n)&&!ch.length){applyPrio(t);ch.push("prioridade “"+A.prioridade+"”");field="prioridade"}
  if(/(\bprazo\b|em quanto tempo|perceber resultado)/.test(n)&&!ch.length){A.prazo=cleanSay(stripCorr(t));if(A.prazo){ch.push("prazo “"+A.prazo+"”");field="prazo"}}
  if(/(progred|como saber)/.test(n)&&!ch.length){A.progresso=cleanSay(stripCorr(t));if(A.progresso){ch.push("progresso “"+A.progresso+"”");field="progresso"}}
@@ -165,9 +161,7 @@ function handle(ans){
   case it.id.startsWith("int:"):{const p=it.id.slice(4);A.dores[p].int=num(ans)??5;if(A.dores[p].int>=7)A.obs.push("Dor intensa ("+A.dores[p].int+"/10) no "+p);break}
   case it.id.startsWith("qdo:"):A.dores[it.id.slice(4)].quando=ans;if(/repouso|noite|parado/.test(n))A.obs.push("Dor em repouso no "+it.id.slice(4));break;
   case it.id.startsWith("dx:"):A.dores[it.id.slice(3)].dx=yes(ans)||/[a-z]{6,}/.test(n)&&!/^nao/.test(n)?ans:"Sem diagnóstico";break;
-  case it.id==="med"||it.id==="med2":{const mi=parseMed(ans);
-   if(mi.vazio&&it.id==="med"){A.med=ans;insertNext([{id:"med2",q:"Qual orientação?"}]);break}
-   A.med=it.id==="med2"?(A.med+" → "+ans):ans;A.medInfo=it.id==="med2"?parseMed(A.med):mi;break}
+  case it.id==="med"||it.id==="med2":{const mi=parseMed(ans);A.med=it.id==="med2"?(A.med+" → "+ans):ans;A.medInfo=it.id==="med2"?parseMed(A.med):mi;break}
   case it.id==="c:hipertensao":A.cond.hipertensao=ans;if(!yes(ans)||/nao/.test(n))A.obs.push("Hipertensão possivelmente não controlada");break;
   case it.id==="c:diabetes":A.cond.diabetes=ans;if(/hipoglic|sim/.test(n)&&/hipoglic/.test(n))A.obs.push("Histórico de hipoglicemia");break;
   case it.id==="c:meds":A.meds=ans;if(/beta|atenolol|propranolol|insulina|anticoagul|varfarina/.test(n))A.obs.push("Medicamento que afeta a resposta ao exercício: "+ans);break;
@@ -488,31 +482,55 @@ function showTtsPlay(t,onEnd){if(!ttsEnabled())return;let b=$("#ttsPlay");
  if(!b){b=document.createElement("button");b.id="ttsPlay";b.type="button";b.className="btn";b.style.cssText="width:100%;margin:6px 0";const m=$("#mic");(m&&m.parentNode?m.parentNode:document.body).insertBefore(b,m||null)}
  b.textContent="🔊 Tocar para ouvir o coach";
  b.onclick=()=>{b.remove();window.__ttsUnlocked=true;try{speechSynthesis.resume()}catch(e){}speak(t||lastCoachText(),onEnd,{interrupt:true})}}
-/* Não chama cancel() no mesmo instante de speak(): no Chrome Android a fala seguinte some. Sem voz pt-BR, fala mesmo assim com lang pt-BR e sem u.voice. */
-function speak(t,onEnd,opts){const id=++spkId;let done=false;setAI(true);
- const fin=()=>{if(done||id!==spkId)return;done=true;clearTimeout(ttsWD);setAI(false);onEnd&&onEnd()};
- if(!t||!ttsEnabled()||!("speechSynthesis"in window)){fin();return}
- const SS=speechSynthesis;try{SS.resume()}catch(e){}
- const parts=chunks(String(t)),rate=+vpref.rate||1.15;let i=0;
- const voices=typeof SS.getVoices==="function"?SS.getVoices()||[]:[];
- if(!voices.length)showTtsPlay(t,onEnd);
- const step=()=>{if(id!==spkId||done)return;clearTimeout(ttsWD);if(i>=parts.length){fin();return}
-  const txt=parts[i++];let fired=false;const adv=()=>{if(fired||id!==spkId)return;fired=true;step()};
-  const u=new SpeechSynthesisUtterance(txt);u.lang="pt-BR";const v=curVoice();if(v)u.voice=v;u.rate=rate;u.pitch=1;keepU=[u];
-  const mark=()=>{window.__ttsHeard=true;window.__ttsStart=Date.now()};u.onstart=mark;try{u.addEventListener("start",mark)}catch(e){}
-  u.onend=adv;u.onerror=e=>{if(e.error==="interrupted"||e.error==="canceled")return;showTtsPlay(t,onEnd);adv()};
-  const startedAt=Date.now();
-  ttsWD=setTimeout(()=>{if(id!==spkId||done)return;if(!(window.__ttsStart>=startedAt)&&!SS.speaking)showTtsPlay(t,onEnd);adv()},1800+txt.length*90/rate);
-  const go=()=>{if(id!==spkId||done)return;try{SS.resume();SS.speak(u)}catch(e){showTtsPlay(t,onEnd);adv()}};
-  if(i===1&&(SS.speaking||SS.pending)){try{SS.cancel()}catch(e){}setTimeout(go,120);return}
-  go()};
+/* Frases fixas tocam em mp3 (Android costuma ficar mudo no speechSynthesis). Texto dinâmico, como o nome, usa a voz do navegador. */
+const clipPlayer=typeof Audio==="function"?new Audio():null;
+if(clipPlayer){clipPlayer.setAttribute("playsinline","");clipPlayer.preload="auto"}
+function clipSegments(text){const clips=window.COACH_CLIPS||{},keys=Object.keys(clips).sort((a,b)=>b.length-a.length);let rest=String(text||""),out=[];
+ while(rest.length){rest=rest.replace(/^\s+/,"");if(!rest)break;const hit=keys.find(k=>rest.startsWith(k));
+  if(hit){out.push({mp3:clips[hit],text:hit});rest=rest.slice(hit.length);continue}
+  let at=rest.length;for(const k of keys){const j=rest.indexOf(k);if(j>0&&j<at)at=j}const bit=rest.slice(0,at).trim();if(bit)out.push({text:bit});rest=rest.slice(at)}
+ return out}
+function primeAudio(){if(!clipPlayer)return;try{clipPlayer.src="/audio/silence.mp3";const p=clipPlayer.play();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
+function speak(t,onEnd,opts){const id=++spkId;let done=false;setAI(true);try{if(clipPlayer)clipPlayer.pause()}catch(e){}
+ const fin=()=>{if(done||id!==spkId)return;done=true;clearTimeout(ttsWD);try{if(clipPlayer)clipPlayer.pause()}catch(e){}setAI(false);onEnd&&onEnd()};
+ if(!t||!ttsEnabled()){fin();return}
+ const segs=clipSegments(t);if(!segs.length){fin();return}
+ if(segs.some(s=>s.mp3)&&!(segs[0]&&segs[0].mp3))primeAudio();
+ segs.filter(s=>s.mp3).forEach(s=>{window.__played=window.__played||[];window.__played.push({text:s.text,src:s.mp3})});
+ let i=0,warned=false;
+ const step=()=>{if(done||id!==spkId)return;if(i>=segs.length){fin();return}const seg=segs[i++];if(seg.mp3)playOne(seg);else speakSynth(seg.text,step)};
+ const playOne=seg=>{
+  if(!clipPlayer){if(!warned){warned=true;showTtsPlay(t,onEnd)}step();return}
+  let settled=false,armed=false;const token={};clipPlayer._tok=token;
+  const fail=()=>{if(settled||id!==spkId||clipPlayer._tok!==token)return;settled=true;clearTimeout(ttsWD);if(!warned){warned=true;showTtsPlay(t,onEnd)}step()};
+  const pass=()=>{if(settled||id!==spkId||clipPlayer._tok!==token)return;settled=true;clearTimeout(ttsWD);step()};
+  clipPlayer.onplaying=()=>{if(clipPlayer._tok===token){window.__audioHeard=true;window.__ttsHeard=true;const b=$("#ttsPlay");if(b)b.remove()}};
+  clipPlayer.onended=()=>{if(armed)pass()};
+  clipPlayer.onerror=()=>{if(armed)fail()};
+  try{clipPlayer.src=seg.mp3;const p=clipPlayer.play();armed=true;ttsWD=setTimeout(pass,30000);if(p&&p.catch)p.catch(()=>{if(armed)fail()})}catch(e){armed=true;fail()}};
+ const speakSynth=(text,next)=>{if(!("speechSynthesis"in window)){showTtsPlay(t,onEnd);next();return}
+  const SS=speechSynthesis;try{SS.resume()}catch(e){}
+  const parts=chunks(String(text)),rate=+vpref.rate||1.15;let pi=0;
+  const voices=typeof SS.getVoices==="function"?SS.getVoices()||[]:[];if(!voices.length)showTtsPlay(t,onEnd);
+  const goPart=()=>{if(id!==spkId||done)return;clearTimeout(ttsWD);if(pi>=parts.length){next();return}
+   const txt=parts[pi++];let fired=false;const adv=()=>{if(fired||id!==spkId)return;fired=true;goPart()};
+   const u=new SpeechSynthesisUtterance(txt);u.lang="pt-BR";const v=curVoice();if(v)u.voice=v;u.rate=rate;u.pitch=1;keepU=[u];
+   const mark=()=>{window.__ttsHeard=true;window.__ttsStart=Date.now()};u.onstart=mark;try{u.addEventListener("start",mark)}catch(e){}
+   u.onend=adv;u.onerror=e=>{if(e.error==="interrupted"||e.error==="canceled")return;showTtsPlay(t,onEnd);adv()};
+   const startedAt=Date.now();
+   ttsWD=setTimeout(()=>{if(id!==spkId||done)return;if(!(window.__ttsStart>=startedAt)&&!SS.speaking)showTtsPlay(t,onEnd);adv()},1800+txt.length*90/rate);
+   const go=()=>{if(id!==spkId||done)return;try{SS.resume();SS.speak(u)}catch(e){showTtsPlay(t,onEnd);adv()}};
+   if(pi===1&&(SS.speaking||SS.pending)){try{SS.cancel()}catch(e){}setTimeout(go,120);return}
+   go()};
+  goPart()};
  step()}
 function say(t){if(!t)return;addMsg("c",t);speak(t)}
 function addMsg(w,t){if(target==="anam"&&S.status==="none"||w==="a"&&target==="anam"){S.chat.push([w,t]);save()}renderChat()}
 function renderChat(){$("#chat").innerHTML="";S.chat.forEach(([w,t])=>{const d=document.createElement("div");d.className="msg "+w;if(w==="c"&&t){const s=document.createElement("span");s.textContent=t;d.appendChild(s);const b=document.createElement("button");b.type="button";b.className="btn sm sec repetir";b.textContent="Repetir";b.onclick=()=>speak(t,null,{interrupt:true});d.appendChild(b)}else d.textContent=t;$("#chat").appendChild(d)});$("#chat").scrollTop=1e6}
 function unlockTts(ev){if(window.__ttsUnlocked)return;window.__ttsUnlocked=true;try{speechSynthesis.resume()}catch(e){}
- if(!ttsEnabled()||window.__ttsHeard)return;const el=ev&&ev.target;if(el&&el.closest&&el.closest("#ttsToggle,#voiceGo,#ttsPlay,.repetir"))return;
- const last=lastCoachText();if(last)speak(last)}
+ if(!ttsEnabled())return;const last=lastCoachText();const needs=last&&clipSegments(last).some(s=>s.mp3);
+ if(needs?window.__audioHeard:window.__ttsHeard)return;const el=ev&&ev.target;if(el&&el.closest&&el.closest("#ttsToggle,#voiceGo,#ttsPlay,.repetir"))return;
+ if(last)speak(last)}
 ["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,unlockTts,true));
 const MOBILE=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
 let waveGen=0;
@@ -527,7 +545,7 @@ function resetRec(){listening=false;clearTimeout(recWD);$("#mic").classList.remo
 function speechOk(text,conf){const t=String(text||"").replace(/\s+/g," ").trim();if(t.length<2)return false;if(/^(a+|e+|o+|h+|ah+|eh+|hm+|hum+|hmm+|uh+|u+|é+|né|ne|hã|ham|ahn)$/i.test(t))return false;if(typeof conf==="number"&&conf>0&&conf<0.4)return false;return true}
 function listen(tgt){if(!SR){$("#nosup").classList.remove("hide");return}
  if(listening){const r=rec;try{r.stop()}catch(e){}setTimeout(()=>{if(rec===r&&listening&&r.__finish)r.__finish()},1500);return}
- target=tgt;spkId++;clearTimeout(ttsWD);try{speechSynthesis.cancel()}catch(e){}
+ target=tgt;spkId++;clearTimeout(ttsWD);try{speechSynthesis.cancel()}catch(e){}try{if(clipPlayer)clipPlayer.pause()}catch(e){}
  $("#mic").classList.remove("ai");
  if(rec){try{rec.onend=rec.onerror=rec.onresult=rec.onstart=null;rec.abort()}catch(e){}}
  const r=new SR();rec=r;r.lang="pt-BR";r.interimResults=true;r.continuous=false;r.maxAlternatives=1;
@@ -594,7 +612,7 @@ function objSectionHTML(A){A=A||S.a;if(!A.objTxt&&!goalSet(A).length&&!A.resulta
  const note=A.prazo?prazoNote(A.prazo):"";
  return `<h3>2. OBJETIVOS E EXPECTATIVAS</h3><ul>
  <li><b>Objetivo principal:</b> ${esc(goalLabels(A).join(", ")||"—")}${words}</li>
- <li><b>Resultados que deseja alcançar:</b> ${esc(A.resultados||"—")}</li>
+ ${A.resultados?`<li><b>Resultados que deseja alcançar:</b> ${esc(A.resultados)}</li>`:""}
  <li><b>Região ou capacidade para priorizar:</b> ${esc(A.prioridade||"—")}</li>
  <li><b>Em quanto tempo espera resultados:</b> ${esc(A.prazo||"—")}${note?` <small>${esc(note)}</small>`:""}</li>
  <li><b>Como vamos medir o progresso:</b> ${esc(A.progresso||"—")}</li></ul>`}

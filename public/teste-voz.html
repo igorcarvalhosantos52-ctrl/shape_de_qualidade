@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teste de voz — Shape de Qualidade</title>
+<style>
+ body{margin:0;font:17px/1.45 system-ui,sans-serif;background:#0e1116;color:#f4f1ea}
+ main{max-width:32rem;margin:0 auto;padding:20px 16px 40px}
+ h1{font-size:1.35rem;margin:0 0 6px}
+ p{margin:8px 0}
+ .card{background:#171c24;border:1px solid #2c3442;border-radius:14px;padding:14px 14px 16px;margin:14px 0}
+ button{width:100%;font:inherit;font-weight:650;padding:14px 12px;border-radius:12px;border:0;background:#e7b423;color:#1a1404;margin-top:8px}
+ button.sec{background:#243044;color:#f4f1ea}
+ .k{color:#9aa6b8;font-size:.85rem}
+ .v{font-size:1.05rem;margin:2px 0 10px}
+ ul{margin:6px 0;padding-left:18px}
+ .ok{color:#8ddeaf}.bad{color:#ffb4a8}
+ small{color:#9aa6b8}
+</style>
+</head>
+<body>
+<main>
+ <h1>Teste de voz do coach</h1>
+ <p>Abra esta página no celular do aluno. Toque nos dois botões e confira se sai som pelo alto-falante (volume de mídia, não o volume do toque).</p>
+ <div class="card">
+  <div class="k">Navegador</div>
+  <div class="v" id="ua"></div>
+  <div class="k">speechSynthesis (voz do navegador)</div>
+  <div class="v" id="suporte"></div>
+  <div class="k">Quantidade de vozes</div>
+  <div class="v" id="nVozes">Carregando…</div>
+  <div class="k">Vozes em português</div>
+  <ul id="ptVozes"><li>Carregando…</li></ul>
+  <p id="aviso"></p>
+  <button type="button" id="btnVoz">Testar voz do navegador</button>
+  <p id="stVoz"></p>
+  <button type="button" class="sec" id="btnAtualizar">Atualizar lista de vozes</button>
+ </div>
+ <div class="card">
+  <div class="k">Áudio gravado (mp3)</div>
+  <p>Este botão toca um arquivo, sem usar a voz do navegador. Se só este sair som, o coach vai usar os mp3 das perguntas.</p>
+  <button type="button" id="btnAudio">Testar áudio</button>
+  <p id="stAudio"></p>
+ </div>
+ <p><small><a href="/" style="color:#e7b423">Voltar ao app</a></small></p>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+$("#ua").textContent=navigator.userAgent;
+function listar(){
+ const ok="speechSynthesis"in window;
+ $("#suporte").textContent=ok?"Sim, o navegador diz que tem voz.":"Não. Este navegador não tem speechSynthesis.";
+ $("#suporte").className=ok?"v ok":"v bad";
+ if(!ok){$("#nVozes").textContent="0";$("#ptVozes").innerHTML="<li>Nenhuma</li>";$("#aviso").textContent="Sem voz do navegador, o coach depende do mp3.";return}
+ const all=speechSynthesis.getVoices()||[];
+ const pt=all.filter(v=>/^pt/i.test(v.lang||""));
+ $("#nVozes").textContent=String(all.length);
+ $("#ptVozes").innerHTML=pt.length?pt.map(v=>"<li>"+v.name+" ("+v.lang+")"+(v.localService?" · local":" · online")+"</li>").join(""):"<li>Nenhuma voz pt ou pt-BR</li>";
+ $("#aviso").textContent=all.length?pt.length?"Há voz em português. Mesmo assim o Android às vezes fica mudo: compare com o botão de áudio.":"Há vozes, mas nenhuma em português. A voz do navegador pode falar em outro idioma ou ficar muda. O mp3 é o caminho seguro.":"0 vozes. No Chrome de Android isso é comum: a voz do navegador não fala. Se o mp3 tocar, o coach consegue falar pelas perguntas gravadas.";
+}
+listar();
+if("speechSynthesis"in window){speechSynthesis.onvoiceschanged=listar;setTimeout(listar,400);setTimeout(listar,1500)}
+$("#btnAtualizar").onclick=listar;
+$("#btnVoz").onclick=()=>{
+ const st=$("#stVoz");
+ if(!("speechSynthesis"in window)){st.textContent="Sem speechSynthesis.";st.className="bad";return}
+ const u=new SpeechSynthesisUtterance("Teste de voz do navegador. Um, dois, três.");
+ u.lang="pt-BR";
+ let started=false;
+ st.textContent="Pedindo a voz do navegador…";st.className="";
+ u.onstart=()=>{started=true;st.textContent="A voz do navegador começou. Você ouviu?";st.className="ok"};
+ u.onend=()=>{st.textContent=started?"A voz do navegador terminou.":"A voz terminou sem marcar início.";st.className=started?"ok":"bad"};
+ u.onerror=e=>{st.textContent="A voz do navegador falhou: "+(e.error||"erro")+".";st.className="bad"};
+ try{speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){st.textContent="Não foi possível chamar a voz: "+e.message;st.className="bad"}
+ setTimeout(()=>{if(!started&&!/falhou|Não foi/.test(st.textContent)){st.textContent="A voz não começou. Neste aparelho o speechSynthesis ficou mudo.";st.className="bad"}},2500);
+};
+$("#btnAudio").onclick=()=>{
+ const st=$("#stAudio"),a=new Audio("/audio/teste.mp3");
+ a.setAttribute("playsinline","");
+ st.textContent="Tocando o mp3…";st.className="";
+ a.onplaying=()=>{st.textContent="Tocando o mp3. Se você ouviu, o áudio do coach funciona.";st.className="ok"};
+ a.onended=()=>{st.textContent="O mp3 terminou. Se você ouviu, o áudio do coach funciona.";st.className="ok"};
+ a.onerror=()=>{st.textContent="O navegador não carregou o mp3.";st.className="bad"};
+ const p=a.play();
+ if(p&&p.catch)p.catch(e=>{st.textContent="O navegador bloqueou o mp3: "+(e&&e.message?e.message:e)+".";st.className="bad"});
+};
+</script>
+</body>
+</html>

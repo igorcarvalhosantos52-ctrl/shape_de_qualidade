@@ -227,6 +227,7 @@ app.get('/api/admin/summary', admin, async (req, res) => {
 app.post('/api/admin/reset-link', admin, async (req, res) => { const p = await db.prepare('SELECT id,email FROM personals WHERE id=?').get(+req.body.personal_id); if (!p) return res.status(404).json({ error: 'Personal não encontrado.' }); res.json({ ok: true, email: p.email, link: await makeReset(req, 'personal', p.id), expira_em_min: 60 }); });
 app.post('/api/admin/plans', admin, async (req, res) => { try { res.json({ ok: true, plans: await pay.setPlans(req.body || {}) }); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.get('/admin', admin, (_q, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/teste-voz', (_q, res) => res.sendFile(path.join(__dirname, 'public', 'teste-voz.html')));
 
 app.use(express.static(path.join(__dirname, 'public'), { index: 'index.html' }));
 app.get('/redefinir', (_q, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
