@@ -46,6 +46,8 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await Promise.all([a.waitForNavigation(), a.click('#lgGo')]);
     await a.waitForSelector('#t-aluno:not(.hide)'); await a.evaluate(() => { document.querySelector('#tts').checked = false; document.querySelector('#autoL').checked = false; });
     await a.waitForFunction(() => /Olá, Pamela/.test(document.querySelector('#chat').textContent), { timeout: 15000 }); ok(true, 'coach cumprimenta "Olá, Pamela" sem perguntar o nome');
+    ok(/Seu personal ainda não cadastrou o WhatsApp/.test(await a.$eval('#waTop', e => e.innerText)) && !(await a.$('#waTop .waPers')), 'sem número, o aluno vê que o personal ainda não cadastrou o WhatsApp');
+    ok((await a.evaluate(async () => (await fetch('/api/personal/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status)) === 401, 'aluno não cadastra o WhatsApp do personal');
     const answers = ['19 anos', 'ganho de massa muscular', 'treino há 1 ano', '2 dias', 'errei, posso treinar quatro vezes por semana', '1 hora', 'não', 'não tenho'];
     for (const t of answers) { const n = await a.$$eval('#chat .msg', x => x.length); await a.type('#txt', t); await a.keyboard.press('Enter');
       await a.waitForFunction(n => document.querySelectorAll('#chat .msg').length > n + 1 || !document.querySelector('#anamCard') || document.querySelector('#anamCard').classList.contains('hide'), { timeout: 15000 }, n); await sleep(300); }
@@ -68,6 +70,97 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(await a.$eval('#hdrProf', e => /Igor Personal/.test(e.textContent)), 'cabeçalho mostra o professor');
     ok((await a.$eval('#statusCard', e => e.innerText)).match(/4 x|4x|4 séries|4 s/i) || true, 'treino visível');
     await a.screenshot({ path: SHOTS + '/09-aluno-treino-aprovado.png' });
+
+    // ---- WhatsApp do personal
+    await p.evaluate(() => { const z = document.querySelector('#zapBox'); if (z) z.open = true; });
+    await p.waitForSelector('#zapNum');
+    ok(/Meu WhatsApp/.test(await p.$eval('#zapBox', e => e.innerText)), 'painel do personal tem Meu WhatsApp');
+    await p.click('#zapNum', { clickCount: 3 }); await p.type('#zapNum', '(11) 98765-4321'); await p.click('#zapGo');
+    await p.waitForFunction(() => /salvo/i.test(document.querySelector('#zapMsg').innerText));
+    const zap = await p.evaluate(async () => (await (await fetch('/api/me')).json()).personal.whatsapp);
+    ok(zap === '11987654321', 'número do WhatsApp fica só com DDD e dígitos');
+    await a.reload({ waitUntil: 'networkidle0' }); await a.waitForSelector('#waTop .waPers');
+    const wa = await a.$eval('#waTop .waPers', e => e.getAttribute('href'));
+    ok(wa.startsWith('https://wa.me/5511987654321?text=') && decodeURIComponent(wa.split('text=')[1]).startsWith('Olá, sou Pamela do Shape de Qualidade'), 'Falar com o personal abre o WhatsApp com o nome do aluno');
+    ok(!!(await a.$('#adjCard .waPers')), 'botão fica perto do ajuste do dia');
+
+    // ---- divisão da semana (personal) + troca só de hoje
+    const MON = new Date(2026, 9, 12, 15, 0, 0).getTime();
+    p.on('dialog', d => d.accept()); a.on('dialog', d => d.accept());
+    await p.evaluate(t => { window.__fakeNow = t; render(); }, MON);
+    await p.waitForSelector('#splitEdit');
+    ok(/Usar sugestão automática/.test(await p.$eval('#splitBox', e => e.innerText)) && /Personalizar dias/.test(await p.$eval('#splitEdit', e => e.innerText)), 'divisão padrão é a sugestão automática');
+    await p.click('#splitEdit');
+    await p.waitForSelector('.splitDay[data-w="1"] .splitG');
+    await p.evaluate(() => {
+      const row = document.querySelector('.splitDay[data-w="1"]');
+      row.querySelector('.splitLabel').value = 'Core de segunda';
+      row.querySelectorAll('.splitG').forEach(i => { i.checked = i.value === 'abdomen'; });
+      row.querySelector('.splitG').dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await p.waitForFunction(() => /Core de segunda/.test(document.querySelector('#persCard').innerText) && /Prancha abdominal/.test(document.querySelector('#persCard').innerText));
+    await p.evaluate(() => { const thu = document.querySelector('.splitDay[data-w="4"] .splitOn'); thu.checked = false; thu.dispatchEvent(new Event('change', { bubbles: true })); });
+    await p.waitForSelector('.splitDay[data-w="6"] .splitOn');
+    await p.evaluate(() => { const sat = document.querySelector('.splitDay[data-w="6"] .splitOn'); sat.checked = true; sat.dispatchEvent(new Event('change', { bubbles: true })); });
+    await p.waitForSelector('.splitDay[data-w="6"] .splitG');
+    await p.evaluate(() => {
+      const row = document.querySelector('.splitDay[data-w="6"]');
+      row.querySelector('.splitLabel').value = 'Cardio de sábado';
+      row.querySelectorAll('.splitG').forEach(i => { i.checked = i.value === 'cardio'; });
+      row.querySelector('.splitG').dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await p.waitForFunction(() => /Cardio de sábado/.test(document.querySelector('#persCard').innerText));
+    await p.evaluate(() => {
+      const inp = document.querySelector('#persCard input[data-act="s"]'); inp.value = '6'; inp.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await p.waitForFunction(() => document.querySelector('#persCard input[data-act="s"]') && document.querySelector('#persCard input[data-act="s"]').value === '6');
+    const beforeRm = await p.$$eval('.ex', es => es.length);
+    await p.evaluate(() => document.querySelector('button[data-act="down"]').click());
+    await p.waitForSelector('button[data-act="rm"]');
+    await p.evaluate(() => { const bs = [...document.querySelectorAll('button[data-act="rm"]')]; bs[bs.length - 1].click(); });
+    await p.waitForFunction(n => document.querySelectorAll('.ex').length < n, {}, beforeRm);
+    const addSel = await p.$('select[data-act="add"]');
+    await p.evaluate(() => { const sel = document.querySelector('select[data-act="add"]'); if (sel.options.length > 1) { sel.selectedIndex = 1; sel.dispatchEvent(new Event('change', { bubbles: true })); } });
+    if (addSel) await sleep(300);
+    const fits = await p.evaluate(() => { const b = document.querySelector('#splitBox'); return b.getBoundingClientRect().width <= document.documentElement.clientWidth + 1; });
+    ok(fits, 'editor da divisão cabe na largura do celular');
+    const planOf = async () => p.evaluate(async () => { const me = await (await fetch('/api/me')).json(); return (me.students.find(s => s.u === 'pamela') || {}).ficha.plan; });
+    let saved = null; for (let i = 0; i < 25 && !(saved && saved.split && saved.split.days.some(d => d.label === 'Core de segunda' && d.gs.includes('abdomen') && saved.treinos.some(t => t.nome === 'Core de segunda' && t.blocos.some(b => b.ex.some(e => e.s === 6))))); i++) { await sleep(200); saved = await planOf(); }
+    ok(!!saved && saved.split.custom && saved.split.days.some(d => d.w === 6 && d.gs.includes('cardio')) && !saved.split.days.some(d => d.w === 4), 'divisão personalizada grava dias, grupos e séries no aluno');
+    const see = async () => { await a.reload({ waitUntil: 'networkidle0' }); await a.waitForFunction(() => typeof S !== 'undefined' && S && S.plan && S.status === 'aprovado'); await a.evaluate(t => { window.__fakeNow = t; render(); }, MON); await a.waitForSelector('#statusCard'); };
+    await see();
+    ok(/Core de segunda/.test(await a.$eval('#statusCard', e => e.innerText)) && /Core de segunda/.test(await a.$eval('#hdrDia', e => e.textContent)) && /6 série/.test(await a.$eval('#statusCard', e => e.innerText)) && !/Cardio de sábado/.test(await a.$eval('#statusCard', e => e.innerText)), 'aba Dia do aluno mostra o treino personalizado de hoje');
+    await a.click('.detBtn'); await a.waitForSelector('#detDrawer.open');
+    ok(/Como fazer/.test(await a.$eval('#detDrawer', e => e.innerText)), 'Detalhes abre no exercício do dia personalizado');
+    await a.evaluate(() => document.querySelector('#detOv').click());
+    const hack = await a.evaluate(async () => { const F = await (await fetch('/api/me')).json(); F.ficha.plan.split = { custom: true, days: [{ w: 1, label: 'HACK', gs: ['peito'] }] }; F.ficha.plan.treinos[0].nome = 'HACK'; await fetch('/api/ficha/pamela', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(F.ficha) }); return (await (await fetch('/api/me')).json()).ficha.plan.treinos[0].nome; });
+    ok(hack === 'Core de segunda', 'aluno não consegue trocar a divisão gravada pelo personal');
+    await a.type('#adjTxt', 'estou cansado'); await a.click('#adjSend');
+    await a.waitForFunction(() => /Ajustado hoje|cansaço|cansad/.test(document.querySelector('#statusCard').innerText));
+    ok(/Ajustado hoje|cansaço|cansad/.test(await a.$eval('#statusCard', e => e.innerText)), 'ajuste do dia funciona no treino personalizado');
+    ok(/consulte o seu personal/i.test(await a.$eval('#adjOut', e => e.innerText)) && !!(await a.$('#adjOut .waPers')), 'mensagem Consulte o seu personal traz Falar com o personal');
+    await p.evaluate(() => { const sel = document.querySelector('#swapDay'); const opt = [...sel.options].find(o => /Terça/.test(o.textContent)); sel.value = opt.value; document.querySelector('#swapDayGo').click(); });
+    let swapped = null; for (let i = 0; i < 25 && !(swapped && swapped.swapHoje && /Costas/.test(swapped.swapHoje.nome || '') && swapped.treinos[0].nome === 'Core de segunda'); i++) { await sleep(200); swapped = await planOf(); }
+    ok(!!swapped, 'troca de hoje não mexe na divisão da semana');
+    await see();
+    const hoje1 = await a.$eval('#statusCard', e => e.innerText);
+    ok(/trocado pelo personal/.test(hoje1) && /Costas|Puxada|Remada|Rosca/.test(hoje1) && !/Prancha abdominal/.test(hoje1), 'aluno vê o treino de outro dia só hoje');
+    await p.evaluate(() => { document.querySelectorAll('#swapGs .splitG').forEach(i => { i.checked = i.value === 'gluteo'; }); document.querySelector('#swapApply').click(); });
+    let gl = null; for (let i = 0; i < 25 && !(gl && gl.swapHoje && (gl.swapHoje.gs || []).includes('gluteo') && gl.split.days[0].label === 'Core de segunda'); i++) { await sleep(200); gl = await planOf(); }
+    ok(!!gl, 'troca de hoje por grupo muscular fica só no dia');
+    await see();
+    ok(/Glúteo|Elevação pélvica|Ponte de glúteo/.test(await a.$eval('#statusCard', e => e.innerText)), 'aluno vê o grupo escolhido para hoje');
+    await p.click('#swapUndo');
+    let undone = null; for (let i = 0; i < 25 && !(undone && !undone.swapHoje && undone.split && undone.split.custom); i++) { await sleep(200); undone = await planOf(); }
+    await see();
+    ok(/Core de segunda/.test(await a.$eval('#statusCard', e => e.innerText)) && !/trocado pelo personal/.test(await a.$eval('#statusCard', e => e.innerText)), 'desfazer a troca devolve o dia da divisão');
+    await p.click('#splitAuto');
+    await p.waitForSelector('#splitEdit');
+    let back = null; for (let i = 0; i < 25 && !(back && !back.split); i++) { await sleep(200); back = await planOf(); }
+    ok(!!back && back.treinos[0].nome === 'Treino 1', 'voltar à divisão automática restaura a sugestão fixa');
+    await see();
+    ok(/Peito/.test(await a.$eval('#statusCard', e => e.innerText)) && !/Core de segunda/.test(await a.$eval('#statusCard', e => e.innerText)), 'aba Dia volta ao treino automático');
+
     // ---- limite de 15 alunos no Básico
     const signup = async (i) => { const c = await browser.createBrowserContext(), pg = await c.newPage(); await pg.goto(URL + '/convite/' + code, { waitUntil: 'networkidle0' });
       await pg.waitForSelector('#lgUser');

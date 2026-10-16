@@ -98,17 +98,41 @@ function bindPlanBox() {
       location.href = "/?area=personal&plano=1"; } catch (e) { err(e.message); } };
 }
 function pc_paywall() { const pc = $("#persCard"); pc.innerHTML = paywallHTML().replace("Assine o Shape de Qualidade", "Pagar o upgrade de plano"); bindLock(); pc.scrollIntoView(); }
+function waDigits(raw) { let d = String(raw || "").replace(/\D/g, ""); if (d.startsWith("55") && d.length > 11) d = d.slice(2); return d; }
+function waBlock() {
+  const nome = (ME && ME.nome) || (typeof S !== "undefined" && S.a && S.a.nome) || "aluno";
+  const d = waDigits(ME && ME.personal && ME.personal.whatsapp);
+  if (!/^\d{10,11}$/.test(d)) return `<p class="waOff">Seu personal ainda não cadastrou o WhatsApp</p>`;
+  const href = "https://wa.me/55" + d + "?text=" + encodeURIComponent("Olá, sou " + nome + " do Shape de Qualidade. Quero falar com você.");
+  return `<a class="btn waPers" href="${esc(href)}" target="_blank" rel="noopener">Falar com o personal</a>`;
+}
+function mountWa() {
+  if (!ME || ME.role !== "student") return;
+  const html = `<div class="waSlot">${waBlock()}</div>`;
+  const who = $("#whoName");
+  if (who && who.parentElement && !$("#waTop")) who.parentElement.insertAdjacentHTML("afterend", `<div id="waTop">${html}</div>`);
+  const adj = $("#adjCard");
+  if (adj && !$("#waAdj")) { const row = adj.querySelector(".row"); if (row) row.insertAdjacentHTML("afterend", `<div id="waAdj">${html}</div>`); }
+  document.querySelectorAll("#adjOut, #chat, #statusCard").forEach(el => {
+    if (!/consulte o seu personal/i.test(el.innerText || "")) return;
+    if (el.querySelector(".waPers, .waOff")) return;
+    el.insertAdjacentHTML("beforeend", html);
+  });
+}
 const _render = render;
 render = function () {
   _render();
   document.querySelectorAll("#lockNow").forEach(b => (b.onclick = logoutAll));
   const fg = $("#pwForgot"); if (fg) fg.remove();
+  mountWa();
 };
+const _renderChat = renderChat;
+renderChat = function () { _renderChat(); mountWa(); };
 // o "Reiniciar" apaga também no servidor (save() envia a ficha nova)
 
 /* ---------- Início ---------- */
 if (ME.role === "student" && !ME.active) {
-  $("#t-login .lockbox").innerHTML = `<h2>⏸️ Acesso pausado</h2><p>Olá, <b>${esc(ME.nome)}</b>. A assinatura do seu personal (<b>${esc(ME.personal.nome)}</b>) está inativa no momento. Fale com ele para reativar.</p><button class="btn" id="out2">Sair</button>`;
+  $("#t-login .lockbox").innerHTML = `<h2>⏸️ Acesso pausado</h2><p>Olá, <b>${esc(ME.nome)}</b>. A assinatura do seu personal (<b>${esc(ME.personal.nome)}</b>) está inativa no momento. Fale com ele para reativar.</p><div class="waSlot">${waBlock()}</div><button class="btn" id="out2">Sair</button>`;
   ["login", "aluno", "personal"].forEach(x => $("#t-" + x).classList.toggle("hide", x !== "login")); $("#out2").onclick = logoutAll;
 } else {
   boot();
@@ -165,6 +189,13 @@ if (location.pathname === "/redefinir" && qs.get("t")) {
   }).catch(e => ($("#rsInfo").innerHTML = `<div class="alert bad">${esc(e.message)}</div>`));
 }
 // personal logado: trocar a própria senha e redefinir senha de aluno
+function zapBox() {
+  const cur = (ME.personal && ME.personal.whatsapp) || "";
+  return `<details class="alert ok noprint" id="zapBox" style="font-size:.85rem"><summary><b>Meu WhatsApp</b></summary>
+  <p style="margin:8px 0 4px">Número com DDD. O aluno usa esse número no botão <b>Falar com o personal</b>.</p>
+  <input id="zapNum" inputmode="numeric" autocomplete="tel" placeholder="11999998888" value="${esc(cur)}" style="margin-bottom:6px">
+  <button class="btn sm" id="zapGo" type="button">Salvar</button><div id="zapMsg"></div></details>`;
+}
 function senhaBox() {
   const opts = (ME.students || []).map(s => `<option value="${esc(s.u)}">${esc(s.nome)} (@${esc(s.u)})</option>`).join("");
   return `<details class="alert ok noprint" id="pwdBox" style="font-size:.85rem"><summary><b>🔑 Senhas</b></summary>
@@ -173,7 +204,10 @@ function senhaBox() {
 }
 const _renderPanel2 = renderPanel;
 renderPanel = function () { _renderPanel2(); if (!unlocked || ME.role !== "personal" || !$("#planBox")) return;
-  const o = $("#pwdBox") && $("#pwdBox").open; $("#planBox").insertAdjacentHTML("afterend", senhaBox()); if (o) $("#pwdBox").open = true;
+  const o = $("#pwdBox") && $("#pwdBox").open, zo = $("#zapBox") && $("#zapBox").open;
+  $("#planBox").insertAdjacentHTML("afterend", zapBox() + senhaBox()); if (o) $("#pwdBox").open = true; if (zo) $("#zapBox").open = true;
+  const zmsg = (m, ok) => ($("#zapMsg").innerHTML = `<div class="alert ${ok ? "ok" : "bad"}">${esc(m)}</div>`);
+  $("#zapGo").onclick = async () => { try { const r = await api("/api/personal/whatsapp", { numero: $("#zapNum").value }); ME.personal.whatsapp = r.whatsapp; $("#zapNum").value = r.whatsapp; zmsg(r.whatsapp ? "WhatsApp salvo. Seus alunos já podem falar com você." : "Número apagado.", 1); } catch (e) { zmsg(e.message); } };
   const msg = (m, ok) => ($("#pwdMsg").innerHTML = `<div class="alert ${ok ? "ok" : "bad"}">${esc(m)}</div>`);
   $("#myGo").onclick = async () => { try { await api("/api/personal/password", { atual: $("#myOld").value, nova: $("#myNew").value }); $("#myOld").value = $("#myNew").value = ""; msg("Sua senha foi trocada.", 1); } catch (e) { msg(e.message); } };
   const sg = $("#stGo"); if (sg) sg.onclick = async () => { const u = $("#stSel").value, n = $("#stNew").value; try { await api("/api/personal/student-password", { usuario: u, nova: n }); $("#stNew").value = ""; msg(`Pronto! Passe para o aluno: usuário ${u} – senha ${n}`, 1); } catch (e) { msg(e.message); } };

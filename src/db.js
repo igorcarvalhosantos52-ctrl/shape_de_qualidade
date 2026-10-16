@@ -24,3 +24,4 @@ for (const sql of ["ALTER TABLE personals ADD COLUMN plan TEXT DEFAULT 'pro'", "
   "ALTER TABLE subscriptions ADD COLUMN plan TEXT DEFAULT 'pro'", "ALTER TABLE payments ADD COLUMN plan TEXT DEFAULT 'pro'"]) { try { db.exec(sql); } catch (e) {} }
 db.exec(`CREATE TABLE IF NOT EXISTS password_resets(token_hash TEXT PRIMARY KEY, role TEXT NOT NULL, user_id INTEGER NOT NULL, expires INTEGER NOT NULL, created_at INTEGER NOT NULL)`);
 try { db.exec("ALTER TABLE personals ADD COLUMN reset_requested_at INTEGER"); } catch (e) {}
+try { db.exec("ALTER TABLE personals ADD COLUMN whatsapp TEXT DEFAULT ''"); } catch (e) {}

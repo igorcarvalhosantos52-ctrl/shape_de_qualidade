@@ -23,7 +23,14 @@ const hits = new Map();
 function limit(req, res, next) { const k = req.ip + req.path, n = (hits.get(k) || []).filter(t => t > Date.now() - 15 * 60e3); n.push(Date.now()); hits.set(k, n); if (n.length > 20) return res.status(429).json({ error: 'Muitas tentativas. Aguarde 15 minutos.' }); next(); }
 const emailOk = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e), userOk = u => /^[a-z0-9._-]{3,30}$/.test(u);
 const code = () => crypto.randomBytes(4).toString('hex').toUpperCase();
-const pubP = p => ({ id: p.id, nome: p.nome, email: p.email, cref: p.cref, invite_code: p.invite_code });
+const pubP = p => ({ id: p.id, nome: p.nome, email: p.email, cref: p.cref, invite_code: p.invite_code, whatsapp: p.whatsapp || "" });
+function waNorm(raw) {
+  let d = String(raw || "").replace(/\D/g, "");
+  if (d.startsWith("55") && d.length > 11) d = d.slice(2);
+  if (!d) return "";
+  if (!/^\d{10,11}$/.test(d)) { const err = new Error("Informe o DDD e o número, com 10 ou 11 dígitos."); err.status = 400; throw err; }
+  return d;
+}
 
 // ---------- personal ----------
 app.post('/api/personal/signup', limit, async (req, res) => {
@@ -86,6 +93,10 @@ async function changeOwn(req, res, tbl, min) {
   db.prepare('DELETE FROM sessions WHERE role=? AND user_id=? AND token<>?').run(req.sess.role, u.id, req.sess.token); res.json({ ok: true });
 }
 app.post('/api/personal/password', limit, need('personal'), (req, res) => changeOwn(req, res, 'personals', 8));
+app.post('/api/personal/whatsapp', need('personal'), (req, res) => {
+  try { const w = waNorm(req.body.numero); db.prepare('UPDATE personals SET whatsapp=? WHERE id=?').run(w, req.sess.user_id); res.json({ ok: true, whatsapp: w }); }
+  catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+});
 app.post('/api/student/password', limit, need('student'), (req, res) => changeOwn(req, res, 'students', 6));
 // personal redefine a senha de um aluno dele
 app.post('/api/personal/student-password', limit, need('personal'), async (req, res) => {
@@ -135,9 +146,9 @@ app.get('/api/me', (req, res) => {
     return res.json({ role: 'personal', personal: pubP(p), sub, students, count, ...P });
   }
   if (req.sess.role === 'student') {
-    const s = db.prepare('SELECT s.*,p.nome pnome,p.cref pcref,p.email pemail FROM students s JOIN personals p ON p.id=s.personal_id WHERE s.id=?').get(req.sess.user_id);
+    const s = db.prepare('SELECT s.*,p.nome pnome,p.cref pcref,p.whatsapp pzap FROM students s JOIN personals p ON p.id=s.personal_id WHERE s.id=?').get(req.sess.user_id);
     if (!s) return res.json({ role: null, ...P });
-    return res.json({ role: 'student', u: s.username, nome: s.nome, personal: { nome: s.pnome, cref: s.pcref }, active: pay.subscriptionOf(s.personal_id).active, ficha: parse(s.ficha), ...P });
+    return res.json({ role: 'student', u: s.username, nome: s.nome, personal: { nome: s.pnome, cref: s.pcref, whatsapp: s.pzap || "" }, active: pay.subscriptionOf(s.personal_id).active, ficha: parse(s.ficha), ...P });
   }
   res.json({ role: null, ...P });
 });
@@ -153,6 +164,8 @@ app.put('/api/ficha/:u', (req, res) => {
     // o aluno não pode se autoaprovar nem mudar a revisão
     if (F.status === 'aprovado' && old.status !== 'aprovado') { F.status = old.status || 'pendente'; F.aprov = old.aprov || null; }
     if (F.status === 'aprovado') { F.aprov = old.aprov; F.plan = old.plan; }
+    // divisão e troca de hoje são do personal: o aluno não altera o plano do colega nem o de outro personal
+    if (old.plan && ((old.plan.split && old.plan.split.custom) || old.plan.swapHoje)) F.plan = old.plan;
     F.rev = old.rev || null;
   } else if (req.sess.role === 'personal') {
     if (req.sess.user_id !== s.personal_id) return res.status(403).json({ error: 'proibido' });
