@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: shape-de-qualidade
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    disk: { name: data, mountPath: /data, sizeGB: 1 }
+    envVars:
+      - { key: NODE_ENV, value: production }
+      - { key: DB_PATH, value: /data/shape.db }
+      - { key: TRIAL_DAYS, value: "4" }
+      - { key: ADMIN_EMAIL, sync: false }
+      - { key: ADMIN_PASSWORD, sync: false }
+      - { key: MP_ACCESS_TOKEN, sync: false }
+      - { key: BASE_URL, sync: false }
