@@ -119,3 +119,80 @@ if (ME.role === "student" && !ME.active) {
   if (new URLSearchParams(location.search).get("plano")) __toast("Plano alterado!");
   if (new URLSearchParams(location.search).get("pago")) { __toast("Pagamento recebido! Assinatura ativa."); history.replaceState(null, "", "/"); }
 }
+
+/* ---------- Voz: o navegador só libera fala e microfone depois de um toque ----------
+   Depois do login a página recarrega; sem um toque o celular bloqueia a voz do coach.
+   Este botão "destrava" a voz e repete a última pergunta. */
+(function voiceStart() {
+  if (ME.role !== "student" || !ME.active) return;
+  const hasTTS = "speechSynthesis" in window, mic = $("#mic"); if (!mic) return;
+  const box = document.createElement("div"); box.id = "voiceGo"; box.className = "alert ok noprint";
+  box.style.cssText = "text-align:center;cursor:pointer;font-weight:700";
+  box.innerHTML = SR ? "🎙️ Toque aqui para conversar por voz com o coach" : "⌨️ Seu navegador não tem reconhecimento de voz. Responda digitando abaixo (no Android use o Chrome; no iPhone, o Safari).";
+  mic.parentNode.insertBefore(box, mic);
+  if (!SR) return;
+  const go = () => { box.remove();
+    if (hasTTS) { try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch (e) {} }
+    const last = [...(S.chat || [])].reverse().find(m => m[0] === "c");
+    if (S.status === "none" && last) speak(last[1], () => listen("anam", true)); else listen("anam"); };
+  box.onclick = go; mic.addEventListener("click", () => box.remove(), { once: true });
+})();
+
+/* ---------- Senhas ---------- */
+const qs = new URLSearchParams(location.search);
+// esqueci a senha – aluno
+$("#t-login .lockbox").insertAdjacentHTML("beforeend", `<p style="font-size:.85rem"><a href="#" id="stuForgot">Esqueci a senha</a></p><div id="stuForgotMsg"></div>`);
+$("#stuForgot").onclick = e => { e.preventDefault(); $("#stuForgotMsg").innerHTML = `<div class="alert warn">🔑 Peça ao seu <b>personal</b> para criar uma nova senha para você: ele faz isso no painel dele, em <b>Senhas</b>. Depois é só entrar com a senha nova.</div>`; };
+// esqueci a senha – personal (na tela de login do personal)
+const _lockHTML = lockHTML;
+lockHTML = function () { let h = _lockHTML(); if (pView === "login" && !ME.role) h = h.replace('<p><a href="#" id="pSwap">', '<p style="font-size:.9rem"><a href="#" id="pForgot">Esqueci a senha</a></p><div id="pForgotBox"></div><p><a href="#" id="pSwap">'); return h; };
+const _bindLock = bindLock;
+bindLock = function () { _bindLock(); const f = $("#pForgot"); if (!f) return;
+  f.onclick = e => { e.preventDefault(); $("#pForgotBox").innerHTML = `<div class="alert warn" style="font-size:.9rem">Digite o e-mail da sua conta e toque em <b>Pedir nova senha</b>. Você vai receber do suporte um link para criar uma senha nova (vale 1 hora).<input id="fgEmail" type="email" placeholder="Seu e-mail" style="margin:8px 0"><button class="btn sm" id="fgGo">Pedir nova senha</button><div id="fgMsg"></div></div>`;
+    if ($("#pEmail").value) $("#fgEmail").value = $("#pEmail").value;
+    $("#fgGo").onclick = async () => { try { const r = await api("/api/personal/forgot", { email: $("#fgEmail").value.trim() }); $("#fgMsg").innerHTML = `<div class="alert ok">${esc(r.msg)}</div>`; } catch (e) { $("#fgMsg").innerHTML = `<div class="alert bad">${esc(e.message)}</div>`; } }; }; };
+// página /redefinir?t=...
+if (location.pathname === "/redefinir" && qs.get("t")) {
+  const t = qs.get("t"), lb = $("#t-login .lockbox");
+  ["login", "aluno", "personal"].forEach(x => $("#t-" + x).classList.toggle("hide", x !== "login"));
+  lb.innerHTML = `<h2>🔑 Criar nova senha</h2><div id="rsInfo">Verificando o link...</div>`;
+  api("/api/password/reset/" + encodeURIComponent(t)).then(r => {
+    const min = r.role === "personal" ? 8 : 6;
+    $("#rsInfo").innerHTML = `<p>Olá, <b>${esc(r.nome || "")}</b> (${esc(r.login || "")}). Digite a nova senha (mínimo ${min} caracteres).</p><input type="password" id="rs1" placeholder="Nova senha" style="margin-bottom:8px"><input type="password" id="rs2" placeholder="Repita a nova senha" style="margin-bottom:8px"><div id="rsErr"></div><button class="btn" id="rsGo" style="width:100%">Salvar nova senha</button>`;
+    $("#rsGo").onclick = async () => { const er = m => ($("#rsErr").innerHTML = `<div class="alert bad">${esc(m)}</div>`);
+      if ($("#rs1").value !== $("#rs2").value) return er("As senhas não conferem.");
+      try { const x = await api("/api/password/reset", { token: t, senha: $("#rs1").value }); lb.innerHTML = `<div class="alert ok">✅ Senha alterada! Entrando...</div>`; setTimeout(() => (location.href = x.role === "personal" ? "/?area=personal" : "/"), 1200); } catch (e) { er(e.message); } };
+  }).catch(e => ($("#rsInfo").innerHTML = `<div class="alert bad">${esc(e.message)}</div>`));
+}
+// personal logado: trocar a própria senha e redefinir senha de aluno
+function senhaBox() {
+  const opts = (ME.students || []).map(s => `<option value="${esc(s.u)}">${esc(s.nome)} (@${esc(s.u)})</option>`).join("");
+  return `<details class="alert ok noprint" id="pwdBox" style="font-size:.85rem"><summary><b>🔑 Senhas</b></summary>
+  <p style="margin:8px 0 4px"><b>Trocar minha senha</b></p><input type="password" id="myOld" placeholder="Senha atual" style="margin-bottom:6px"><input type="password" id="myNew" placeholder="Nova senha (mín. 8)" style="margin-bottom:6px"><button class="btn sm" id="myGo">Trocar minha senha</button>
+  <p style="margin:12px 0 4px"><b>Nova senha para um aluno</b> (quando ele esquecer)</p>${opts ? `<select id="stSel" style="margin-bottom:6px">${opts}</select><input type="text" id="stNew" placeholder="Nova senha do aluno (mín. 6)" style="margin-bottom:6px"><button class="btn sm" id="stGo">Definir senha do aluno</button>` : "<small>Você ainda não tem alunos.</small>"}<div id="pwdMsg"></div></details>`;
+}
+const _renderPanel2 = renderPanel;
+renderPanel = function () { _renderPanel2(); if (!unlocked || ME.role !== "personal" || !$("#planBox")) return;
+  const o = $("#pwdBox") && $("#pwdBox").open; $("#planBox").insertAdjacentHTML("afterend", senhaBox()); if (o) $("#pwdBox").open = true;
+  const msg = (m, ok) => ($("#pwdMsg").innerHTML = `<div class="alert ${ok ? "ok" : "bad"}">${esc(m)}</div>`);
+  $("#myGo").onclick = async () => { try { await api("/api/personal/password", { atual: $("#myOld").value, nova: $("#myNew").value }); $("#myOld").value = $("#myNew").value = ""; msg("Sua senha foi trocada.", 1); } catch (e) { msg(e.message); } };
+  const sg = $("#stGo"); if (sg) sg.onclick = async () => { const u = $("#stSel").value, n = $("#stNew").value; try { await api("/api/personal/student-password", { usuario: u, nova: n }); $("#stNew").value = ""; msg(`Pronto! Passe para o aluno: usuário ${u} – senha ${n}`, 1); } catch (e) { msg(e.message); } };
+};
+if (ME.role === "personal" && typeof unlocked !== "undefined" && unlocked) renderPanel();
+if (!$("#t-personal").classList.contains("hide")) render();
+
+/* ---------- Puxar para atualizar (no app instalado não há botão de recarregar) ---------- */
+(function ptr() {
+  const ind = document.createElement("div"); ind.id = "ptr";
+  ind.style.cssText = "position:fixed;left:50%;top:0;transform:translate(-50%,-60px);background:#111;color:#d4a017;border:1px solid #d4a017;padding:6px 14px;border-radius:0 0 12px 12px;font-size:.85rem;z-index:9998;transition:transform .15s;pointer-events:none";
+  document.body.appendChild(ind);
+  let y0 = null, dy = 0; const TH = 80;
+  const blocked = t => (t.closest && t.closest("#detDrawer,#detOv,#stuPanel,#chat,select,textarea,input,.open")) || (document.getElementById("detDrawer") || {}).classList?.contains("open");
+  addEventListener("touchstart", e => { y0 = (scrollY <= 0 && e.touches.length === 1 && !blocked(e.target)) ? e.touches[0].clientY : null; dy = 0; }, { passive: true });
+  addEventListener("touchmove", e => { if (y0 === null) return; if (scrollY > 0) { y0 = null; ind.style.transform = "translate(-50%,-60px)"; return; }
+    dy = e.touches[0].clientY - y0; if (dy <= 10) return; ind.textContent = dy > TH ? "↻ Solte para atualizar" : "↓ Puxe para atualizar";
+    ind.style.transform = `translate(-50%,${Math.min(dy / 2, 40) - 20}px)`; }, { passive: true });
+  addEventListener("touchend", () => { if (y0 !== null && dy > TH) { ind.textContent = "Atualizando..."; location.reload(); } else ind.style.transform = "translate(-50%,-60px)"; y0 = null; dy = 0; });
+})();
+// nova versão do app publicada: o service worker novo assume e a página recarrega uma vez
+if ("serviceWorker" in navigator) { let rl = false; navigator.serviceWorker.addEventListener("controllerchange", () => { if (rl || !navigator.serviceWorker.controller) return; rl = true; if (!document.querySelector("input:focus,textarea:focus")) location.reload(); }); navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => {}); }

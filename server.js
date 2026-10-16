@@ -45,6 +45,56 @@ app.post('/api/personal/login', limit, async (req, res) => {
 });
 app.post('/api/logout', (req, res) => { if (req.cookies.sq) db.prepare('DELETE FROM sessions WHERE token=?').run(req.cookies.sq); res.clearCookie('sq'); res.json({ ok: true }); });
 
+
+// ---------- senhas: troca, redefinição por link (1h), pedido de "esqueci a senha" ----------
+const sha = t => crypto.createHash('sha256').update(t).digest('hex');
+const baseUrl = req => (process.env.BASE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+function makeReset(req, role, id) {
+  const t = crypto.randomBytes(32).toString('hex');
+  db.prepare('DELETE FROM password_resets WHERE (role=? AND user_id=?) OR expires<?').run(role, id, Date.now());
+  db.prepare('INSERT INTO password_resets VALUES(?,?,?,?,?)').run(sha(t), role, id, Date.now() + 3600e3, Date.now());
+  return baseUrl(req) + '/redefinir?t=' + t;
+}
+const killSessions = (role, id) => db.prepare('DELETE FROM sessions WHERE role=? AND user_id=?').run(role, id);
+app.post('/api/personal/forgot', limit, (req, res) => {
+  const p = db.prepare('SELECT id FROM personals WHERE email=?').get(String(req.body.email || '').trim().toLowerCase());
+  if (p) db.prepare('UPDATE personals SET reset_requested_at=? WHERE id=?').run(Date.now(), p.id);
+  res.json({ ok: true, msg: 'Pedido registrado. O suporte do Shape de Qualidade vai te enviar um link para criar uma nova senha' + (process.env.ADMIN_EMAIL ? ` (contato: ${process.env.ADMIN_EMAIL})` : '') + '. O link vale por 1 hora.' });
+});
+app.get('/api/password/reset/:t', (req, res) => {
+  const r = db.prepare('SELECT * FROM password_resets WHERE token_hash=? AND expires>?').get(sha(String(req.params.t)), Date.now());
+  if (!r) return res.status(400).json({ error: 'Link inválido ou vencido. Peça um novo.' });
+  const u = r.role === 'personal' ? db.prepare('SELECT nome,email login FROM personals WHERE id=?').get(r.user_id) : db.prepare('SELECT nome,username login FROM students WHERE id=?').get(r.user_id);
+  res.json({ ok: true, role: r.role, nome: u && u.nome, login: u && u.login });
+});
+app.post('/api/password/reset', limit, async (req, res) => {
+  const r = db.prepare('SELECT * FROM password_resets WHERE token_hash=? AND expires>?').get(sha(String(req.body.token || '')), Date.now());
+  if (!r) return res.status(400).json({ error: 'Link inválido ou vencido. Peça um novo.' });
+  const pw = String(req.body.senha || ''), min = r.role === 'personal' ? 8 : 6;
+  if (pw.length < min) return res.status(400).json({ error: `A senha precisa ter pelo menos ${min} caracteres.` });
+  const tbl = r.role === 'personal' ? 'personals' : 'students';
+  db.prepare(`UPDATE ${tbl} SET hash=? WHERE id=?`).run(await bcrypt.hash(pw, 11), r.user_id);
+  if (r.role === 'personal') db.prepare('UPDATE personals SET reset_requested_at=NULL WHERE id=?').run(r.user_id);
+  db.prepare('DELETE FROM password_resets WHERE token_hash=?').run(r.token_hash); killSessions(r.role, r.user_id);
+  newSession(res, r.role, r.user_id); res.json({ ok: true, role: r.role });
+});
+async function changeOwn(req, res, tbl, min) {
+  const u = db.prepare(`SELECT * FROM ${tbl} WHERE id=?`).get(req.sess.user_id), nova = String(req.body.nova || '');
+  if (!u || !(await bcrypt.compare(String(req.body.atual || ''), u.hash))) return res.status(401).json({ error: 'Senha atual incorreta.' });
+  if (nova.length < min) return res.status(400).json({ error: `A nova senha precisa ter pelo menos ${min} caracteres.` });
+  db.prepare(`UPDATE ${tbl} SET hash=? WHERE id=?`).run(await bcrypt.hash(nova, 11), u.id);
+  db.prepare('DELETE FROM sessions WHERE role=? AND user_id=? AND token<>?').run(req.sess.role, u.id, req.sess.token); res.json({ ok: true });
+}
+app.post('/api/personal/password', limit, need('personal'), (req, res) => changeOwn(req, res, 'personals', 8));
+app.post('/api/student/password', limit, need('student'), (req, res) => changeOwn(req, res, 'students', 6));
+// personal redefine a senha de um aluno dele
+app.post('/api/personal/student-password', limit, need('personal'), async (req, res) => {
+  const s = db.prepare('SELECT * FROM students WHERE username=? AND personal_id=?').get(String(req.body.usuario || '').trim().toLowerCase(), req.sess.user_id);
+  if (!s) return res.status(404).json({ error: 'Aluno não encontrado.' });
+  const nova = String(req.body.nova || ''); if (nova.length < 6) return res.status(400).json({ error: 'A nova senha precisa ter pelo menos 6 caracteres.' });
+  db.prepare('UPDATE students SET hash=? WHERE id=?').run(await bcrypt.hash(nova, 11), s.id); killSessions('student', s.id); res.json({ ok: true });
+});
+
 // ---------- aluno ----------
 app.get('/api/invite/:code', (req, res) => {
   const p = db.prepare('SELECT id,nome FROM personals WHERE invite_code=?').get(String(req.params.code).toUpperCase());
@@ -145,7 +195,7 @@ function admin(req, res, next) {
   res.set('WWW-Authenticate', 'Basic realm="admin"').status(401).send(E ? 'Login do administrador' : 'Defina ADMIN_EMAIL e ADMIN_PASSWORD para usar o painel admin.');
 }
 app.get('/api/admin/summary', admin, (req, res) => {
-  const ps = db.prepare('SELECT p.id,p.nome,p.email,p.cref,p.created_at,(SELECT COUNT(*) FROM students s WHERE s.personal_id=p.id) alunos FROM personals p ORDER BY p.created_at DESC').all()
+  const ps = db.prepare('SELECT p.id,p.nome,p.email,p.cref,p.created_at,p.reset_requested_at,(SELECT COUNT(*) FROM students s WHERE s.personal_id=p.id) alunos FROM personals p ORDER BY p.created_at DESC').all()
     .map(p => ({ ...p, sub: pay.subscriptionOf(p.id) }));
   const rev = db.prepare("SELECT COALESCE(SUM(amount_cents),0) total, COALESCE(SUM(CASE WHEN test=0 THEN amount_cents END),0) real FROM payments WHERE status='approved'").get();
   const mes = db.prepare("SELECT COALESCE(SUM(CASE WHEN test=0 THEN amount_cents END),0) real, COALESCE(SUM(amount_cents),0) total FROM payments WHERE status='approved' AND created_at>?").get(Date.now() - 30 * DAY);
@@ -153,10 +203,12 @@ app.get('/api/admin/summary', admin, (req, res) => {
   const pays = db.prepare('SELECT pa.*,p.email FROM payments pa JOIN personals p ON p.id=pa.personal_id ORDER BY pa.created_at DESC LIMIT 100').all();
   res.json({ plans: pay.plans(), byPlan, personals: ps, revenue: rev, last30: mes, payments: pays, providers: pay.providers(), ativos: ps.filter(p => p.sub.active).length });
 });
+app.post('/api/admin/reset-link', admin, (req, res) => { const p = db.prepare('SELECT id,email FROM personals WHERE id=?').get(+req.body.personal_id); if (!p) return res.status(404).json({ error: 'Personal não encontrado.' }); res.json({ ok: true, email: p.email, link: makeReset(req, 'personal', p.id), expira_em_min: 60 }); });
 app.post('/api/admin/plans', admin, (req, res) => { try { res.json({ ok: true, plans: pay.setPlans(req.body || {}) }); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.get('/admin', admin, (_q, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 
 app.use(express.static(path.join(__dirname, 'public'), { index: 'index.html' }));
+app.get('/redefinir', (_q, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/convite/:code', (_q, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 setInterval(() => db.prepare('DELETE FROM sessions WHERE expires<?').run(Date.now()), 3600e3).unref();
 const PORT = process.env.PORT || 3000;

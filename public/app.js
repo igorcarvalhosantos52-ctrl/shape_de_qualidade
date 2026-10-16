@@ -391,7 +391,8 @@ function canAutoListen(){return $("#autoL").checked&&SR&&!listening&&S.status===
 function say(t){if(!t)return;addMsg("c",t);noSpeechTries=0;speak(t,()=>{if(canAutoListen())setTimeout(()=>{if(canAutoListen())listen("anam",true)},250)})}
 function addMsg(w,t){if(target==="anam"&&S.status==="none"||w==="a"&&target==="anam"){S.chat.push([w,t]);save()}renderChat()}
 function renderChat(){$("#chat").innerHTML="";S.chat.forEach(([w,t])=>{const d=document.createElement("div");d.className="msg "+w;d.textContent=t;$("#chat").appendChild(d)});$("#chat").scrollTop=1e6}
-async function startWave(){try{stream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx=new(window.AudioContext||window.webkitAudioContext)();an=audioCtx.createAnalyser();an.fftSize=64;audioCtx.createMediaStreamSource(stream).connect(an);const data=new Uint8Array(an.frequencyBinCount),bars=[...$("#wave").children];(function loop(){an.getByteFrequencyData(data);bars.forEach((b,i)=>b.style.height=(6+data[i*2]/255*34)+"px");raf=requestAnimationFrame(loop)})()}catch(e){fakeWave()}}
+const MOBILE=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
+async function startWave(){/* no celular, abrir o microfone em paralelo (getUserMedia) derruba o reconhecimento de voz: usa onda animada */if(MOBILE||!navigator.mediaDevices){fakeWave();return}try{stream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx=new(window.AudioContext||window.webkitAudioContext)();an=audioCtx.createAnalyser();an.fftSize=64;audioCtx.createMediaStreamSource(stream).connect(an);const data=new Uint8Array(an.frequencyBinCount),bars=[...$("#wave").children];(function loop(){an.getByteFrequencyData(data);bars.forEach((b,i)=>b.style.height=(6+data[i*2]/255*34)+"px");raf=requestAnimationFrame(loop)})()}catch(e){fakeWave()}}
 function fakeWave(){const bars=[...$("#wave").children];(function loop(){bars.forEach(b=>b.style.height=(6+Math.random()*28)+"px");raf=setTimeout(loop,120)})()}
 function stopWave(){cancelAnimationFrame(raf);clearTimeout(raf);if(stream)stream.getTracks().forEach(t=>t.stop());if(audioCtx)audioCtx.close().catch(()=>{});stream=audioCtx=null;[...$("#wave").children].forEach(b=>b.style.height="")}
 let recWD=null,noSpeechTries=0,startFails=0;
@@ -407,13 +408,13 @@ function listen(tgt,auto){if(!SR){$("#nosup").classList.remove("hide");return}
  const finish=()=>{if(ended)return;ended=true;if(rec===r)resetRec();
   const text=(final||interim).trim();/* aceita respostas curtas ("não", "sim") mesmo que só tenham vindo como resultado parcial */
   if(text){noSpeechTries=0;startFails=0;$("#live").textContent="“"+text+"”";tgt==="adj"?adjust(text):handle(text);return}
-  if(err==="not-allowed"||err==="service-not-allowed"){$("#live").textContent="Permissão de microfone negada. Use o campo de texto.";return}
+  if(["not-allowed","service-not-allowed","audio-capture","network"].includes(err))return;
   if(tgt==="anam"&&S.status==="none"&&$("#autoL").checked&&noSpeechTries<3){noSpeechTries++;$("#live").textContent="Não ouvi nada. Ouvindo de novo...";setTimeout(()=>{if(!listening&&canAutoListen())listen("anam",true)},300);return}
   $("#live").textContent="Toque na onda para responder (ou digite)."};
  r.__finish=finish;
  r.onstart=()=>{$("#mic").classList.add("live");updMode();$("#live").textContent="Ouvindo...";startWave()};
  r.onresult=e=>{interim="";for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript;else interim+=e.results[i][0].transcript}$("#live").textContent=(final+interim)||"Ouvindo...";if(tgt==="adj")$("#adjTxt").value=final+interim};
- r.onerror=e=>{err=e.error||"";if(err!=="no-speech"&&err!=="aborted")$("#live").textContent="Não entendi, tente de novo ou digite."};
+ r.onerror=e=>{err=e.error||"";const M={"not-allowed":"🎤 O microfone está bloqueado. Libere o microfone para este site (cadeado ao lado do endereço) ou responda digitando abaixo.","service-not-allowed":"🎤 Este navegador não liberou o reconhecimento de voz. Use o Chrome (Android/PC) ou o Safari (iPhone), ou digite abaixo.","audio-capture":"🎤 Não encontrei microfone. Verifique o microfone ou digite abaixo.","network":"📶 O reconhecimento de voz precisa de internet. Verifique a conexão ou digite abaixo."};if(M[err]){$("#live").textContent=M[err];if(err!=="network"){$("#autoL").checked=false}}else if(err!=="no-speech"&&err!=="aborted")$("#live").textContent="Não entendi, tente de novo ou digite."};
  r.onend=finish;
  listening=true;$("#mic").classList.add("live");updMode();
  recWD=setTimeout(()=>{try{r.stop()}catch(e){}setTimeout(finish,1500)},12000);/* watchdog: reconhecimento travado */

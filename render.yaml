@@ -8,6 +8,7 @@ services:
     disk: { name: data, mountPath: /data, sizeGB: 1 }
     envVars:
       - { key: NODE_ENV, value: production }
+      - { key: NODE_VERSION, value: "22" }
       - { key: DB_PATH, value: /data/shape.db }
       - { key: TRIAL_DAYS, value: "4" }
       - { key: ADMIN_EMAIL, sync: false }

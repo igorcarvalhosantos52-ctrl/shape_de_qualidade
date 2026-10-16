@@ -95,12 +95,36 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       return { n: me.students.length, put: put.status }; });
     ok(iso.n === 0 && iso.put === 403, 'outro personal não vê nem altera alunos alheios');
     await p.screenshot({ path: SHOTS + '/04-painel-personal-convite.png' });
+
+    // ---- senhas
+    const post = (pg, u, b) => pg.evaluate(async (u, b) => { const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }); return { st: r.status, j: await r.json() }; }, u, b);
+    ok((await post(p, '/api/personal/password', { atual: 'errada', nova: 'nova12345' })).st === 401, 'trocar senha exige a senha atual');
+    ok((await post(p, '/api/personal/password', { atual: 'senha1234', nova: 'nova12345' })).st === 200, 'personal troca a própria senha');
+    ok((await post(p, '/api/personal/student-password', { usuario: 'pamela', nova: 'pam456' })).st === 200, 'personal define nova senha do aluno');
+    const an = await (await browser.createBrowserContext()).newPage();
+    await an.goto(URL, { waitUntil: 'networkidle0' });
+    ok((await post(an, '/api/student/login', { usuario: 'pamela', senha: 'aluna123' })).st === 401 && (await post(an, '/api/student/login', { usuario: 'pamela', senha: 'pam456' })).st === 200, 'aluno entra com a senha nova (a antiga deixa de valer)');
+    await an.goto(URL, { waitUntil: 'networkidle0' }); await an.waitForSelector('#voiceGo');
+    ok(/Toque aqui para conversar por voz/.test(await an.$eval('#voiceGo', e => e.innerText)), 'aluno vê o botão para iniciar a conversa por voz');
+    await an.$eval('#voiceGo', e => e.click()); await sleep(300); ok(!(await an.$('#voiceGo')), 'toque inicia a voz (botão some)');
+    const fg = await (await browser.createBrowserContext()).newPage(); await fg.goto(URL + '/?area=personal', { waitUntil: 'networkidle0' });
+    await fg.waitForSelector('#pForgot'); await fg.$eval('#pForgot', e => e.click()); await fg.type('#fgEmail', 'igor@teste.com'); await fg.$eval('#fgGo', e => e.click()); await fg.waitForSelector('#fgMsg .alert');
+    ok(/link/.test(await fg.$eval('#fgMsg', e => e.innerText)), 'personal pede nova senha em "Esqueci a senha"');
+    ok(!!(await an.$('#ptr')), 'indicador de puxar para atualizar presente');
     // ---- admin
     const ad = await browser.newPage(); await ad.authenticate({ username: 'dono@teste.com', password: 'admin123' }); await ad.setViewport({ width: 1200, height: 800 });
     await ad.goto(URL + '/admin', { waitUntil: 'networkidle0' }); await sleep(500); ok(/Igor Personal/.test(await ad.content()), 'painel admin lista personais e receita');
     const ap = await ad.evaluate(async () => (await fetch('/api/admin/plans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ basico: { price: '34,90', limit: '20' } }) })).json());
     ok(ap.plans.basico.price_cents === 3490 && ap.plans.basico.limit === 20, 'admin edita preço e limite do plano');
     await ad.evaluate(async () => fetch('/api/admin/plans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ basico: { price: '29,90', limit: '15' } }) }));
+
+    const rl = await ad.evaluate(async id => (await fetch('/api/admin/reset-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ personal_id: id }) })).json(), pid);
+    ok(/\/redefinir\?t=[0-9a-f]{64}$/.test(rl.link) && /pediu nova senha/.test(await ad.content()), 'admin vê o pedido e gera link de nova senha');
+    const rp = await (await browser.createBrowserContext()).newPage(); await rp.goto(rl.link, { waitUntil: 'networkidle0' }); await rp.waitForSelector('#rs1');
+    await rp.type('#rs1', 'recuperada1'); await rp.type('#rs2', 'recuperada1'); await Promise.all([rp.waitForNavigation(), rp.click('#rsGo')]);
+    ok((await rp.evaluate(async () => (await (await fetch('/api/me')).json()).role)) === 'personal', 'link de redefinição cria a senha nova e entra');
+    ok((await post(rp, '/api/password/reset', { token: rl.link.split('t=')[1], senha: 'outra12345' })).st === 400, 'link de redefinição só vale uma vez');
+    ok((await post(rp, '/api/personal/login', { email: 'igor@teste.com', senha: 'recuperada1' })).st === 200, 'login com a senha redefinida');
     await ad.reload({ waitUntil: 'networkidle0' }); await sleep(400); await ad.screenshot({ path: SHOTS + '/12-admin-planos.png', fullPage: true });
     await ad.screenshot({ path: SHOTS + '/10-admin.png' });
     console.log('\nTODOS OS TESTES PASSARAM');
