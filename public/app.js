@@ -45,7 +45,7 @@ function save(){if(CK)localStorage.setItem(CK,JSON.stringify(S))}
 function baseQueue(){
  const q=[];if(!(curUser&&accounts()[curUser]))q.push({id:"nome",q:"Oi! Eu sou o coach do Shape de Qualidade. Qual é o seu nome?"});
  q.push({id:"idade",q:"Quantos anos você tem?"},
- {id:"objetivo",q:"Parte 2, objetivos e expectativas. Qual é o seu objetivo principal? Pode ser mais de um: saúde e qualidade de vida, hipertrofia, emagrecimento, força, condicionamento cardiovascular, mobilidade e flexibilidade, ou outro. Me conta com as suas palavras."},
+ {id:"objetivo",q:"Qual o seu principal objetivo? Por exemplo: Hipertrofia, Emagrecimento ou Saúde e qualidade de vida."},
  {id:"resultados",q:"Quais resultados você deseja alcançar?"},
  {id:"prioridade",q:"Existe alguma região do corpo ou alguma capacidade que você deseja priorizar? Se não tiver, é só dizer que não."},
  {id:"prazo",q:"Em quanto tempo você espera perceber resultados?"},
