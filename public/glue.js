@@ -194,8 +194,8 @@ if (!$("#t-personal").classList.contains("hide")) render();
     ind.style.transform = `translate(-50%,${Math.min(dy / 2, 40) - 20}px)`; }, { passive: true });
   addEventListener("touchend", () => { if (y0 !== null && dy > TH) { ind.textContent = "Atualizando..."; location.reload(); } else ind.style.transform = "translate(-50%,-60px)"; y0 = null; dy = 0; });
 })();
-// nova versão do app publicada: o service worker novo assume e a página recarrega uma vez
-if ("serviceWorker" in navigator) { let rl = false; navigator.serviceWorker.addEventListener("controllerchange", () => { if (rl || !navigator.serviceWorker.controller) return; rl = true; if (!document.querySelector("input:focus,textarea:focus")) location.reload(); }); navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => {}); }
+// nova versão do app publicada: recarrega só se já havia um service worker ao abrir a página (troca de versão), no máximo uma vez
+if ("serviceWorker" in navigator) { const hadController = !!navigator.serviceWorker.controller; let reloading = false; navigator.serviceWorker.addEventListener("controllerchange", () => { if (!hadController || reloading || !navigator.serviceWorker.controller) return; reloading = true; if (!document.querySelector("input:focus,textarea:focus")) location.reload(); }); navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => {}); }
 
 /* ---------- Voz do coach (falar): destrava no 1º toque, espera as vozes, pt-BR, e botão "Tocar para ouvir" se o navegador bloquear ---------- */
 (function ttsFix() {

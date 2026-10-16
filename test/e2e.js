@@ -69,7 +69,8 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok((await a.$eval('#statusCard', e => e.innerText)).match(/4 x|4x|4 séries|4 s/i) || true, 'treino visível');
     await a.screenshot({ path: SHOTS + '/09-aluno-treino-aprovado.png' });
     // ---- limite de 15 alunos no Básico
-    const signup = async (i) => { const c = await browser.createBrowserContext(), pg = await c.newPage(); await pg.goto(URL + '/convite/' + code, { waitUntil: 'domcontentloaded' });
+    const signup = async (i) => { const c = await browser.createBrowserContext(), pg = await c.newPage(); await pg.goto(URL + '/convite/' + code, { waitUntil: 'networkidle0' });
+      await pg.waitForSelector('#lgUser');
       const r = await pg.evaluate(async (code, i) => { const r = await fetch('/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: 'aluno' + i, nome: 'Aluno ' + i, senha: 'aluno123', convite: code }) }); return { st: r.status, j: await r.json() }; }, code, i);
       await c.close(); return r; };
     for (let i = 2; i <= 15; i++) { const r = await signup(i); if (r.st !== 200) throw new Error('cadastro ' + i + ': ' + r.j.error); }
