@@ -1,14 +1,34 @@
 // Teste ponta a ponta: cadastro do personal -> paywall -> pagamento demo -> convite -> aluno faz anamnese -> personal aprova
-const puppeteer = require('puppeteer-core'), { spawn } = require('child_process'), path = require('path'), fs = require('fs');
-const DB = '/tmp/sq-e2e.db'; process.env.DB_PATH = DB;
-[DB, DB + '-wal', DB + '-shm'].forEach(f => require('fs').rmSync(f, { force: true }));
+const puppeteer = require('puppeteer-core'), { spawn, spawnSync } = require('child_process'), path = require('path'), fs = require('fs');
+const LIB = '/tmp/sq-e2e-libsql.db', SQLITE = '/tmp/sq-e2e-sqlite.db';
+for (const f of [LIB, LIB + '-wal', LIB + '-shm', SQLITE, SQLITE + '-wal', SQLITE + '-shm']) fs.rmSync(f, { force: true });
+process.env.TURSO_DATABASE_URL = 'file:' + LIB;
+delete process.env.TURSO_AUTH_TOKEN;
 const sql = require('../src/db'), pay = require('../src/payments');
 const PORT = 3456, URL = `http://localhost:${PORT}`, SHOTS = path.join(__dirname, '..', 'screens');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔ ' + m); };
 (async () => {
   fs.mkdirSync(SHOTS, { recursive: true });
-  const srv = spawn('node', ['server.js'], { cwd: path.join(__dirname, '..'), env: { ...process.env, PORT, DB_PATH: DB, ADMIN_EMAIL: 'dono@teste.com', ADMIN_PASSWORD: 'admin123', MP_ACCESS_TOKEN: '', STRIPE_SECRET_KEY: '' }, stdio: 'inherit' });
+  const smoke = spawnSync(process.execPath, ['-e', `
+    delete process.env.TURSO_DATABASE_URL; delete process.env.TURSO_AUTH_TOKEN;
+    process.env.DB_PATH = ${JSON.stringify(SQLITE)};
+    const db = require('./src/db');
+    db.ready.then(async () => {
+      if (db.driver !== 'sqlite') throw new Error('driver ' + db.driver);
+      await db.migrate();
+      const r = await db.prepare('INSERT INTO sessions VALUES(?,?,?,?)').run('tok', 'personal', 7, Date.now() + 10000);
+      if (typeof r.lastInsertRowid !== 'number') throw new Error('rowid ' + typeof r.lastInsertRowid);
+      const s = await db.prepare('SELECT role, user_id FROM sessions WHERE token=?').get('tok');
+      if (!s || s.role !== 'personal' || s.user_id !== 7) throw new Error('sessao ' + JSON.stringify(s));
+      console.log('SQLITE_OK');
+    }).catch(e => { console.error(e); process.exit(1); });
+  `], { cwd: path.join(__dirname, '..'), env: { ...process.env, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '' }, encoding: 'utf8' });
+  if (smoke.status !== 0 || !/SQLITE_OK/.test(smoke.stdout || '')) throw new Error('caminho SQLite local falhou: ' + (smoke.stderr || smoke.stdout));
+  ok(true, 'sem TURSO_DATABASE_URL o app usa SQLite local e grava a sessão');
+  await sql.ready; await sql.migrate();
+  ok(sql.driver === 'libsql' && String(process.env.TURSO_DATABASE_URL).startsWith('file:'), 'com TURSO_DATABASE_URL o app usa libSQL');
+  const srv = spawn('node', ['server.js'], { cwd: path.join(__dirname, '..'), env: { ...process.env, PORT, TURSO_DATABASE_URL: 'file:' + LIB, TURSO_AUTH_TOKEN: '', ADMIN_EMAIL: 'dono@teste.com', ADMIN_PASSWORD: 'admin123', MP_ACCESS_TOKEN: '', STRIPE_SECRET_KEY: '' }, stdio: 'inherit' });
   await sleep(1200);
   const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--use-fake-ui-for-media-stream'] });
   const phone = { width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
@@ -26,11 +46,13 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await p.waitForSelector('#planBox'); const tb = await p.$eval('#planBox', e => e.innerText);
     ok(/TESTE GRÁTIS – 4 dia/.test(tb) && /Básico/.test(tb), 'novo personal ganha 4 dias grátis no plano escolhido (Básico)');
     // teste grátis acaba -> paywall com escolha de plano
-    const pid = sql.prepare("SELECT id FROM personals WHERE email='igor@teste.com'").get().id;
-    sql.prepare("UPDATE subscriptions SET current_period_end=? WHERE personal_id=?").run(Date.now() - 1000, pid);
+    const pid = (await sql.prepare("SELECT id FROM personals WHERE email='igor@teste.com'").get()).id;
+    const sess = await sql.prepare("SELECT role, user_id FROM sessions WHERE user_id=? AND role='personal'").get(pid);
+    ok(sess && sess.role === 'personal' && sess.user_id === pid, 'sessão do personal fica gravada no banco libSQL');
+    await sql.prepare("UPDATE subscriptions SET current_period_end=? WHERE personal_id=?").run(Date.now() - 1000, pid);
     await p.reload({ waitUntil: 'networkidle0' }); await p.waitForSelector('#paywall');
     ok(/teste grátis acabou/i.test(await p.$eval('#paywall', e => e.innerText)) && (await p.$$('#planos .plan')).length === 3, 'fim do teste grátis leva ao paywall com 3 planos');
-    ok(pay.startTrial(pid, 'pro') === false, 'só um teste grátis por conta');
+    ok(await pay.startTrial(pid, 'pro') === false, 'só um teste grátis por conta');
     await p.click('label[data-plan="basico"]'); await sleep(200);
     await p.screenshot({ path: SHOTS + '/03-paywall.png' }); await p.screenshot({ path: SHOTS + '/11-planos.png', fullPage: true });
     await Promise.all([p.waitForNavigation(), p.click('#payDemo')]);

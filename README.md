@@ -50,9 +50,8 @@ O acesso só é liberado quando o webhook confirma o pagamento consultando a API
 `customer.subscription.deleted`) com `STRIPE_WEBHOOK_SECRET`.
 
 ## Publicar na internet
-**Render:** suba esta pasta num repositório GitHub → render.com → *New → Blueprint* (usa o `render.yaml`, com disco
-para o banco SQLite) → preencha as variáveis. O plano gratuito não tem disco: os dados se perdem.
-**Railway:** *New Project → Deploy from GitHub*, adicione um **Volume** em `/data`, `DB_PATH=/data/shape.db` e as variáveis do `.env.example`.
+**Render (plano grátis):** defina `TURSO_DATABASE_URL` e `TURSO_AUTH_TOKEN` no serviço. O app grava no Turso e só responde depois que a escrita é confirmada; login e sessão ficam na tabela `sessions`. Sem essas variáveis, usa SQLite local (`DB_PATH`) — é o modo do computador.
+**Railway:** *New Project → Deploy from GitHub*. Com Turso, não precisa de volume. Sem Turso, adicione um **Volume** em `/data` e `DB_PATH=/data/shape.db`.
 Precisa de HTTPS (Render/Railway já dão) – o microfone e a instalação como app só funcionam em HTTPS.
 
 ## Instalar no celular (PWA)
@@ -66,7 +65,7 @@ Atenção: vender assinatura *dentro* de app da Play Store pode exigir o faturam
 
 ## Estrutura
 - `server.js` – API (login com bcrypt, sessões em cookie httpOnly, fichas, convites, admin)
-- `src/db.js` – SQLite (better-sqlite3) · `src/payments.js` – módulo de pagamento (demo / Mercado Pago / Stripe)
+- `src/db.js` – Turso (libSQL) se `TURSO_DATABASE_URL` existir; senão SQLite (better-sqlite3) · `src/payments.js` – módulo de pagamento (demo / Mercado Pago / Stripe)
 - `public/` – app (index.html, app.js = lógica aprovada, glue.js = integração com o servidor, shim.js, sw.js, manifest)
 - `test/e2e.js` – teste: cadastro com teste grátis → fim do teste → paywall de planos → pagamento demo → convite → anamnese → aprovação → limite de 15 → upgrade/downgrade → admin; telas em `screens/`
 

@@ -10,24 +10,24 @@ const DEFAULT_PLANS = () => ({
   ilimitado: { nome: 'Ilimitado', price_cents: envC('PLAN_ILIMITADO_PRICE', 7990), limit: envL('PLAN_ILIMITADO_LIMIT', null) },
 });
 const TRIAL_DAYS = +(process.env.TRIAL_DAYS || 4);
-function plans() {
-  const s = db.prepare("SELECT value FROM settings WHERE key='plans'").get(), d = DEFAULT_PLANS();
+async function plans() {
+  const s = await db.prepare("SELECT value FROM settings WHERE key='plans'").get(), d = DEFAULT_PLANS();
   if (s) { const o = JSON.parse(s.value); for (const k in d) Object.assign(d[k], o[k] || {}); }
   return d;
 }
-function setPlans(o) {
-  const cur = plans();
+async function setPlans(o) {
+  const cur = await plans();
   for (const k in cur) if (o[k]) { const c = Math.round(parseFloat(String(o[k].price).replace(',', '.')) * 100), l = o[k].limit === '' || o[k].limit === null ? null : parseInt(o[k].limit);
     if (!(c >= 100) || (l !== null && !(l >= 1))) throw new Error('Preço ou limite inválido em ' + cur[k].nome); cur[k].price_cents = c; cur[k].limit = l; }
-  db.prepare("INSERT INTO settings VALUES('plans',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(JSON.stringify(cur)); return cur;
+  await db.prepare("INSERT INTO settings VALUES('plans',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(JSON.stringify(cur)); return cur;
 }
-const planOf = k => { const P = plans(); if (!P[k]) throw new Error('Plano inválido'); return P[k]; };
-const priceCents = k => planOf(k || 'pro').price_cents;
-function startTrial(personalId, plan) {
-  const p = db.prepare('SELECT trial_used FROM personals WHERE id=?').get(personalId);
+const planOf = async k => { const P = await plans(); if (!P[k]) throw new Error('Plano inválido'); return P[k]; };
+const priceCents = async k => (await planOf(k || 'pro')).price_cents;
+async function startTrial(personalId, plan) {
+  const p = await db.prepare('SELECT trial_used FROM personals WHERE id=?').get(personalId);
   if (!p || p.trial_used) return false;
-  db.prepare('UPDATE personals SET trial_used=1, plan=? WHERE id=?').run(plan, personalId);
-  db.prepare('INSERT INTO subscriptions(personal_id,provider,external_id,status,amount_cents,current_period_end,created_at,updated_at,plan) VALUES(?,?,?,?,?,?,?,?,?)')
+  await db.prepare('UPDATE personals SET trial_used=1, plan=? WHERE id=?').run(plan, personalId);
+  await db.prepare('INSERT INTO subscriptions(personal_id,provider,external_id,status,amount_cents,current_period_end,created_at,updated_at,plan) VALUES(?,?,?,?,?,?,?,?,?)')
     .run(personalId, 'trial', null, 'trialing', 0, Date.now() + TRIAL_DAYS * DAY, Date.now(), Date.now(), plan);
   return true;
 }
@@ -37,24 +37,25 @@ const providers = () => ({
   demo: !process.env.MP_ACCESS_TOKEN && !process.env.STRIPE_SECRET_KEY || process.env.ALLOW_DEMO === '1',
 });
 const now = () => Date.now();
-function activate(personalId, provider, externalId, amount, test, periodEnd, plan) {
-  plan = plan || 'pro'; db.prepare('UPDATE personals SET plan=? WHERE id=?').run(plan, personalId);
-  const sub = db.prepare('SELECT * FROM subscriptions WHERE personal_id=? ORDER BY id DESC LIMIT 1').get(personalId);
+async function activate(personalId, provider, externalId, amount, test, periodEnd, plan) {
+  plan = plan || 'pro'; await db.prepare('UPDATE personals SET plan=? WHERE id=?').run(plan, personalId);
+  const sub = await db.prepare('SELECT * FROM subscriptions WHERE personal_id=? ORDER BY id DESC LIMIT 1').get(personalId);
   const base = sub && sub.status !== 'trialing' && sub.current_period_end > now() ? sub.current_period_end : now();
   const end = periodEnd || base + 30 * DAY;
-  if (sub) db.prepare('UPDATE subscriptions SET provider=?,external_id=COALESCE(?,external_id),status=?,amount_cents=?,current_period_end=?,updated_at=?,plan=? WHERE id=?')
+  if (sub) await db.prepare('UPDATE subscriptions SET provider=?,external_id=COALESCE(?,external_id),status=?,amount_cents=?,current_period_end=?,updated_at=?,plan=? WHERE id=?')
     .run(provider, externalId, 'active', amount, end, now(), plan, sub.id);
-  else db.prepare('INSERT INTO subscriptions(personal_id,provider,external_id,status,amount_cents,current_period_end,created_at,updated_at,plan) VALUES(?,?,?,?,?,?,?,?,?)')
+  else await db.prepare('INSERT INTO subscriptions(personal_id,provider,external_id,status,amount_cents,current_period_end,created_at,updated_at,plan) VALUES(?,?,?,?,?,?,?,?,?)')
     .run(personalId, provider, externalId, 'active', amount, end, now(), now(), plan);
 }
-function recordPayment(personalId, provider, extId, amount, status, test, plan) {
-  try { db.prepare('INSERT INTO payments(personal_id,provider,external_id,amount_cents,status,test,created_at,plan) VALUES(?,?,?,?,?,?,?,?)')
+async function recordPayment(personalId, provider, extId, amount, status, test, plan) {
+  try { await db.prepare('INSERT INTO payments(personal_id,provider,external_id,amount_cents,status,test,created_at,plan) VALUES(?,?,?,?,?,?,?,?)')
     .run(personalId, provider, extId, amount, status, test ? 1 : 0, now(), plan || 'pro'); return true; }
   catch (e) { if (/UNIQUE/.test(e.message)) return false; throw e; }
 }
-function subscriptionOf(personalId) {
-  const s = db.prepare('SELECT * FROM subscriptions WHERE personal_id=? ORDER BY id DESC LIMIT 1').get(personalId);
-  const p = db.prepare('SELECT plan,trial_used FROM personals WHERE id=?').get(personalId) || {}, plan = (s && s.plan) || p.plan || 'pro', P = plans()[plan] || plans().pro;
+async function subscriptionOf(personalId) {
+  const s = await db.prepare('SELECT * FROM subscriptions WHERE personal_id=? ORDER BY id DESC LIMIT 1').get(personalId);
+  const p = await db.prepare('SELECT plan,trial_used FROM personals WHERE id=?').get(personalId) || {};
+  const all = await plans(), plan = (s && s.plan) || p.plan || 'pro', P = all[plan] || all.pro;
   const base = { plan, plan_nome: P.nome, limit: P.limit, trial_used: !!p.trial_used };
   if (!s) return { active: false, status: 'none', ...base };
   const active = ['active', 'cancelled', 'trialing'].includes(s.status) && s.current_period_end > now();
@@ -73,11 +74,11 @@ async function stripe(pathname, params) {
 
 // Cria checkout e devolve URL para redirecionar o personal
 async function checkout(req, personal, method, plan) {
-  plan = plan || 'pro'; const PL = planOf(plan), amount = PL.price_cents, ref = 'p' + personal.id + ':' + plan, back = baseUrl(req) + '/?pago=1', P = providers();
+  plan = plan || 'pro'; const PL = await planOf(plan), amount = PL.price_cents, ref = 'p' + personal.id + ':' + plan, back = baseUrl(req) + '/?pago=1', P = providers();
   if (method === 'demo') {
     if (!P.demo) throw new Error('Modo demo desativado');
     const id = 'demo_' + crypto.randomBytes(6).toString('hex');
-    recordPayment(personal.id, 'demo', id, amount, 'approved', true, plan); activate(personal.id, 'demo', id, amount, true, null, plan);
+    await recordPayment(personal.id, 'demo', id, amount, 'approved', true, plan); await activate(personal.id, 'demo', id, amount, true, null, plan);
     return { url: back, demo: true };
   }
   if (method === 'mp_card') { // assinatura recorrente (cartão) – API /preapproval
@@ -115,20 +116,20 @@ async function mpWebhook(req) {
   if (type === 'payment') {
     const p = await mp('/v1/payments/' + id);
     const { pid, plan } = parseRef(p.external_reference);
-    if (pid && p.status === 'approved' && recordPayment(pid, 'mercadopago', String(p.id), Math.round(p.transaction_amount * 100), 'approved', !p.live_mode, plan))
-      activate(pid, 'mercadopago', String(p.id), Math.round(p.transaction_amount * 100), false, null, plan);
+    if (pid && p.status === 'approved' && await recordPayment(pid, 'mercadopago', String(p.id), Math.round(p.transaction_amount * 100), 'approved', !p.live_mode, plan))
+      await activate(pid, 'mercadopago', String(p.id), Math.round(p.transaction_amount * 100), false, null, plan);
   } else if (/preapproval/.test(type || '')) {
     const s = await mp('/preapproval/' + id); const { pid, plan } = parseRef(s.external_reference);
     if (!pid) return;
-    if (s.status === 'authorized') activate(pid, 'mercadopago', s.id, Math.round(s.auto_recurring.transaction_amount * 100), false, s.next_payment_date ? Date.parse(s.next_payment_date) + 3 * DAY : null, plan);
-    if (s.status === 'cancelled' || s.status === 'paused') db.prepare("UPDATE subscriptions SET status='cancelled',updated_at=? WHERE personal_id=? AND external_id=?").run(now(), pid, s.id);
+    if (s.status === 'authorized') await activate(pid, 'mercadopago', s.id, Math.round(s.auto_recurring.transaction_amount * 100), false, s.next_payment_date ? Date.parse(s.next_payment_date) + 3 * DAY : null, plan);
+    if (s.status === 'cancelled' || s.status === 'paused') await db.prepare("UPDATE subscriptions SET status='cancelled',updated_at=? WHERE personal_id=? AND external_id=?").run(now(), pid, s.id);
   } else if (type === 'subscription_authorized_payment') {
     const p = await mp('/authorized_payments/' + id); const s = await mp('/preapproval/' + p.preapproval_id); const { pid, plan } = parseRef(s.external_reference);
-    if (pid && p.payment && p.payment.status === 'approved' && recordPayment(pid, 'mercadopago', String(p.id), Math.round(p.transaction_amount * 100), 'approved', false, plan))
-      activate(pid, 'mercadopago', s.id, Math.round(p.transaction_amount * 100), false, null, plan);
+    if (pid && p.payment && p.payment.status === 'approved' && await recordPayment(pid, 'mercadopago', String(p.id), Math.round(p.transaction_amount * 100), 'approved', false, plan))
+      await activate(pid, 'mercadopago', s.id, Math.round(p.transaction_amount * 100), false, null, plan);
   }
 }
-function stripeWebhook(req) {
+async function stripeWebhook(req) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET; if (!secret) throw new Error('STRIPE_WEBHOOK_SECRET ausente');
   const sig = Object.fromEntries(String(req.get('stripe-signature')).split(',').map(p => p.split('=')));
   const h = crypto.createHmac('sha256', secret).update(sig.t + '.' + req.rawBody).digest('hex');
@@ -138,13 +139,13 @@ function stripeWebhook(req) {
     const md = (o.subscription_details && o.subscription_details.metadata) || (o.parent && o.parent.subscription_details && o.parent.subscription_details.metadata) || {};
     const pid = +((o.subscription_details && o.subscription_details.metadata && o.subscription_details.metadata.personal_id) || (o.parent && o.parent.subscription_details && o.parent.subscription_details.metadata.personal_id));
     const end = o.lines && o.lines.data[0] && o.lines.data[0].period ? o.lines.data[0].period.end * 1000 : null;
-    if (pid && recordPayment(pid, 'stripe', o.id, o.amount_paid, 'approved', !ev.livemode, md.plan)) activate(pid, 'stripe', o.subscription, o.amount_paid, false, end, md.plan);
+    if (pid && await recordPayment(pid, 'stripe', o.id, o.amount_paid, 'approved', !ev.livemode, md.plan)) await activate(pid, 'stripe', o.subscription, o.amount_paid, false, end, md.plan);
   }
-  if (ev.type === 'customer.subscription.deleted') db.prepare("UPDATE subscriptions SET status='cancelled',updated_at=? WHERE external_id=?").run(now(), o.id);
+  if (ev.type === 'customer.subscription.deleted') await db.prepare("UPDATE subscriptions SET status='cancelled',updated_at=? WHERE external_id=?").run(now(), o.id);
 }
 // Troca de plano numa assinatura já paga, sem nova cobrança agora (vale a partir da próxima renovação)
 async function changeRecurring(personalId, plan) {
-  const sub = subscriptionOf(personalId), PL = planOf(plan);
+  const sub = await subscriptionOf(personalId), PL = await planOf(plan);
   if (sub.provider === 'mercadopago' && sub.external_id && !/^\d+$/.test(sub.external_id))
     await mp('/preapproval/' + sub.external_id, { method: 'PUT', body: JSON.stringify({ reason: 'Shape de Qualidade – plano ' + PL.nome, external_reference: 'p' + personalId + ':' + plan, auto_recurring: { transaction_amount: PL.price_cents / 100, currency_id: 'BRL' } }) });
   if (sub.provider === 'stripe' && sub.external_id) {
@@ -152,7 +153,7 @@ async function changeRecurring(personalId, plan) {
     await stripe('/subscriptions/' + sub.external_id, { 'items[0][id]': st.items.data[0].id, 'items[0][price_data][currency]': 'brl', 'items[0][price_data][unit_amount]': PL.price_cents,
       'items[0][price_data][recurring][interval]': 'month', 'items[0][price_data][product]': st.items.data[0].price.product, proration_behavior: 'none', 'metadata[plan]': plan });
   }
-  db.prepare('UPDATE subscriptions SET plan=?,updated_at=? WHERE id=(SELECT id FROM subscriptions WHERE personal_id=? ORDER BY id DESC LIMIT 1)').run(plan, now(), personalId);
-  db.prepare('UPDATE personals SET plan=? WHERE id=?').run(plan, personalId);
+  await db.prepare('UPDATE subscriptions SET plan=?,updated_at=? WHERE id=(SELECT id FROM subscriptions WHERE personal_id=? ORDER BY id DESC LIMIT 1)').run(plan, now(), personalId);
+  await db.prepare('UPDATE personals SET plan=? WHERE id=?').run(plan, personalId);
 }
 module.exports = { plans, setPlans, planOf, startTrial, changeRecurring, TRIAL_DAYS, checkout, mpWebhook, stripeWebhook, subscriptionOf, priceCents, providers };
