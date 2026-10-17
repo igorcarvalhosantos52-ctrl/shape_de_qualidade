@@ -692,6 +692,13 @@ function bindSplit(){const ed=$("#splitEdit");if(ed)ed.onclick=()=>{if((S.a.medI
  const ap=$("#swapApply");if(ap)ap.onclick=()=>{const gs=[...document.querySelectorAll("#swapGs .splitG:checked")].map(i=>i.value);if(!gs.length)return;swapFromGs(gs)};
  const un=$("#swapUndo");if(un)un.onclick=()=>setSwap(null)}
 function badge(){return{pendente:'<span class="badge pend">PENDENTE</span>',aprovado:'<span class="badge apr">APROVADO</span>',bloqueado:'<span class="badge blk">BLOQUEADO – LIBERAÇÃO MÉDICA</span>'}[S.status]||""}
+function numMed(v){if(v==null||v==="")return null;const n=Number(v);return Number.isFinite(n)&&n>0?n:null}
+function brDec(n,dec){const s=Math.abs(Number(n)).toFixed(dec).split(".");return s[0]+(dec?","+s[1]:"")}
+function fmtAltura(cm){const m=cm/100,m2=Math.round(m*100)/100;if(Math.abs(m-m2)<1e-6)return brDec(m2,2)+" m";const c=Math.round(cm*10)/10;return (Math.abs(c-Math.round(c))<1e-6?String(Math.round(c)):brDec(c,1))+" cm"}
+function fmtPeso(kg){const k=Math.round(kg*10)/10;return (Math.abs(k-Math.round(k))<1e-6?String(Math.round(k)):brDec(k,1))+" kg"}
+function medidasDe(){const me=window.__ME||{};const src=viewing?(me.students||[]).find(s=>s.u===viewing):null;if(!src)return{cm:null,kg:null};return{cm:numMed(src.altura_cm),kg:numMed(src.peso_kg)}}
+function corpoTexto(){const m=medidasDe();const alt=m.cm==null?"não informado":fmtAltura(m.cm);const peso=m.kg==null?"não informado":fmtPeso(m.kg);let imc="";if(m.cm!=null&&m.kg!=null){const v=Math.round(m.kg/((m.cm/100)*(m.cm/100))*10)/10;imc=' <span style="font-size:.85em">IMC '+brDec(v,1)+"</span>"}return "Altura "+alt+" · Peso "+peso+imc}
+function corpoHTML(){if(!viewing)return "";return `<p id="corpoAluno" style="color:var(--mut);font-size:.9rem;margin:.2em 0 .6em">${corpoTexto()}</p>`}
 function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.status,r=risk();
  $("#anamCard").classList.toggle("hide",st!=="none");
  $("#equipCard").classList.toggle("hide",st!=="equip");
@@ -706,8 +713,9 @@ function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.stat
  {const A=todayAdj();$("#adjOut").innerHTML=A?`<div class="alert ok"><b>“${esc(A.t)}”</b> <small>(${esc(A.quando)})</small><br>${A.exp.map(esc).join("<br>")}</div>`:""}const un=$("#adjUndo");if(un)un.onclick=()=>{const dk=dayKey(NOW());S.adj=(S.adj||[]).filter(a=>a.dk!==dk);S.adjLog=(S.adjLog||[]).concat([NOW().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})+" voltou ao treino original"]);save();render();say("Pronto, voltei para o treino original de hoje.")};
  // Personal
  const pc=$("#persCard");
- if(!S.plan){pc.innerHTML='<h2>Painel do Personal</h2><div class="alert warn">ℹ️ O CREF é opcional. Quando informado, é verificado só pelo formato; confira o registro na consulta pública do sistema CONFEF/CREF.</div><p style="color:var(--mut)">Nenhum treino aguardando aprovação. O aluno precisa concluir a anamnese primeiro.</p>'}
+ if(!S.plan){pc.innerHTML='<h2>Painel do Personal</h2><div class="alert warn">ℹ️ O CREF é opcional. Quando informado, é verificado só pelo formato; confira o registro na consulta pública do sistema CONFEF/CREF.</div><p style="color:var(--mut)">Nenhum treino aguardando aprovação. O aluno precisa concluir a anamnese primeiro.</p>'+corpoHTML()}
  else pc.innerHTML=`<h2>Painel do Personal ${badge()}</h2>${S.mudancas&&S.mudancas.length?`<div class="alert warn">✏️ O aluno corrigiu respostas e o treino foi recalculado: ${S.mudancas.slice(-5).map(esc).join(" · ")}</div>`:""}<div class="alert warn">ℹ️ O CREF é opcional. Quando informado, é verificado só pelo formato; confira o registro na consulta pública do sistema CONFEF/CREF.</div>${S.adjLog&&S.adjLog.length?`<div class="alert warn">🩹 <b>Ajustes do aluno:</b> ${S.adjLog.slice(-8).map(esc).join(" · ")}</div>`:""}<p><b>Aluno:</b> ${esc(S.a.nome)} · ${esc(S.a.idade)} anos · ${esc(objShow())}${S.a.objetivo?` <small style="color:var(--mut)">(${esc(goalLabels().join(", ")||S.a.objetivo)})</small>`:""} · ${esc(S.a.nivel)} · ${S.a.dias}x/semana</p>
+ ${corpoHTML()}
  ${objSectionHTML()}
  ${progEditorHTML()}
  ${r.length?`<div class="alert bad">⚠️ ${r.length} ponto(s) de risco. Confirme a <b>liberação médica</b> antes de aprovar.<ul>${r.map(x=>"<li>"+esc(x)+"</li>").join("")}</ul><label style="display:flex;gap:6px"><input type="checkbox" id="libmed" style="width:auto"> Recebi e conferi a liberação médica</label></div>`:'<div class="alert ok">Sem pontos de risco na anamnese.</div>'}${S.a.med?`<p><b>Orientação médica:</b> “${esc(S.a.med)}”</p>`:""}${attn().length?`<div class="alert warn">Atenção: ${attn().map(esc).join(" · ")}</div>`:""}
@@ -718,7 +726,7 @@ function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.stat
  // Relatório
  const A=S.a,rp=$("#repCard");
  rp.innerHTML=!A.nome?'<h2>Relatório de Anamnese</h2><p style="color:var(--mut)">Conclua a anamnese para gerar o relatório.</p>':`<h2>Relatório de Anamnese – Shape de Qualidade</h2><p style="color:var(--mut)">Gerado em ${new Date().toLocaleString("pt-BR")}</p>
- <h3>Resumo</h3><table><tr><th>Nome</th><td>${esc(A.nome)}</td></tr><tr><th>Idade</th><td>${esc(A.idade)}</td></tr><tr><th>Objetivo</th><td>${esc(objShow(A))}</td></tr><tr><th>Nível</th><td>${esc(A.nivel)}${A.retorno?" (retorno após pausa)":""}</td></tr><tr><th>Dias/semana</th><td>${A.dias}</td></tr><tr><th>Tempo por treino</th><td>${A.tempo} min</td></tr><tr><th>Medicamentos</th><td>${esc(A.meds||"Não informado")}</td></tr><tr><th>Status do treino</th><td>${badge()||"Não gerado"}</td></tr></table>
+ <h3>Resumo</h3><table><tr><th>Nome</th><td>${esc(A.nome)}</td></tr><tr><th>Idade</th><td>${esc(A.idade)}</td></tr><tr><th>Altura e peso</th><td>${corpoTexto()}</td></tr><tr><th>Objetivo</th><td>${esc(objShow(A))}</td></tr><tr><th>Nível</th><td>${esc(A.nivel)}${A.retorno?" (retorno após pausa)":""}</td></tr><tr><th>Dias/semana</th><td>${A.dias}</td></tr><tr><th>Tempo por treino</th><td>${A.tempo} min</td></tr><tr><th>Medicamentos</th><td>${esc(A.meds||"Não informado")}</td></tr><tr><th>Status do treino</th><td>${badge()||"Não gerado"}</td></tr></table>
  ${objSectionHTML(A)}
  <h3>Dores e lesões</h3>${Object.keys(A.dores).length?`<table><tr><th>Local</th><th>Intensidade</th><th>Quando</th><th>Diagnóstico</th></tr>${Object.entries(A.dores).map(([k,v])=>`<tr class="${v.int>=7?"risk":""}"><td>${k}</td><td>${v.int??"-"}/10</td><td>${esc(v.quando||"-")}</td><td>${esc(v.dx||"-")}</td></tr>`).join("")}</table>`:"<p>Nenhuma relatada.</p>"}
  <h3>Orientação médica</h3><p class="quote">“${esc(A.med||"Não informada")}”</p>${A.medInfo&&A.medInfo.conds.length?`<p><b>Condições detectadas:</b> ${A.medInfo.conds.map(esc).join(", ")}</p>`:""}${A.medInfo&&A.medInfo.tags.length?`<p><b>Restrições aplicadas no treino:</b> ${A.medInfo.tags.map(esc).join(", ")}</p>`:""}${attn().length?`<div class="alert warn">Pontos de atenção: ${attn().map(esc).join(" · ")}</div>`:""}
@@ -796,7 +804,7 @@ function closeStu(){viewing=null;S=load();render()}
 function showTab(t){if(t==="aluno"&&viewing)closeStu();["login","aluno","personal"].forEach(x=>$("#t-"+x).classList.toggle("hide",x!==t));render()}
 /* ---------- Login do aluno ---------- */
 let lgNew=false;
-function lgUI(){["#lgNome","#lgPw2"].forEach(i=>$(i).classList.toggle("hide",!lgNew));$("#lgGo").textContent=lgNew?"Criar conta":"Entrar";$("#lgMode").textContent=lgNew?"Já tenho conta – entrar":"Não tenho conta – criar agora";$("#lgErr").innerHTML=""}
+function lgUI(){["#lgNome","#lgAltura","#lgPeso","#lgPw2"].forEach(i=>$(i).classList.toggle("hide",!lgNew));$("#lgGo").textContent=lgNew?"Criar conta":"Entrar";$("#lgMode").textContent=lgNew?"Já tenho conta – entrar":"Não tenho conta – criar agora";$("#lgErr").innerHTML=""}
 $("#lgMode").onclick=e=>{e.preventDefault();lgNew=!lgNew;lgUI()};
 $("#lgGo").onclick=async()=>{const err=m=>$("#lgErr").innerHTML=`<div class="alert bad">${m}</div>`;const u=$("#lgUser").value.trim().toLowerCase(),pw=$("#lgPw").value,A=accounts();
  if(!/^[a-z0-9._-]{3,30}$/.test(u))return err("Usuário inválido (mín. 3 letras/números, sem espaços).");

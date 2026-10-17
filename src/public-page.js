@@ -27,6 +27,8 @@ ${preco ? `<p class="preco">Mensalidade ${esc(preco)}</p>` : '<p class="preco">M
 ${bloqueio ? `<div class="erro">${esc(bloqueio)}</div>` : `<button id="quero" type="button">Quero ser aluno</button>
 <form id="form" class="hide">
 <input id="nome" placeholder="Seu nome completo" autocomplete="name">
+<input id="altura" placeholder="Altura (cm ou metros, ex.: 175 ou 1,75)" inputmode="decimal" autocomplete="off">
+<input id="peso" placeholder="Peso (kg, ex.: 70,5)" inputmode="decimal" autocomplete="off">
 <input id="user" placeholder="Usuário (ex.: joao.silva)" autocapitalize="none" autocomplete="username">
 <input id="pw" type="password" placeholder="Senha (mínimo 6)" autocomplete="new-password">
 <input id="pw2" type="password" placeholder="Confirme a senha" autocomplete="new-password">
@@ -41,7 +43,7 @@ const quero=document.getElementById('quero'), form=document.getElementById('form
 if(quero){quero.onclick=()=>{quero.classList.add('hide');form.classList.remove('hide')};document.getElementById('voltar').onclick=()=>{form.classList.add('hide');quero.classList.remove('hide')};
 form.onsubmit=async ev=>{ev.preventDefault();const er=document.getElementById('erro');er.innerHTML='';
 if(document.getElementById('pw').value!==document.getElementById('pw2').value){er.innerHTML='<div class="erro">As senhas não conferem.</div>';return}
-try{const r=await fetch('/api/student/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:document.getElementById('nome').value.trim(),usuario:document.getElementById('user').value.trim(),senha:document.getElementById('pw').value,convite:code,origem:'publico'})});
+try{const r=await fetch('/api/student/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:document.getElementById('nome').value.trim(),usuario:document.getElementById('user').value.trim(),senha:document.getElementById('pw').value,altura:document.getElementById('altura').value.trim(),peso:document.getElementById('peso').value.trim(),convite:code,origem:'publico'})});
 const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Não foi possível criar a conta.');location.href=j.pix?'/?pos=pix':'/'}catch(e){er.innerHTML='<div class="erro">'+e.message.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</div>'}};}
 </script><script src="/baixar.js"></script></body></html>`;
 }

@@ -10,7 +10,7 @@ async function logoutAll() { try { speechSynthesis.cancel(); } catch (e) {} awai
 const inviteFromUrl = (location.pathname.match(/^\/convite\/([A-Za-z0-9]+)/) || [])[1] || new URLSearchParams(location.search).get("convite");
 
 /* ---------- Login / cadastro do aluno (servidor) ---------- */
-lgUI = function () { ["#lgNome", "#lgPw2", "#lgCode"].forEach(i => $(i).classList.toggle("hide", !lgNew)); $("#lgGo").textContent = lgNew ? "Criar conta" : "Entrar";
+lgUI = function () { ["#lgNome", "#lgAltura", "#lgPeso", "#lgPw2", "#lgCode"].forEach(i => $(i).classList.toggle("hide", !lgNew)); $("#lgGo").textContent = lgNew ? "Criar conta" : "Entrar";
   $("#lgMode").textContent = lgNew ? "Já tenho conta – entrar" : "Não tenho conta – criar com o convite do personal"; $("#lgErr").innerHTML = ""; };
 $("#lgMode").onclick = e => { e.preventDefault(); lgNew = !lgNew; lgUI(); };
 $("#lgGo").onclick = async () => {
@@ -18,7 +18,7 @@ $("#lgGo").onclick = async () => {
   const usuario = $("#lgUser").value.trim().toLowerCase(), senha = $("#lgPw").value;
   try {
     if (lgNew) { if (senha !== $("#lgPw2").value) return err("As senhas não conferem.");
-      await api("/api/student/signup", { usuario, senha, nome: $("#lgNome").value.trim(), convite: $("#lgCode").value.trim() }); }
+      await api("/api/student/signup", { usuario, senha, nome: $("#lgNome").value.trim(), convite: $("#lgCode").value.trim(), altura: $("#lgAltura").value.trim(), peso: $("#lgPeso").value.trim() }); }
     else await api("/api/student/login", { usuario, senha });
     location.href = "/";
   } catch (e) { err(e.message); }

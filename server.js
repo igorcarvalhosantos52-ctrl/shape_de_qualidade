@@ -1,6 +1,6 @@
 // Shape de Qualidade – servidor (Express + SQLite ou Turso)
 const express = require('express'), cookieParser = require('cookie-parser'), bcrypt = require('bcrypt'), crypto = require('crypto'), path = require('path');
-const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards'), tuition = require('./src/tuition'), publicPage = require('./src/public-page'), ebook = require('./src/ebook'), ownerTest = require('./src/owner-test');
+const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards'), tuition = require('./src/tuition'), publicPage = require('./src/public-page'), ebook = require('./src/ebook'), ownerTest = require('./src/owner-test'), medidas = require('./src/medidas');
 const app = express(); app.set('trust proxy', 1);
 const PROD = process.env.NODE_ENV === 'production', DAY = 864e5;
 app.use(express.json({ limit: '2mb', verify: (req, _r, buf) => { req.rawBody = buf.toString(); } }));
@@ -182,9 +182,12 @@ app.post('/api/student/signup', limit, async (req, res) => {
   if (!userOk(u)) return res.status(400).json({ error: 'Usuário inválido (mín. 3 letras/números, sem espaços).' });
   if (nome.length < 2) return res.status(400).json({ error: 'Informe seu nome.' });
   if (pw.length < 6) return res.status(400).json({ error: 'A senha precisa ter pelo menos 6 caracteres.' });
+  const alturaCm = medidas.altura(req.body.altura), pesoKg = medidas.peso(req.body.peso);
+  if (alturaCm == null) return res.status(400).json({ error: 'Informe a altura em centímetros ou em metros. Ex.: 175 ou 1,75.' });
+  if (pesoKg == null) return res.status(400).json({ error: 'Informe o peso em quilos. Ex.: 70,5.' });
   if (await db.prepare('SELECT 1 FROM students WHERE username=?').get(u)) return res.status(409).json({ error: 'Esse usuário já existe.' });
   const origin = req.body.origem === 'publico' ? 'publico' : 'convite';
-  const r = await db.prepare('INSERT INTO students(personal_id,username,nome,hash,created_at,origin) VALUES(?,?,?,?,?,?)').run(p.id, u, nome, await bcrypt.hash(pw, 11), Date.now(), origin);
+  const r = await db.prepare('INSERT INTO students(personal_id,username,nome,hash,created_at,origin,altura_cm,peso_kg) VALUES(?,?,?,?,?,?,?,?)').run(p.id, u, nome, await bcrypt.hash(pw, 11), Date.now(), origin, alturaCm, pesoKg);
   await newSession(res, 'student', r.lastInsertRowid);
   res.json({ ok: true, pix: origin === 'publico' && (p.fee_cents || 0) > 0 });
 });
@@ -205,7 +208,7 @@ app.get('/api/me', async (req, res) => {
     const paid = await pay.hasPaidAccess(p.id);
     const owner_test = await ownerTest.isOwner(p.id);
     const fees = sub.active ? await tuition.summaryForPersonal(p.id) : {};
-    const students = sub.active ? (await db.prepare('SELECT username,nome,ficha FROM students WHERE personal_id=? ORDER BY nome').all(p.id)).map(s => ({ u: s.username, nome: s.nome, ficha: parse(s.ficha), fee: fees[s.username] || { tone: 'none', label: 'Sem mensalidade', origin: 'convite', gate: '' } })) : [];
+    const students = sub.active ? (await db.prepare('SELECT username,nome,ficha,altura_cm,peso_kg FROM students WHERE personal_id=? ORDER BY nome').all(p.id)).map(s => ({ u: s.username, nome: s.nome, ficha: parse(s.ficha), altura_cm: s.altura_cm == null ? null : Number(s.altura_cm), peso_kg: s.peso_kg == null ? null : Number(s.peso_kg), fee: fees[s.username] || { tone: 'none', label: 'Sem mensalidade', origin: 'convite', gate: '' } })) : [];
     const count = (await db.prepare('SELECT COUNT(*) n FROM students WHERE personal_id=?').get(p.id)).n;
     return res.json({ role: 'personal', personal: { ...pubP(p), foto: p.foto || '' }, sub, paid, owner_test, students, count, ...P });
   }
@@ -213,7 +216,7 @@ app.get('/api/me', async (req, res) => {
     const s = await db.prepare('SELECT s.*,p.nome pnome,p.cref pcref,p.whatsapp pzap FROM students s JOIN personals p ON p.id=s.personal_id WHERE s.id=?').get(req.sess.user_id);
     if (!s) return res.json({ role: null, ...P });
     const extra = await tuition.attachStudent(s);
-    return res.json({ role: 'student', u: s.username, nome: s.nome, personal: { nome: s.pnome, cref: s.pcref, whatsapp: s.pzap || "" }, active: (await pay.subscriptionOf(s.personal_id)).active, ficha: parse(s.ficha), ...extra, ...P });
+    return res.json({ role: 'student', u: s.username, nome: s.nome, altura_cm: s.altura_cm == null ? null : Number(s.altura_cm), peso_kg: s.peso_kg == null ? null : Number(s.peso_kg), personal: { nome: s.pnome, cref: s.pcref, whatsapp: s.pzap || "" }, active: (await pay.subscriptionOf(s.personal_id)).active, ficha: parse(s.ficha), ...extra, ...P });
   }
   res.json({ role: null, ...P });
 });

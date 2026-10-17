@@ -28,6 +28,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   ok(true, 'sem TURSO_DATABASE_URL o app usa SQLite local e grava a sessão');
   await sql.ready; await sql.migrate();
   ok(sql.driver === 'libsql' && String(process.env.TURSO_DATABASE_URL).startsWith('file:'), 'com TURSO_DATABASE_URL o app usa libSQL');
+  const medidas = require('../src/medidas');
+  ok(medidas.altura('1,75') === 175 && medidas.altura('175') === 175 && medidas.altura('1.70') === 170 && medidas.altura('175 cm') === 175 && medidas.peso('70,5') === 70.5 && medidas.peso('80') === 80, 'altura aceita cm ou metros com vírgula e peso aceita vírgula');
+  ok(medidas.altura('') === null && medidas.altura('abc') === null && medidas.altura('0,4') === null && medidas.peso('10') === null, 'altura e peso fora da faixa não passam');
   const ownerTest = require('../src/owner-test');
   const savedOwner = process.env.OWNER_TEST_EMAILS, savedAdmin = process.env.ADMIN_EMAIL;
   delete process.env.OWNER_TEST_EMAILS; process.env.ADMIN_EMAIL = 'dono@teste.com';
@@ -84,7 +87,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       const sw = await (await fetch('/sw.js')).text();
       return { name: j.name, display: j.display, icons, sw: sw.slice(0, 160) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && /png/.test(i.type)) && /sq-v21/.test(man.sw) && man.sw.includes('"/baixar.js"'), 'o manifest tem nome, ícones de 192 e 512 px e display standalone');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && /png/.test(i.type)) && /sq-v22/.test(man.sw) && man.sw.includes('"/baixar.js"'), 'o manifest tem nome, ícones de 192 e 512 px e display standalone');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
     await ios.setViewport(phone);
     await ios.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1');
@@ -218,7 +221,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await a.goto(URL + '/convite/' + code, { waitUntil: 'networkidle0' });
     await a.waitForFunction(() => /convidado por/.test(document.querySelector('#lgInfo').textContent));
     ok((await a.$eval('#baixarApp', e => e.textContent)) === '📲 Baixar app' && !(await a.$eval('#baixarBar', e => e.classList.contains('hide'))), 'o link /convite/CÓDIGO mostra Baixar app');
-    await a.type('#lgNome', 'Pamela'); await a.type('#lgUser', 'pamela'); await a.type('#lgPw', 'aluna123'); await a.type('#lgPw2', 'aluna123');
+    await a.type('#lgNome', 'Pamela'); await a.type('#lgAltura', '1,75'); await a.type('#lgPeso', '70,5'); await a.type('#lgUser', 'pamela'); await a.type('#lgPw', 'aluna123'); await a.type('#lgPw2', 'aluna123');
     await a.screenshot({ path: SHOTS + '/05-cadastro-aluno-convite.png' });
     await Promise.all([a.waitForNavigation(), a.click('#lgGo')]);
     await a.waitForSelector('#t-aluno:not(.hide)');
@@ -271,6 +274,13 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await p.reload({ waitUntil: 'networkidle0' }); await p.waitForSelector('.stu'); await p.click('.stu[data-u="pamela"]'); await sleep(500);
     const ficha = await p.evaluate(() => ({ txt: document.querySelector('#persCard').textContent + document.querySelector('#repCard').textContent, a: S.a, blocos: S.plan.treinos[0].blocos.map(b => ({ g: b.g, n: b.ex.length, s: b.ex[0].s })), exp: dayExp(S.plan.treinos[0]) }));
     ok(/2\. OBJETIVOS E EXPECTATIVAS/.test(ficha.txt) && /Ganho de massa muscular/.test(ficha.txt) && !/Resultados que deseja alcançar/.test(ficha.txt) && !ficha.a.resultados && /peito/i.test(ficha.txt) && /3 meses/.test(ficha.txt) && /Como vamos medir o progresso/.test(ficha.txt) && /realista/.test(ficha.txt) && ficha.a.med === 'não tenho' && /Orientação médica/.test(ficha.txt) && /não tenho/.test(ficha.txt), 'ficha mostra objetivo, prioridade, prazo e a orientação médica');
+    const pamMed = await sql.prepare('SELECT altura_cm a, peso_kg p FROM students WHERE username=?').get('pamela');
+    ok(Number(pamMed.a) === 175 && Number(pamMed.p) === 70.5 && /Altura 1,75 m/.test(ficha.txt) && /Peso 70,5 kg/.test(ficha.txt) && /IMC 23,0/.test(ficha.txt), 'ficha do convite mostra altura, peso e o IMC');
+    await sql.prepare('UPDATE students SET altura_cm=NULL, peso_kg=NULL WHERE username=?').run('pamela');
+    await p.reload({ waitUntil: 'networkidle0' }); await p.waitForSelector('.stu[data-u="pamela"]'); await p.click('.stu[data-u="pamela"]');
+    await p.waitForFunction(() => { const el = document.querySelector('#corpoAluno'); return el && /não informado/.test(el.textContent) && !/IMC/.test(el.textContent); });
+    ok((await p.$eval('#corpoAluno', e => e.textContent)).includes('Altura não informado') && (await p.$eval('#corpoAluno', e => e.textContent)).includes('Peso não informado'), 'aluno antigo sem altura e peso mostra não informado');
+    await sql.prepare('UPDATE students SET altura_cm=?, peso_kg=? WHERE username=?').run(175, 70.5, 'pamela');
     ok(!ficha.a.progresso, 'o aluno não responde como medir o progresso');
     await p.waitForSelector('#progIn');
     await p.click('#progBox .progSug[data-s="Fotos"]');
@@ -489,7 +499,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     // ---- limite de 15 alunos no Básico
     const signup = async (i) => { const c = await browser.createBrowserContext(), pg = await c.newPage(); await pg.goto(URL + '/convite/' + code, { waitUntil: 'networkidle0' });
       await pg.waitForSelector('#lgUser');
-      const r = await pg.evaluate(async (code, i) => { const r = await fetch('/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: 'aluno' + i, nome: 'Aluno ' + i, senha: 'aluno123', convite: code }) }); return { st: r.status, j: await r.json() }; }, code, i);
+      const r = await pg.evaluate(async (code, i) => { const r = await fetch('/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: 'aluno' + i, nome: 'Aluno ' + i, senha: 'aluno123', convite: code, altura: '170', peso: '70' }) }); return { st: r.status, j: await r.json() }; }, code, i);
       await c.close(); return r; };
     for (let i = 2; i <= 15; i++) { const r = await signup(i); if (r.st !== 200) throw new Error('cadastro ' + i + ': ' + r.j.error); }
     const r16 = await signup(16); ok(r16.st === 403 && /limite de 15 alunos do plano Básico.*upgrade/.test(r16.j.error), 'Básico trava no 15º aluno com aviso de upgrade');
@@ -806,7 +816,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(capa.baixar === '📲 Baixar app' && capa.w > 200 && capa.h >= 48 && capa.top < 80 && !capa.hide, 'a página pública /p/CÓDIGO mostra Baixar app');
     await pub.click('#quero');
     await pub.waitForSelector('#form:not(.hide)');
-    await pub.type('#nome', 'Caio Aluno'); await pub.type('#user', 'caio'); await pub.type('#pw', 'aluno123'); await pub.type('#pw2', 'aluno123');
+    await pub.type('#nome', 'Caio Aluno'); await pub.type('#altura', '170'); await pub.type('#peso', '80,5'); await pub.type('#user', 'caio'); await pub.type('#pw', 'aluno123'); await pub.type('#pw2', 'aluno123');
     await Promise.all([pub.waitForNavigation({ waitUntil: 'networkidle0' }), pub.click('#form button[type=submit]')]);
     await pub.waitForSelector('#feeJa');
     const pixAntes = await pub.evaluate(() => ({ anam: document.querySelector('#anamCard').classList.contains('hide'), wa: document.querySelector('#waTop').innerText, card: document.querySelector('#feeCard').innerText, payload: document.querySelector('#feePayload').value, qr: !!document.querySelector('#feeCard img') }));
@@ -824,6 +834,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await f.click('.stu[data-u="caio"]');
     await f.waitForSelector('#feeOk');
     ok(/Confirmar recebimento/.test(await f.$eval('#feeEdit', e => e.innerText)) && !(await f.$('#aprovar')), 'a ficha confirma o Pix e ainda não tem treino para aprovar');
+    const caioCorpo = await f.$eval('#corpoAluno', e => e.textContent);
+    const caioMed = await sql.prepare('SELECT altura_cm a, peso_kg p FROM students WHERE username=?').get('caio');
+    ok(Number(caioMed.a) === 170 && Number(caioMed.p) === 80.5 && /1,70 m/.test(caioCorpo) && /80,5 kg/.test(caioCorpo) && /IMC 27,9/.test(caioCorpo), 'o link /p grava altura e peso e a ficha mostra o IMC');
     await f.click('#feeOk');
     await f.waitForFunction(() => /Pago/.test((document.querySelector('#feeEditBody') || {}).innerText || '') && document.querySelector('#feeHist'));
     const pago = await f.evaluate(() => ({ t: document.querySelector('.stu[data-u="caio"]').innerText, dot: !!document.querySelector('.stu[data-u="caio"] .feeDot.ok'), hist: document.querySelector('#feeHist').innerText }));
@@ -834,7 +847,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await f.click('#feeUndo');
     await f.waitForFunction(() => /Pagamento informado/.test((document.querySelector('#feeEditBody') || {}).innerText || '') && /desfeito/.test((document.querySelector('#feeHist') || {}).innerText || ''));
     ok(!!(await f.$('.stu[data-u="caio"] .feeDot.soon')), 'desfazer devolve o aviso de pagamento e a cor amarela');
-    const davi = await fetch(URL + '/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: 'davi', nome: 'Davi Direto', senha: 'aluno123', convite: codeLia }) });
+    const davi = await fetch(URL + '/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: 'davi', nome: 'Davi Direto', senha: 'aluno123', convite: codeLia, altura: '1,80', peso: '75' }) });
     const daviJ = await davi.json();
     ok(davi.status === 200 && daviJ.pix === false, 'convite direto não manda o aluno para o Pix antes da anamnese');
     let atrasado = null;
@@ -874,7 +887,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await sql.prepare('UPDATE settings SET value=? WHERE key=?').run(JSON.stringify(pj), 'plans');
     const htmlCheio = await (await fetch(URL + '/p/' + codeLia)).text();
     ok(/limite/.test(htmlCheio) && !/Quero ser aluno/.test(htmlCheio), 'no ar, o link público respeita o limite de alunos');
-    const extra = await fetch(URL + '/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: 'extra1', nome: 'Extra Um', senha: 'aluno123', convite: codeLia, origem: 'publico' }) });
+    const extra = await fetch(URL + '/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: 'extra1', nome: 'Extra Um', senha: 'aluno123', convite: codeLia, origem: 'publico', altura: '165', peso: '60,5' }) });
     const extraJ = await extra.json();
     ok(extra.status === 403 && /limite/.test(extraJ.error), 'cadastro pelo link público também trava no limite do plano');
     pj.pro.limit = limiteAntes;
