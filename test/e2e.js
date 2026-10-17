@@ -28,6 +28,17 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   ok(true, 'sem TURSO_DATABASE_URL o app usa SQLite local e grava a sessão');
   await sql.ready; await sql.migrate();
   ok(sql.driver === 'libsql' && String(process.env.TURSO_DATABASE_URL).startsWith('file:'), 'com TURSO_DATABASE_URL o app usa libSQL');
+  const ownerTest = require('../src/owner-test');
+  const savedOwner = process.env.OWNER_TEST_EMAILS, savedAdmin = process.env.ADMIN_EMAIL;
+  delete process.env.OWNER_TEST_EMAILS; process.env.ADMIN_EMAIL = 'dono@teste.com';
+  ok(ownerTest.allows('dono@teste.com', 4) && !ownerTest.allows('igor@teste.com', 4), 'sem OWNER_TEST_EMAILS vale o e-mail do admin e o resto segue a regra paga');
+  ok(ownerTest.allows('unico@teste.com', 1), 'se só existe uma conta de personal, ela entra no teste do dono');
+  process.env.OWNER_TEST_EMAILS = 'marina@exemplo.com, joao@exemplo.com';
+  ok(ownerTest.allows('marina@exemplo.com', 3) && ownerTest.allows('joao@exemplo.com', 3) && ownerTest.allows('dono@teste.com', 3) && !ownerTest.allows('igor@teste.com', 3), 'a lista e a conta do admin liberam; as outras não');
+  process.env.OWNER_TEST_EMAILS = 'off';
+  ok(!ownerTest.config().on && !ownerTest.allows('dono@teste.com', 1), 'OWNER_TEST_EMAILS=off desliga o teste do dono');
+  if (savedOwner === undefined) delete process.env.OWNER_TEST_EMAILS; else process.env.OWNER_TEST_EMAILS = savedOwner;
+  if (savedAdmin === undefined) delete process.env.ADMIN_EMAIL; else process.env.ADMIN_EMAIL = savedAdmin;
   const srv = spawn('node', ['server.js'], { cwd: path.join(__dirname, '..'), env: { ...process.env, PORT, TURSO_DATABASE_URL: 'file:' + LIB, TURSO_AUTH_TOKEN: '', ADMIN_EMAIL: 'dono@teste.com', ADMIN_PASSWORD: 'admin123', MP_ACCESS_TOKEN: '', STRIPE_SECRET_KEY: '' }, stdio: 'inherit' });
   await sleep(1200);
     const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
@@ -46,6 +57,19 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await Promise.all([p.waitForNavigation(), p.click('#pwGo')]);
     await p.waitForSelector('#planBox'); const tb = await p.$eval('#planBox', e => e.innerText);
     ok(/TESTE GRÁTIS – 2 dia/.test(tb) && /Básico/.test(tb), 'novo personal ganha 2 dias grátis no plano escolhido (Básico)');
+    const ctxExtra = await browser.createBrowserContext(), extraPg = await ctxExtra.newPage();
+    await extraPg.goto(URL, { waitUntil: 'networkidle0' });
+    const extraOwner = await extraPg.evaluate(async () => {
+      const s = await fetch('/api/personal/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Conta Extra', email: 'extra.owner@teste.com', senha: 'senha1234', plano: 'basico' }) });
+      const cards = await (await fetch('/api/cards')).json();
+      const eb = await fetch('/api/ebook');
+      const vid = await fetch('/api/tutoriais/link', { headers: { Range: 'bytes=0-1' } });
+      const me = await (await fetch('/api/me')).json();
+      return { signup: s.status, open: cards.cards.filter(c => !c.locked).length, eb: eb.status, vid: vid.status, vidType: vid.headers.get('content-type') || '', owner: !!me.owner_test, trial: !!(me.sub && me.sub.trial) };
+    });
+    ok(extraOwner.signup === 200 && extraOwner.trial && extraOwner.owner === false && extraOwner.open === 0 && extraOwner.eb === 403 && (extraOwner.vid === 200 || extraOwner.vid === 206) && /mp4/.test(extraOwner.vidType), 'Básico no teste grátis vê os tutoriais e não vê cards nem ebook');
+    await p.reload({ waitUntil: 'networkidle0' });
+    await p.waitForSelector('#ebookSec');
     const trialCards = await p.evaluate(async () => { const r = await fetch('/api/cards'); const j = await r.json(); const img = await fetch('/api/cards/1/img'); const ej = await img.json().catch(() => ({})); const c = j.cards && j.cards[0]; return { st: r.status, plan: j.plan, trial: j.trial, paid: j.paid, n: j.cards.length, locked: j.cards.filter(x => x.locked).length, okf: !!(c && c.titulo && c.regiao && c.plano && 'locked' in c), img: img.status, err: ej.error || '' }; });
     ok(trialCards.st === 200 && trialCards.trial && trialCards.paid === false && trialCards.plan === 'basico' && trialCards.n === 100 && trialCards.locked === 100 && trialCards.okf && trialCards.img === 403 && /assinatura/.test(trialCards.err), 'no teste grátis todos os cards ficam bloqueados até a assinatura');
     await p.waitForSelector('#cardStudySec');
@@ -458,7 +482,8 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
         const s = await fetch('/api/personal/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Cards ' + plano, email, senha: 'senha1234', plano }) });
         const list = await fetch('/api/cards'); const j = await list.json();
         const img = async id => { const r = await fetch('/api/cards/' + id + '/img'); return { st: r.status, cache: r.headers.get('cache-control') || '', type: r.headers.get('content-type') || '' }; };
-        return { signup: s.status, plan: j.plan, trial: j.trial, paid: j.paid, open: j.cards.filter(c => !c.locked).length, shut: j.cards.filter(c => c.locked).length, i1: await img(1), i51: await img(51), i100: await img(100) };
+        const vid = await fetch('/api/tutoriais/link', { headers: { Range: 'bytes=0-1' } });
+        return { signup: s.status, plan: j.plan, trial: j.trial, paid: j.paid, open: j.cards.filter(c => !c.locked).length, shut: j.cards.filter(c => c.locked).length, i1: await img(1), i51: await img(51), i100: await img(100), vid: vid.status, vidType: vid.headers.get('content-type') || '' };
       }, email, plano);
       return { pg, api };
     }
@@ -469,6 +494,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     }
     const proC = await contaCards('cards-pro@teste.com', 'pro');
     ok(proC.api.signup === 200 && proC.api.trial && proC.api.paid === false && proC.api.plan === 'pro' && proC.api.open === 0 && proC.api.shut === 100 && proC.api.i1.st === 403, 'Pro no teste grátis deixa os 100 cards bloqueados');
+    ok((proC.api.vid === 200 || proC.api.vid === 206) && /mp4/.test(proC.api.vidType), 'Pro no teste grátis assiste os tutoriais');
     await proC.pg.goto(URL + '/?area=personal', { waitUntil: 'networkidle0' });
     await proC.pg.waitForSelector('#cardStudySec'); await proC.pg.click('#cardStudySec summary');
     await proC.pg.waitForSelector('.cardtile.locked');
@@ -503,6 +529,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(swiped.after !== swiped.before, 'deslizar na tela cheia muda o card' + (swiped.err ? ' (' + swiped.err + ')' : ''));
     const iliC = await contaCards('cards-ili@teste.com', 'ilimitado');
     ok(iliC.api.trial && iliC.api.paid === false && iliC.api.plan === 'ilimitado' && iliC.api.open === 0 && iliC.api.shut === 100 && iliC.api.i1.st === 403 && iliC.api.i100.st === 403, 'Ilimitado no teste grátis deixa os 100 cards bloqueados');
+    ok((iliC.api.vid === 200 || iliC.api.vid === 206) && /mp4/.test(iliC.api.vidType), 'Ilimitado no teste grátis assiste os tutoriais');
     const iliId = (await sql.prepare("SELECT id FROM personals WHERE email='cards-ili@teste.com'").get()).id;
     await sql.prepare('INSERT INTO payments(personal_id,provider,external_id,amount_cents,status,test,created_at,plan) VALUES(?,?,?,?,?,?,?,?)').run(iliId, 'mercadopago', 'live_ili_ainda_trial', 7990, 'approved', 0, Date.now(), 'ilimitado');
     const aindaTrial = await iliC.pg.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); return { trial: j.trial, paid: j.paid, open: j.cards.filter(c => !c.locked).length }; });
@@ -524,6 +551,25 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(basPago.paid && basPago.open === 0 && basPago.img === 403 && /Básico/.test(basPago.err) && /upgrade/i.test(basPago.err), 'Básico pago continua sem cards e pede upgrade');
     const ebookBas = await basC.pg.evaluate(async () => { const r = await fetch('/api/ebook'); const j = await r.json().catch(() => ({})); return { st: r.status, err: j.error || '' }; });
     ok(ebookBas.st === 403 && ebookBas.err === 'Exclusivo do plano Ilimitado', 'Básico pago não abre o ebook');
+    ok((basC.api.vid === 200 || basC.api.vid === 206) && /mp4/.test(basC.api.vidType), 'Básico assiste os tutoriais sem pagamento');
+    const ctxDono = await browser.createBrowserContext(), donoPg = await ctxDono.newPage(); await donoPg.setViewport(phone);
+    await donoPg.goto(URL, { waitUntil: 'networkidle0' });
+    const donoApi = await donoPg.evaluate(async () => {
+      const s = await fetch('/api/personal/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Dono Personal', email: 'dono@teste.com', senha: 'senha1234', plano: 'basico' }) });
+      const j = await (await fetch('/api/cards')).json();
+      const i1 = await fetch('/api/cards/1/img');
+      const i100 = await fetch('/api/cards/100/img');
+      const eb = await fetch('/api/ebook');
+      const me = await (await fetch('/api/me')).json();
+      return { signup: s.status, plan: j.plan, trial: j.trial, open: j.cards.filter(c => !c.locked).length, i1: i1.status, t1: i1.headers.get('content-type') || '', i100: i100.status, eb: eb.status, ebt: eb.headers.get('content-type') || '', owner: !!me.owner_test, paid: me.paid };
+    });
+    ok(donoApi.signup === 200 && donoApi.plan === 'basico' && donoApi.trial && donoApi.paid === false && donoApi.owner && donoApi.open === 100 && donoApi.i1 === 200 && /jpeg/.test(donoApi.t1) && donoApi.i100 === 200 && donoApi.eb === 200 && /pdf/.test(donoApi.ebt), 'e-mail do admin no teste grátis abre os 100 cards e o ebook');
+    await donoPg.goto(URL + '/?area=personal', { waitUntil: 'networkidle0' });
+    await donoPg.waitForSelector('#ebookGo');
+    await donoPg.click('#cardStudySec summary');
+    await donoPg.waitForSelector('.cardtile img');
+    const donoUi = await donoPg.evaluate(() => ({ imgs: document.querySelectorAll('.cardtile img').length, locks: document.querySelectorAll('.cardtile.locked').length, ebook: document.querySelector('#ebookSec').textContent, lock: !!document.querySelector('#ebookSec .ebooklock') }));
+    ok(donoUi.imgs === 100 && donoUi.locks === 0 && /Abrir ebook/.test(donoUi.ebook) && !donoUi.lock, 'painel do dono mostra os cards e o botão do ebook');
     const unkId = (await sql.prepare("SELECT id FROM personals WHERE email='cards-pro@teste.com'").get()).id;
     await sql.prepare('UPDATE subscriptions SET plan=? WHERE personal_id=?').run('xyz', unkId);
     await sql.prepare('UPDATE personals SET plan=? WHERE id=?').run('xyz', unkId);

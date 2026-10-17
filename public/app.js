@@ -758,7 +758,7 @@ function showCard(){const c=cardList[cardIdx],v=$("#cardView");if(!c||!v)return;
  $("#cardCap").textContent=c.titulo+" · "+c.regiao+" ("+(cardIdx+1)+"/"+cardList.length+")";
  $("#cardPrev").disabled=cardIdx===0;$("#cardNext").disabled=cardIdx===cardList.length-1}
 function stuList(){const A=accounts();return Object.keys(A).map(u=>{const F=loadF(u);const st=F.status==="aprovado"?"apr":F.plan?"pend":"none";return{u,nome:A[u].nome,st,F}})}
-function ebookView(){const sub=ME.sub||{},paid=!!ME.paid;if(paid&&sub.plan==="ilimitado")return{open:true,msg:""};if(sub.trial||!paid)return{open:false,msg:"Liberado após a assinatura"};return{open:false,msg:"Exclusivo do plano Ilimitado"}}
+function ebookView(){const sub=ME.sub||{},paid=!!ME.paid;if(ME.owner_test||(paid&&sub.plan==="ilimitado"))return{open:true,msg:""};if(sub.trial||!paid)return{open:false,msg:"Liberado após a assinatura"};return{open:false,msg:"Exclusivo do plano Ilimitado"}}
 function ebookCard(){const v=ebookView();const body=v.open?'<button type="button" class="btn sm" id="ebookGo">Abrir ebook</button>':'<p class="ebooklock">🔒 '+esc(v.msg)+'</p>';return '<section id="ebookSec" class="ebookcard noprint"><h3>📘 Ebook: Guia Prático dos Exercícios</h3><div class="ebookcover"><b>Guia Prático dos Exercícios de Musculação</b><span>abordagem anatômica</span></div>'+body+'</section>'}
 function renderPanel(){const p=$("#stuPanel");const cardStudyOpen=!!($("#cardStudySec")&&$("#cardStudySec").open);p.classList.toggle("hide",!unlocked);if(!unlocked){p.innerHTML="";return}
  const L=stuList(),q=norm(pq);let v=L.filter(x=>!q||norm(x.nome+" "+x.u).includes(q)).filter(x=>pf==="todos"||(pf==="pend"?x.st!=="apr":x.st==="apr"));
