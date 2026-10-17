@@ -319,6 +319,88 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await see();
     ok(/Peito/.test(await a.$eval('#statusCard', e => e.innerText)) && !/Core de segunda/.test(await a.$eval('#statusCard', e => e.innerText)), 'aba Dia volta ao treino automático');
 
+    // ---- exercício livre do personal (a lista da biblioteca continua igual)
+    const libSnap = await p.evaluate(() => {
+      const sel = document.querySelector('select[data-act="swap"]');
+      return { name: sel.options[sel.selectedIndex].textContent, add: [...document.querySelector('select[data-act="add"]').options].map(o => o.textContent), swap: [...sel.options].map(o => o.textContent) };
+    });
+    await p.evaluate(() => { const sel = document.querySelector('select[data-act="swap"]'); sel.selectedIndex = sel.selectedIndex === 0 ? 1 : 0; sel.dispatchEvent(new Event('change', { bubbles: true })); });
+    await p.waitForFunction(name => document.querySelector('#persCard .ex b').textContent !== name, {}, libSnap.name);
+    await p.evaluate(name => { const sel = document.querySelector('select[data-act="swap"]'); sel.selectedIndex = [...sel.options].findIndex(o => o.textContent === name); sel.dispatchEvent(new Event('change', { bubbles: true })); }, libSnap.name);
+    await p.waitForFunction(name => document.querySelector('#persCard .ex b').textContent === name, {}, libSnap.name);
+    const libSame = await p.evaluate(() => ({
+      add: [...document.querySelector('select[data-act="add"]').options].map(o => o.textContent),
+      swap: [...document.querySelector('select[data-act="swap"]').options].map(o => o.textContent),
+    }));
+    ok(JSON.stringify(libSame.add) === JSON.stringify(libSnap.add) && JSON.stringify(libSame.swap) === JSON.stringify(libSnap.swap), 'trocar pela lista existente não muda as opções');
+    await p.evaluate(() => document.querySelector('.exCustomTab[data-cxkey$="-add"]').click());
+    await p.waitForSelector('.exCustom .cxNome');
+    ok(/✏️ Outro exercício/.test(await p.$eval('.exCustomTab', e => e.textContent)) && /Meus exercícios/.test(await p.$eval('.exCustom', e => e.innerText)), 'o seletor ganha a opção Outro exercício e a lista Meus exercícios');
+    const optsWhileOpen = await p.evaluate(() => [...document.querySelector('select[data-act="add"]').options].map(o => o.textContent));
+    ok(JSON.stringify(optsWhileOpen) === JSON.stringify(libSnap.add), 'abrir Outro exercício não altera a lista da biblioteca');
+    await p.evaluate(() => {
+      const box = document.querySelector('.exCustom');
+      box.querySelector('.cxNome').value = 'Remada cavalinho';
+      box.querySelector('.cxNota').value = 'Cotovelos perto do corpo';
+      box.querySelector('.cxS').value = '4';
+      box.querySelector('.cxR').value = '10';
+      box.querySelector('.cxD').value = '60s';
+      box.querySelector('[data-savecx]').click();
+    });
+    await p.waitForFunction(() => [...document.querySelectorAll('#persCard .ex b')].some(b => b.textContent === 'Remada cavalinho'));
+    let savedEx = null;
+    for (let i = 0; i < 25 && !(savedEx && savedEx.treinos.some(t => t.blocos.some(b => b.ex.some(e => e.n === 'Remada cavalinho' && e.manual && e.nota === 'Cotovelos perto do corpo' && e.s === 4)))); i++) { await sleep(200); savedEx = await planOf(); }
+    ok(!!savedEx, 'o exercício livre entra na ficha com nome, instrução e séries');
+    const lista = await p.evaluate(async () => (await fetch('/api/personal/exercises')).json());
+    ok(lista.exercises.some(e => e.nome === 'Remada cavalinho' && e.nota === 'Cotovelos perto do corpo') && lista.exercises.filter(e => e.nome === 'Remada cavalinho').length === 1, 'Meus exercícios grava o nome para reutilizar');
+    const addAfter = await p.evaluate(() => [...document.querySelector('select[data-act="add"]').options].map(o => o.textContent));
+    ok(JSON.stringify(addAfter) === JSON.stringify(libSnap.add) && !addAfter.some(t => /Remada cavalinho/.test(t)), 'o nome livre não entra no select da biblioteca');
+    await see();
+    const comNota = await a.evaluate(() => { const ex = [...document.querySelectorAll('#statusCard .ex')].find(e => e.querySelector('b') && e.querySelector('b').textContent === 'Remada cavalinho'); return ex ? { t: ex.innerText, det: !!ex.querySelector('.detBtn') } : null; });
+    ok(comNota && /Cotovelos perto do corpo/.test(comNota.t) && !comNota.det && !/Por que/.test(comNota.t) && !/Como fazer|YouTube/.test(comNota.t), 'aluno vê o nome e a instrução, sem detalhes nem explicação longa');
+    ok(await a.evaluate(() => !!document.querySelector('#statusCard .detBtn')), 'os exercícios da biblioteca continuam com Detalhes');
+    await p.evaluate(() => document.querySelector('.exCustomTab[data-cxkey$="-add"]').click());
+    await p.waitForSelector('[data-use]');
+    await p.evaluate(() => { const ex = [...document.querySelectorAll('#persCard .ex')].find(e => e.querySelector('b') && e.querySelector('b').textContent === 'Remada cavalinho'); ex.querySelector('button[data-act="rm"]').click(); });
+    await p.waitForFunction(() => ![...document.querySelectorAll('#persCard .ex b')].some(b => b.textContent === 'Remada cavalinho') && document.querySelector('[data-use]'));
+    await p.click('[data-use]');
+    await p.waitForFunction(() => [...document.querySelectorAll('#persCard .ex b')].some(b => b.textContent === 'Remada cavalinho'));
+    ok(true, 'Usar recoloca um exercício de Meus exercícios');
+    const grupoLivre = lista.exercises.find(e => e.nome === 'Remada cavalinho').grupo;
+    const dup = await p.evaluate(async (grupo) => { const r = await fetch('/api/personal/exercises', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'remada cavalinho', nota: 'Cotovelos perto do corpo', grupo, series: 4, reps: '10', descanso: '60s' }) }); const j = await r.json(); return { st: r.status, n: (j.exercises || []).filter(e => /remada cavalinho/i.test(e.nome) && e.grupo === grupo).length }; }, grupoLivre);
+    ok(dup.st === 200 && dup.n === 1, 'repetir o nome no mesmo grupo atualiza, sem duplicar');
+    await p.evaluate(() => document.querySelector('.exCustomTab[data-cxkey$="-add"]').click());
+    await p.waitForSelector('[data-delx]');
+    await p.click('[data-delx]');
+    await p.waitForSelector('.meusEmpty');
+    ok(await p.evaluate(() => [...document.querySelectorAll('#persCard .ex b')].some(b => b.textContent === 'Remada cavalinho')), 'apagar tira da lista e mantém o treino já montado');
+    const vazio = await p.evaluate(async () => { const r = await fetch('/api/personal/exercises', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: '  ', grupo: 'peito' }) }); return r.status; });
+    ok(vazio === 400, 'nome vazio é recusado');
+    ok(await a.evaluate(async () => (await fetch('/api/personal/exercises')).status) === 401, 'aluno não acessa a lista do personal');
+    await p.evaluate(() => {
+      const box = document.querySelector('.exCustom');
+      box.querySelector('.cxNome').value = 'Agachamento livre do personal';
+      box.querySelector('.cxNota').value = '';
+      box.querySelector('[data-savecx]').click();
+    });
+    await p.waitForFunction(() => [...document.querySelectorAll('#persCard .ex b')].some(b => b.textContent === 'Agachamento livre do personal'));
+    let livre = null;
+    for (let i = 0; i < 25 && !(livre && livre.treinos.some(t => t.blocos.some(b => b.ex.some(e => e.n === 'Agachamento livre do personal' && e.manual && !e.nota)))); i++) { await sleep(200); livre = await planOf(); }
+    ok(!!livre, 'exercício sem instrução também grava na ficha');
+    await see();
+    const semNota = await a.evaluate(() => { const ex = [...document.querySelectorAll('#statusCard .ex')].find(e => e.querySelector('b') && e.querySelector('b').textContent === 'Agachamento livre do personal'); return ex ? ex.innerText : ''; });
+    ok(semNota.includes('Seu personal vai te ensinar a execução') && !/Por que/.test(semNota), 'sem instrução, o aluno vê só a dica de execução');
+    await a.click('#adjTxt', { clickCount: 3 });
+    await a.type('#adjTxt', 'dor no joelho');
+    await a.click('#adjSend');
+    await a.waitForFunction(() => /Ajustado hoje|joelho/.test(document.querySelector('#statusCard').innerText));
+    const pain = await a.evaluate(() => ({
+      livre: [...document.querySelectorAll('#statusCard .ex b')].some(b => b.textContent === 'Agachamento livre do personal'),
+      remada: [...document.querySelectorAll('#statusCard .ex b')].some(b => b.textContent === 'Remada cavalinho'),
+      out: document.querySelector('#adjOut').innerText,
+    }));
+    ok(pain.livre && pain.remada && !/Troquei Agachamento livre do personal|Tirei Agachamento livre do personal|Troquei Remada cavalinho|Tirei Remada cavalinho/.test(pain.out), 'dor no joelho não troca nem tira o exercício livre');
+
     // ---- limite de 15 alunos no Básico
     const signup = async (i) => { const c = await browser.createBrowserContext(), pg = await c.newPage(); await pg.goto(URL + '/convite/' + code, { waitUntil: 'networkidle0' });
       await pg.waitForSelector('#lgUser');
@@ -346,8 +428,10 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const iso = await x.evaluate(async () => { await fetch('/api/personal/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Outro', email: 'outro@t.com', senha: 'senha1234' }) });
       await fetch('/api/billing/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: 'demo' }) });
       const me = await (await fetch('/api/me')).json(); const put = await fetch('/api/ficha/pamela', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-      return { n: me.students.length, put: put.status }; });
-    ok(iso.n === 0 && iso.put === 403, 'outro personal não vê nem altera alunos alheios');
+      const ex = await (await fetch('/api/personal/exercises')).json();
+      const del = await fetch('/api/personal/exercises/1', { method: 'DELETE' });
+      return { n: me.students.length, put: put.status, ex: (ex.exercises || []).length, del: del.status }; });
+    ok(iso.n === 0 && iso.put === 403 && iso.ex === 0 && iso.del === 404, 'outro personal não vê alunos, fichas nem a lista de exercícios alheia');
     await p.screenshot({ path: SHOTS + '/04-painel-personal-convite.png' });
 
     // ---- senhas

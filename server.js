@@ -140,6 +140,30 @@ app.post('/api/personal/student-password', limit, need('personal'), async (req, 
   const nova = String(req.body.nova || ''); if (nova.length < 6) return res.status(400).json({ error: 'A nova senha precisa ter pelo menos 6 caracteres.' });
   await db.prepare('UPDATE students SET hash=? WHERE id=?').run(await bcrypt.hash(nova, 11), s.id); await killSessions('student', s.id); res.json({ ok: true });
 });
+const CUSTOM_GROUPS = new Set(['peito', 'triceps', 'antebraco', 'costas', 'biceps', 'ombro', 'quad', 'post', 'pant', 'gluteo', 'abdomen', 'cardio', 'mobilidade']);
+const customClip = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+const customList = pid => db.prepare('SELECT id, nome, nota, grupo, series, reps, descanso FROM custom_exercises WHERE personal_id=? ORDER BY nome COLLATE NOCASE, id').all(pid);
+app.get('/api/personal/exercises', need('personal'), async (req, res) => {
+  res.json({ exercises: await customList(req.sess.user_id) });
+});
+app.post('/api/personal/exercises', need('personal'), async (req, res) => {
+  const body = req.body || {}, nome = customClip(body.nome, 80), nota = customClip(body.nota, 200), grupo = customClip(body.grupo, 40);
+  if (nome.length < 2) return res.status(400).json({ error: 'Informe o nome do exercício.' });
+  if (!CUSTOM_GROUPS.has(grupo)) return res.status(400).json({ error: 'Esse grupo não faz parte da ficha.' });
+  let series = parseInt(body.series, 10); if (!(series >= 1 && series <= 10)) series = 3;
+  const reps = customClip(body.reps, 20) || '10–12', descanso = customClip(body.descanso, 20) || '60s', pid = req.sess.user_id;
+  const hit = (await customList(pid)).find(x => x.grupo === grupo && x.nome.localeCompare(nome, 'pt-BR', { sensitivity: 'accent' }) === 0);
+  if (hit) await db.prepare('UPDATE custom_exercises SET nome=?, nota=?, series=?, reps=?, descanso=? WHERE id=? AND personal_id=?').run(nome, nota, series, reps, descanso, hit.id, pid);
+  else await db.prepare('INSERT INTO custom_exercises(personal_id, nome, nota, grupo, series, reps, descanso, created_at) VALUES(?,?,?,?,?,?,?,?)').run(pid, nome, nota, grupo, series, reps, descanso, Date.now());
+  res.json({ exercises: await customList(pid) });
+});
+app.delete('/api/personal/exercises/:id', need('personal'), async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'Exercício não encontrado.' });
+  const r = await db.prepare('DELETE FROM custom_exercises WHERE id=? AND personal_id=?').run(id, req.sess.user_id);
+  if (!r.changes) return res.status(404).json({ error: 'Exercício não encontrado.' });
+  res.json({ exercises: await customList(req.sess.user_id) });
+});
 
 // ---------- aluno ----------
 app.get('/api/invite/:code', async (req, res) => {

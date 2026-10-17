@@ -34,6 +34,10 @@ CREATE TABLE IF NOT EXISTS sessions(
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS password_resets(
   token_hash TEXT PRIMARY KEY, role TEXT NOT NULL, user_id INTEGER NOT NULL, expires INTEGER NOT NULL, created_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS custom_exercises(
+  id INTEGER PRIMARY KEY, personal_id INTEGER NOT NULL REFERENCES personals(id) ON DELETE CASCADE,
+  nome TEXT NOT NULL, nota TEXT DEFAULT '', grupo TEXT NOT NULL,
+  series INTEGER DEFAULT 3, reps TEXT DEFAULT '', descanso TEXT DEFAULT '', created_at INTEGER NOT NULL);
 `;
 // Bancos criados antes destas colunas: o CREATE não altera tabela existente.
 const ALTERS = [
