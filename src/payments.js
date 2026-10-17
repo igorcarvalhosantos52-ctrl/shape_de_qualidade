@@ -9,7 +9,9 @@ const DEFAULT_PLANS = () => ({
   pro: { nome: 'Pro', price_cents: envC('PLAN_PRO_PRICE', 4990), limit: envL('PLAN_PRO_LIMIT', 30) },
   ilimitado: { nome: 'Ilimitado', price_cents: envC('PLAN_ILIMITADO_PRICE', 7990), limit: envL('PLAN_ILIMITADO_LIMIT', null) },
 });
-const TRIAL_DAYS = +(process.env.TRIAL_DAYS || 4);
+// 2 dias para conta nova. Não lemos TRIAL_DAYS do ambiente: um valor antigo
+// deixaria o cadastro em 4 dias. Quem já está em teste guarda a data gravada.
+const TRIAL_DAYS = 2;
 async function plans() {
   const s = await db.prepare("SELECT value FROM settings WHERE key='plans'").get(), d = DEFAULT_PLANS();
   if (s) { const o = JSON.parse(s.value); for (const k in d) Object.assign(d[k], o[k] || {}); }
@@ -60,6 +62,14 @@ async function subscriptionOf(personalId) {
   if (!s) return { active: false, status: 'none', ...base };
   const active = ['active', 'cancelled', 'trialing'].includes(s.status) && s.current_period_end > now();
   return { active, status: active ? s.status : (s.status === 'trialing' ? 'trial_expired' : 'expired'), trial: s.status === 'trialing', provider: s.provider, external_id: s.external_id, current_period_end: s.current_period_end, amount_cents: s.amount_cents, ...base };
+}
+// Cards de estudo: só com assinatura ativa e pagamento confirmado (payments.test = 0).
+// Teste grátis e pagamento simulado (test = 1, provider demo) não contam.
+async function hasPaidAccess(personalId) {
+  const sub = await subscriptionOf(personalId);
+  if (!sub.active || sub.trial) return false;
+  const real = await db.prepare("SELECT 1 AS ok FROM payments WHERE personal_id=? AND status='approved' AND test=0 LIMIT 1").get(personalId);
+  return !!real;
 }
 const baseUrl = req => process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
 
@@ -156,4 +166,4 @@ async function changeRecurring(personalId, plan) {
   await db.prepare('UPDATE subscriptions SET plan=?,updated_at=? WHERE id=(SELECT id FROM subscriptions WHERE personal_id=? ORDER BY id DESC LIMIT 1)').run(plan, now(), personalId);
   await db.prepare('UPDATE personals SET plan=? WHERE id=?').run(plan, personalId);
 }
-module.exports = { plans, setPlans, planOf, startTrial, changeRecurring, TRIAL_DAYS, checkout, mpWebhook, stripeWebhook, subscriptionOf, priceCents, providers };
+module.exports = { plans, setPlans, planOf, startTrial, changeRecurring, TRIAL_DAYS, checkout, mpWebhook, stripeWebhook, subscriptionOf, hasPaidAccess, priceCents, providers };

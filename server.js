@@ -236,16 +236,18 @@ function onlyPersonal(req, res, next) {
 }
 app.get('/api/cards', onlyPersonal, async (req, res) => {
   const sub = await pay.subscriptionOf(req.sess.user_id);
+  const paid = await pay.hasPaidAccess(req.sess.user_id);
   res.json({
-    plan: sub.plan, plan_nome: sub.plan_nome, trial: !!sub.trial,
-    cards: cards.CARDS.map(c => ({ id: c.n, titulo: c.titulo, regiao: c.regiao, plano: c.plano, locked: cards.cardLocked(c, sub.plan) })),
+    plan: sub.plan, plan_nome: sub.plan_nome, trial: !!sub.trial, paid,
+    cards: cards.CARDS.map(c => ({ id: c.n, titulo: c.titulo, regiao: c.regiao, plano: c.plano, locked: cards.cardLocked(c, sub.plan, paid) })),
   });
 });
 app.get('/api/cards/:id/img', onlyPersonal, async (req, res) => {
   const card = cards.CARDS.find(c => c.n === +req.params.id);
   if (!card) return res.status(404).json({ error: 'Card não encontrado.' });
   const sub = await pay.subscriptionOf(req.sess.user_id);
-  if (cards.cardLocked(card, sub.plan)) return res.status(403).json({ error: sub.plan === 'basico' ? 'No plano Básico os cards ficam bloqueados. Faça upgrade para o Pro ou Ilimitado.' : 'Este card faz parte do plano Ilimitado.' });
+  const paid = await pay.hasPaidAccess(req.sess.user_id);
+  if (cards.cardLocked(card, sub.plan, paid)) return res.status(403).json({ error: cards.cardLockError(sub.plan, paid) });
   res.set('Cache-Control', 'private, max-age=86400');
   res.type('jpg');
   res.sendFile(cards.cardFile(card));

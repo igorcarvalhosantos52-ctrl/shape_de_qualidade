@@ -41,12 +41,13 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await p.click('#goPers'); await p.waitForSelector('#pSwap'); await p.click('#pSwap');
     await p.type('#pNomeAcc', 'Igor Personal'); await p.type('#pEmail', 'igor@teste.com'); await p.type('#pCrefAcc', '012345-G/MS');
     await p.type('#pw1', 'senha1234'); await p.type('#pw2', 'senha1234'); await p.click('label[data-plan="basico"]');
+    ok(/2 dias grátis/.test(await p.$eval('body', e => e.innerText)), 'o cadastro avisa que o teste grátis dura 2 dias');
     await p.screenshot({ path: SHOTS + '/02-cadastro-personal.png', fullPage: true });
     await Promise.all([p.waitForNavigation(), p.click('#pwGo')]);
     await p.waitForSelector('#planBox'); const tb = await p.$eval('#planBox', e => e.innerText);
-    ok(/TESTE GRÁTIS – 4 dia/.test(tb) && /Básico/.test(tb), 'novo personal ganha 4 dias grátis no plano escolhido (Básico)');
-    const trialCards = await p.evaluate(async () => { const r = await fetch('/api/cards'); const j = await r.json(); const img = await fetch('/api/cards/1/img'); const c = j.cards && j.cards[0]; return { st: r.status, plan: j.plan, trial: j.trial, n: j.cards.length, locked: j.cards.filter(x => x.locked).length, okf: !!(c && c.titulo && c.regiao && c.plano && 'locked' in c), img: img.status }; });
-    ok(trialCards.st === 200 && trialCards.trial && trialCards.plan === 'basico' && trialCards.n === 100 && trialCards.locked === 100 && trialCards.okf && trialCards.img === 403, 'no teste grátis do Básico o plano escolhido deixa os 100 cards bloqueados');
+    ok(/TESTE GRÁTIS – 2 dia/.test(tb) && /Básico/.test(tb), 'novo personal ganha 2 dias grátis no plano escolhido (Básico)');
+    const trialCards = await p.evaluate(async () => { const r = await fetch('/api/cards'); const j = await r.json(); const img = await fetch('/api/cards/1/img'); const ej = await img.json().catch(() => ({})); const c = j.cards && j.cards[0]; return { st: r.status, plan: j.plan, trial: j.trial, paid: j.paid, n: j.cards.length, locked: j.cards.filter(x => x.locked).length, okf: !!(c && c.titulo && c.regiao && c.plano && 'locked' in c), img: img.status, err: ej.error || '' }; });
+    ok(trialCards.st === 200 && trialCards.trial && trialCards.paid === false && trialCards.plan === 'basico' && trialCards.n === 100 && trialCards.locked === 100 && trialCards.okf && trialCards.img === 403 && /assinatura/.test(trialCards.err), 'no teste grátis todos os cards ficam bloqueados até a assinatura');
     await p.waitForSelector('#cardStudySec');
     const abaixoTrial = await p.evaluate(() => { const a = document.querySelector('#stuDet').getBoundingClientRect(), b = document.querySelector('#cardStudySec').getBoundingClientRect(); return b.top > a.top && /Cards de memorização para estudo/.test(document.querySelector('#cardStudySec').innerText); });
     ok(abaixoTrial, 'seção de cards fica abaixo da lista de alunos');
@@ -54,10 +55,10 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await p.click('#cardStudySec summary');
     await p.waitForSelector('.cardtile.locked');
     const basUi = await p.evaluate(() => ({ locks: document.querySelectorAll('.cardtile.locked').length, imgs: document.querySelectorAll('.cardtile img').length, msg: document.querySelector('#cardStudyBody').innerText }));
-    ok(basUi.locks === 100 && basUi.imgs === 0 && /Básico/.test(basUi.msg) && /upgrade/i.test(basUi.msg), 'Básico vê cadeado e o aviso de upgrade, sem baixar as imagens');
+    ok(basUi.locks === 100 && basUi.imgs === 0 && /Liberado após a assinatura/.test(basUi.msg), 'no teste grátis a grade mostra o cadeado e o aviso de assinatura, sem baixar as imagens');
     await p.click('.cardtile.locked');
     await p.waitForSelector('#cardView:not(.hide) .cvlock');
-    ok(/upgrade/i.test(await p.$eval('#cardView', e => e.innerText)) && !(await p.$('#cardView img')), 'card bloqueado abre o aviso de upgrade, sem a imagem');
+    ok(/Liberado após a assinatura/.test(await p.$eval('#cardView', e => e.innerText)) && !(await p.$('#cardView img')), 'card bloqueado no teste abre o aviso de assinatura, sem a imagem');
     await p.click('#cardNext');
     ok(/\(2\//.test(await p.$eval('#cardCap', e => e.textContent)) && await p.$('#cardView .cvlock'), 'na tela cheia o próximo card também fica bloqueado');
     await p.click('#cardViewX');
@@ -65,6 +66,13 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const pid = (await sql.prepare("SELECT id FROM personals WHERE email='igor@teste.com'").get()).id;
     const sess = await sql.prepare("SELECT role, user_id FROM sessions WHERE user_id=? AND role='personal'").get(pid);
     ok(sess && sess.role === 'personal' && sess.user_id === pid, 'sessão do personal fica gravada no banco libSQL');
+    const endNovo = (await sql.prepare('SELECT current_period_end e FROM subscriptions WHERE personal_id=?').get(pid)).e;
+    const leftDays = (endNovo - Date.now()) / 864e5;
+    ok(leftDays > 1.9 && leftDays <= 2.01, 'o teste novo termina em 2 dias');
+    const antigo = Date.now() + 4 * 864e5;
+    await sql.prepare('UPDATE subscriptions SET current_period_end=? WHERE personal_id=?').run(antigo, pid);
+    await p.evaluate(async () => { await fetch('/api/me'); await fetch('/api/cards'); });
+    ok((await sql.prepare('SELECT current_period_end e FROM subscriptions WHERE personal_id=?').get(pid)).e === antigo, 'teste já em andamento mantém a data de fim, mesmo a de 4 dias');
     await sql.prepare("UPDATE subscriptions SET current_period_end=? WHERE personal_id=?").run(Date.now() - 1000, pid);
     await p.reload({ waitUntil: 'networkidle0' }); await p.waitForSelector('#paywall');
     ok(/teste grátis acabou/i.test(await p.$eval('#paywall', e => e.innerText)) && (await p.$$('#planos .plan')).length === 3, 'fim do teste grátis leva ao paywall com 3 planos');
@@ -73,6 +81,8 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await p.screenshot({ path: SHOTS + '/03-paywall.png' }); await p.screenshot({ path: SHOTS + '/11-planos.png', fullPage: true });
     await Promise.all([p.waitForNavigation(), p.click('#payDemo')]);
     await p.waitForSelector('#invCode'); const code = await p.$eval('#invCode', e => e.textContent); ok(code.length === 8, 'pagamento demo ativou o plano; código de convite ' + code);
+    const demoCards = await p.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); const img = await fetch('/api/cards/1/img'); const ej = await img.json().catch(() => ({})); return { paid: j.paid, locked: j.cards.filter(x => x.locked).length, img: img.status, err: ej.error || '' }; });
+    ok(demoCards.paid === false && demoCards.locked === 100 && demoCards.img === 403 && /assinatura/.test(demoCards.err), 'pagamento simulado não libera os cards');
     await sleep(500); await p.screenshot({ path: SHOTS + '/04-painel-personal-convite.png' });
     // ---- aluno
     const ctxA = await browser.createBrowserContext(), a = await ctxA.newPage(); await a.setViewport(phone);
@@ -276,6 +286,8 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await p.evaluate(() => { document.querySelector('#chgPlan').open = true; }); await p.click('#planGo'); await p.waitForSelector('#paywall');
     await Promise.all([p.waitForNavigation(), p.click('#payDemo')]); await p.waitForSelector('#planBox');
     ok(/Pro/.test(await p.$eval('#planBox', e => e.innerText)) && /15 \/ 30/.test(await p.$eval('#planBox', e => e.innerText)), 'upgrade para Pro libera 30 vagas');
+    const demoPro = await p.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); const img = await fetch('/api/cards/1/img'); return { paid: j.paid, open: j.cards.filter(c => !c.locked).length, img: img.status }; });
+    ok(demoPro.paid === false && demoPro.open === 0 && demoPro.img === 403, 'Pro pago só no modo teste continua com os cards bloqueados');
     ok((await signup(16)).st === 200, 'depois do upgrade o 16º aluno entra');
     const dg = await p.evaluate(async () => { const r = await fetch('/api/billing/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plano: 'basico' }) }); return { st: r.status, j: await r.json() }; });
     ok(dg.st === 409 && /16 alunos/.test(dg.j.error), 'downgrade para Básico bloqueado com 16 alunos');
@@ -422,16 +434,28 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
         const s = await fetch('/api/personal/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Cards ' + plano, email, senha: 'senha1234', plano }) });
         const list = await fetch('/api/cards'); const j = await list.json();
         const img = async id => { const r = await fetch('/api/cards/' + id + '/img'); return { st: r.status, cache: r.headers.get('cache-control') || '', type: r.headers.get('content-type') || '' }; };
-        return { signup: s.status, plan: j.plan, trial: j.trial, open: j.cards.filter(c => !c.locked).length, shut: j.cards.filter(c => c.locked).length, i1: await img(1), i51: await img(51), i100: await img(100) };
+        return { signup: s.status, plan: j.plan, trial: j.trial, paid: j.paid, open: j.cards.filter(c => !c.locked).length, shut: j.cards.filter(c => c.locked).length, i1: await img(1), i51: await img(51), i100: await img(100) };
       }, email, plano);
       return { pg, api };
     }
+    async function marcarPago(email, plano) {
+      const id = (await sql.prepare('SELECT id FROM personals WHERE email=?').get(email)).id;
+      await sql.prepare("UPDATE subscriptions SET status='active', provider='mercadopago', amount_cents=4990, current_period_end=? WHERE personal_id=?").run(Date.now() + 30 * 864e5, id);
+      await sql.prepare('INSERT INTO payments(personal_id,provider,external_id,amount_cents,status,test,created_at,plan) VALUES(?,?,?,?,?,?,?,?)').run(id, 'mercadopago', 'live_' + email, 4990, 'approved', 0, Date.now(), plano);
+    }
     const proC = await contaCards('cards-pro@teste.com', 'pro');
-    ok(proC.api.signup === 200 && proC.api.trial && proC.api.plan === 'pro' && proC.api.open === 50 && proC.api.shut === 50 && proC.api.i1.st === 200 && /jpeg/.test(proC.api.i1.type) && /private/.test(proC.api.i1.cache) && proC.api.i51.st === 403, 'Pro no teste libera 50 cards e a imagem; o restante responde 403');
+    ok(proC.api.signup === 200 && proC.api.trial && proC.api.paid === false && proC.api.plan === 'pro' && proC.api.open === 0 && proC.api.shut === 100 && proC.api.i1.st === 403, 'Pro no teste grátis deixa os 100 cards bloqueados');
     await proC.pg.goto(URL + '/?area=personal', { waitUntil: 'networkidle0' });
     await proC.pg.waitForSelector('#cardStudySec'); await proC.pg.click('#cardStudySec summary');
+    await proC.pg.waitForSelector('.cardtile.locked');
+    ok((await proC.pg.$$('.cardtile img')).length === 0 && (await proC.pg.$$('.cardtile.locked')).length === 100 && /Liberado após a assinatura/.test(await proC.pg.$eval('#cardStudyBody', e => e.innerText)), 'grade do Pro no teste mostra só cadeado e o aviso de assinatura');
+    await marcarPago('cards-pro@teste.com', 'pro');
+    await proC.pg.reload({ waitUntil: 'networkidle0' });
+    await proC.pg.waitForSelector('#cardStudySec'); await proC.pg.click('#cardStudySec summary');
     await proC.pg.waitForSelector('.cardtile img');
-    ok((await proC.pg.$$('.cardtile img')).length === 50 && (await proC.pg.$$('.cardtile.locked')).length === 50, 'grade do Pro mostra 50 miniaturas e 50 cadeados');
+    const proPago = await proC.pg.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); const img = await fetch('/api/cards/1/img'); const img51 = await fetch('/api/cards/51/img'); return { paid: j.paid, open: j.cards.filter(c => !c.locked).length, shut: j.cards.filter(c => c.locked).length, i1: img.status, type: img.headers.get('content-type') || '', cache: img.headers.get('cache-control') || '', i51: img51.status }; });
+    ok(proPago.paid && proPago.open === 50 && proPago.shut === 50 && proPago.i1 === 200 && /jpeg/.test(proPago.type) && /private/.test(proPago.cache) && proPago.i51 === 403, 'Pro com pagamento confirmado libera 50 cards e a imagem; o restante responde 403');
+    ok((await proC.pg.$$('.cardtile img')).length === 50 && (await proC.pg.$$('.cardtile.locked')).length === 50, 'grade do Pro pago mostra 50 miniaturas e 50 cadeados');
     await proC.pg.select('#cardReg', 'Mão');
     await proC.pg.waitForFunction(() => document.querySelectorAll('.cardtile').length === 1 && document.querySelector('.cardtile.locked'));
     ok(true, 'filtro de região reduz a grade');
@@ -452,12 +476,23 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     }));
     ok(swiped.after !== swiped.before, 'deslizar na tela cheia muda o card' + (swiped.err ? ' (' + swiped.err + ')' : ''));
     const iliC = await contaCards('cards-ili@teste.com', 'ilimitado');
-    ok(iliC.api.trial && iliC.api.plan === 'ilimitado' && iliC.api.open === 100 && iliC.api.shut === 0 && iliC.api.i1.st === 200 && iliC.api.i100.st === 200, 'Ilimitado no teste libera os 100 cards');
+    ok(iliC.api.trial && iliC.api.paid === false && iliC.api.plan === 'ilimitado' && iliC.api.open === 0 && iliC.api.shut === 100 && iliC.api.i1.st === 403 && iliC.api.i100.st === 403, 'Ilimitado no teste grátis deixa os 100 cards bloqueados');
+    const iliId = (await sql.prepare("SELECT id FROM personals WHERE email='cards-ili@teste.com'").get()).id;
+    await sql.prepare('INSERT INTO payments(personal_id,provider,external_id,amount_cents,status,test,created_at,plan) VALUES(?,?,?,?,?,?,?,?)').run(iliId, 'mercadopago', 'live_ili_ainda_trial', 7990, 'approved', 0, Date.now(), 'ilimitado');
+    const aindaTrial = await iliC.pg.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); return { trial: j.trial, paid: j.paid, open: j.cards.filter(c => !c.locked).length }; });
+    ok(aindaTrial.trial && aindaTrial.paid === false && aindaTrial.open === 0, 'pagamento confirmado não abre card enquanto o teste grátis segue valendo');
+    await sql.prepare("UPDATE subscriptions SET status='active', provider='mercadopago', amount_cents=7990, current_period_end=? WHERE personal_id=?").run(Date.now() + 30 * 864e5, iliId);
+    const iliPago = await iliC.pg.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); const i1 = await fetch('/api/cards/1/img'); const i100 = await fetch('/api/cards/100/img'); return { paid: j.paid, open: j.cards.filter(c => !c.locked).length, shut: j.cards.filter(c => c.locked).length, i1: i1.status, i100: i100.status }; });
+    ok(iliPago.paid && iliPago.open === 100 && iliPago.shut === 0 && iliPago.i1 === 200 && iliPago.i100 === 200, 'Ilimitado com pagamento confirmado libera os 100 cards');
+    const basC = await contaCards('cards-basico@teste.com', 'basico');
+    await marcarPago('cards-basico@teste.com', 'basico');
+    const basPago = await basC.pg.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); const img = await fetch('/api/cards/1/img'); const ej = await img.json().catch(() => ({})); return { paid: j.paid, open: j.cards.filter(c => !c.locked).length, img: img.status, err: ej.error || '' }; });
+    ok(basPago.paid && basPago.open === 0 && basPago.img === 403 && /Básico/.test(basPago.err) && /upgrade/i.test(basPago.err), 'Básico pago continua sem cards e pede upgrade');
     const unkId = (await sql.prepare("SELECT id FROM personals WHERE email='cards-pro@teste.com'").get()).id;
     await sql.prepare('UPDATE subscriptions SET plan=? WHERE personal_id=?').run('xyz', unkId);
     await sql.prepare('UPDATE personals SET plan=? WHERE id=?').run('xyz', unkId);
-    const unk = await proC.pg.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); return { plan: j.plan, open: j.cards.filter(c => !c.locked).length }; });
-    ok(unk.plan === 'xyz' && unk.open === 50, 'plano desconhecido no teste vale como Pro');
+    const unk = await proC.pg.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); return { plan: j.plan, paid: j.paid, open: j.cards.filter(c => !c.locked).length }; });
+    ok(unk.plan === 'xyz' && unk.paid && unk.open === 50, 'plano desconhecido, já pago, vale como Pro');
     console.log('\nTODOS OS TESTES PASSARAM');
   } catch (e) { console.error(e); process.exitCode = 1; } finally { await browser.close(); srv.kill(); }
 })();

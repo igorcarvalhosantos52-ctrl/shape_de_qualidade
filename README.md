@@ -5,7 +5,7 @@ App de coach virtual com **anamnese por voz** (pt-BR), treino em rotação de 4 
 lista de alunos com busca/aprovação e revisão do treino. É a versão de teste aprovada, agora com servidor.
 
 **Como funciona a venda:** cada **personal** cria a conta e **assina o plano mensal**. Depois do pagamento ele
-recebe um **link/código de convite** e manda para os alunos. Cada personal só vê os próprios alunos. Começa com **4 dias grátis**. Se a assinatura
+recebe um **link/código de convite** e manda para os alunos. Cada personal só vê os próprios alunos. Começa com **2 dias grátis**. Se a assinatura
 vencer, o personal vê a tela de pagamento e os alunos dele ficam com o acesso pausado.
 
 ## Rodar no computador
@@ -25,7 +25,7 @@ Painel do dono: `http://localhost:3000/admin` (defina `ADMIN_EMAIL` e `ADMIN_PAS
 | Pro | até 30 | R$ 49,90/mês |
 | Ilimitado | sem limite | R$ 79,90/mês |
 
-- Todo personal novo ganha **4 dias grátis** no plano que escolher no cadastro, sem cartão e **uma vez por conta**. Quando o teste acaba, ele vê a tela de escolha de plano.
+- Todo personal novo ganha **2 dias grátis** no plano que escolher no cadastro, sem cartão e **uma vez por conta**. Quando o teste acaba, ele vê a tela de escolha de plano. Quem já estava em teste continua até a data que foi gravada no cadastro.
 - **Limite de alunos:** quando o personal chega no limite, o convite avisa o aluno e o cadastro é recusado com a mensagem
   "O seu personal atingiu o limite de 15 alunos do plano Básico. Peça para ele fazer upgrade…". O painel do personal mostra "15 / 15 – Limite atingido".
 - **Mudar de plano** (painel do personal → "Mudar de plano"):
