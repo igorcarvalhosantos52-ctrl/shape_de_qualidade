@@ -218,7 +218,7 @@ if (!$("#t-personal").classList.contains("hide")) render();
   ind.style.cssText = "position:fixed;left:50%;top:0;transform:translate(-50%,-60px);background:#111;color:#d4a017;border:1px solid #d4a017;padding:6px 14px;border-radius:0 0 12px 12px;font-size:.85rem;z-index:9998;transition:transform .15s;pointer-events:none";
   document.body.appendChild(ind);
   let y0 = null, dy = 0; const TH = 80;
-  const blocked = t => (t.closest && t.closest("#detDrawer,#detOv,#stuPanel,#chat,select,textarea,input,.open")) || (document.getElementById("detDrawer") || {}).classList?.contains("open");
+  const blocked = t => (t.closest && t.closest("#detDrawer,#detOv,#stuPanel,#cardView,#chat,select,textarea,input,.open")) || (document.getElementById("detDrawer") || {}).classList?.contains("open");
   addEventListener("touchstart", e => { y0 = (scrollY <= 0 && e.touches.length === 1 && !blocked(e.target)) ? e.touches[0].clientY : null; dy = 0; }, { passive: true });
   addEventListener("touchmove", e => { if (y0 === null) return; if (scrollY > 0) { y0 = null; ind.style.transform = "translate(-50%,-60px)"; return; }
     dy = e.touches[0].clientY - y0; if (dy <= 10) return; ind.textContent = dy > TH ? "↻ Solte para atualizar" : "↓ Puxe para atualizar";

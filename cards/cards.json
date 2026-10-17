@@ -1,0 +1,3912 @@
+[
+ {
+  "n": 1,
+  "slug": "peitoral",
+  "titulo": "Peitoral",
+  "regiao": "Membros superiores • Tronco",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "peitoral maior",
+  "azul": "serrátil anterior",
+  "musculos": [
+   "Peitoral maior (clavicular e esternocostal)",
+   "Peitoral menor",
+   "Deltoide anterior (auxiliar)"
+  ],
+  "funcoes": [
+   "Adução horizontal do ombro",
+   "Flexão do ombro",
+   "Rotação interna do ombro",
+   "Estabilização da escápula (peitoral menor)"
+  ],
+  "exemplos": [
+   "Supino reto",
+   "Crucifixo com halteres",
+   "Crossover",
+   "Flexão de braço"
+  ],
+  "destaques": [
+   {
+    "nome": "Supino reto",
+    "como": "Deitado no banco, desça a barra até o meio do peito e empurre até estender os cotovelos."
+   },
+   {
+    "nome": "Crucifixo com halteres",
+    "como": "Braços semiflexionados, abra em arco até alongar o peito e feche contraindo."
+   },
+   {
+    "nome": "Flexão de braço",
+    "como": "Corpo alinhado, desça o peito até perto do chão e empurre sem perder o core."
+   }
+  ]
+ },
+ {
+  "n": 2,
+  "slug": "dorsais",
+  "titulo": "Dorsais",
+  "regiao": "Tronco • Costas",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "latíssimo do dorso",
+  "azul": "infraespinal e redondo maior",
+  "musculos": [
+   "Latíssimo do dorso",
+   "Redondo maior",
+   "Trapézio inferior (auxiliar)"
+  ],
+  "funcoes": [
+   "Adução do ombro",
+   "Extensão do ombro",
+   "Rotação interna do ombro",
+   "Depressão da escápula"
+  ],
+  "exemplos": [
+   "Puxada frontal",
+   "Barra fixa",
+   "Remada curvada",
+   "Pulldown braço estendido"
+  ],
+  "destaques": [
+   {
+    "nome": "Puxada frontal",
+    "como": "Puxe a barra até a parte alta do peito, levando os cotovelos para baixo."
+   },
+   {
+    "nome": "Barra fixa",
+    "como": "Pendurado, puxe o corpo até o queixo passar a barra, sem balanço."
+   },
+   {
+    "nome": "Remada curvada",
+    "como": "Tronco inclinado e coluna neutra, puxe a barra em direção ao umbigo."
+   }
+  ]
+ },
+ {
+  "n": 3,
+  "slug": "deltoides",
+  "titulo": "Deltoides",
+  "regiao": "Membros superiores • Ombro",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "deltoides",
+  "azul": "bíceps braquial (referência)",
+  "musculos": [
+   "Deltoide anterior",
+   "Deltoide lateral (médio)",
+   "Deltoide posterior"
+  ],
+  "funcoes": [
+   "Abdução do ombro",
+   "Flexão do ombro (anterior)",
+   "Extensão e abdução horizontal (posterior)",
+   "Estabilização da articulação do ombro"
+  ],
+  "exemplos": [
+   "Desenvolvimento",
+   "Elevação lateral",
+   "Elevação frontal",
+   "Crucifixo inverso"
+  ],
+  "destaques": [
+   {
+    "nome": "Desenvolvimento",
+    "como": "Empurre os halteres acima da cabeça até estender os braços, core firme."
+   },
+   {
+    "nome": "Elevação lateral",
+    "como": "Eleve os halteres lateralmente até a linha dos ombros, cotovelos levemente flexionados."
+   },
+   {
+    "nome": "Crucifixo inverso",
+    "como": "Tronco inclinado, abra os braços para trás contraindo a parte posterior do ombro."
+   }
+  ]
+ },
+ {
+  "n": 4,
+  "slug": "biceps",
+  "titulo": "Bíceps",
+  "regiao": "Membros superiores • Braço",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "bíceps braquial",
+  "azul": "braquiorradial",
+  "musculos": [
+   "Bíceps braquial (cabeça longa e curta)",
+   "Braquial",
+   "Braquiorradial (auxiliar)"
+  ],
+  "funcoes": [
+   "Flexão do cotovelo",
+   "Supinação do antebraço",
+   "Flexão do ombro (cabeça longa)"
+  ],
+  "exemplos": [
+   "Rosca direta",
+   "Rosca alternada",
+   "Rosca Scott",
+   "Rosca martelo"
+  ],
+  "destaques": [
+   {
+    "nome": "Rosca direta",
+    "como": "Cotovelos fixos ao lado do corpo, flexione levando a barra aos ombros."
+   },
+   {
+    "nome": "Rosca alternada",
+    "como": "Flexione um braço por vez girando a palma para cima durante a subida."
+   },
+   {
+    "nome": "Rosca Scott",
+    "como": "Braços apoiados no banco Scott, flexione sem tirar os cotovelos do apoio."
+   }
+  ]
+ },
+ {
+  "n": 5,
+  "slug": "triceps",
+  "titulo": "Tríceps",
+  "regiao": "Membros superiores • Braço",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "tríceps braquial",
+  "azul": "deltoide posterior",
+  "musculos": [
+   "Tríceps braquial – cabeça longa",
+   "Tríceps braquial – cabeça lateral",
+   "Tríceps braquial – cabeça medial",
+   "Ancôneo"
+  ],
+  "funcoes": [
+   "Extensão do cotovelo",
+   "Extensão do ombro (cabeça longa)",
+   "Estabilização do cotovelo"
+  ],
+  "exemplos": [
+   "Tríceps pulley",
+   "Tríceps francês",
+   "Tríceps testa",
+   "Mergulho no banco"
+  ],
+  "destaques": [
+   {
+    "nome": "Tríceps pulley",
+    "como": "Cotovelos fixos junto ao corpo, estenda os braços empurrando a barra para baixo."
+   },
+   {
+    "nome": "Tríceps francês",
+    "como": "Halter atrás da cabeça, estenda os cotovelos apontando-os para cima."
+   },
+   {
+    "nome": "Mergulho no banco",
+    "como": "Mãos no banco atrás do corpo, desça flexionando os cotovelos e suba."
+   }
+  ]
+ },
+ {
+  "n": 6,
+  "slug": "abdome",
+  "titulo": "Abdome",
+  "regiao": "Tronco • Core",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "reto do abdome",
+  "azul": "oblíquo externo",
+  "musculos": [
+   "Reto do abdome",
+   "Oblíquo externo",
+   "Oblíquo interno",
+   "Transverso do abdome"
+  ],
+  "funcoes": [
+   "Flexão do tronco",
+   "Estabilização da coluna",
+   "Rotação e inclinação lateral (oblíquos)",
+   "Aumento da pressão intra-abdominal"
+  ],
+  "exemplos": [
+   "Abdominal crunch",
+   "Elevação de pernas",
+   "Prancha",
+   "Abdominal bicicleta"
+  ],
+  "destaques": [
+   {
+    "nome": "Abdominal crunch",
+    "como": "Deitado, eleve as escápulas do chão enrolando o tronco, sem puxar o pescoço."
+   },
+   {
+    "nome": "Elevação de pernas",
+    "como": "Deitado ou pendurado, eleve as pernas controlando a lombar."
+   },
+   {
+    "nome": "Prancha",
+    "como": "Apoio em antebraços e pontas dos pés, corpo alinhado e abdome contraído."
+   }
+  ]
+ },
+ {
+  "n": 7,
+  "slug": "gluteos",
+  "titulo": "Glúteos",
+  "regiao": "Membros inferiores",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "glúteo máximo",
+  "azul": "glúteo médio",
+  "musculos": [
+   "Glúteo máximo",
+   "Glúteo médio",
+   "Glúteo mínimo"
+  ],
+  "funcoes": [
+   "Extensão do quadril",
+   "Abdução do quadril",
+   "Rotação externa do quadril",
+   "Estabilização da pelve na marcha"
+  ],
+  "exemplos": [
+   "Hip thrust",
+   "Agachamento livre",
+   "Abdução de quadril",
+   "Agachamento búlgaro"
+  ],
+  "destaques": [
+   {
+    "nome": "Hip thrust",
+    "como": "Costas apoiadas no banco, eleve o quadril até alinhar com o tronco e contraia os glúteos no topo."
+   },
+   {
+    "nome": "Agachamento livre",
+    "como": "Desça com quadril para trás e joelhos alinhados aos pés; suba empurrando o chão."
+   },
+   {
+    "nome": "Abdução de quadril",
+    "como": "Afaste as pernas contra a resistência, sem balançar o tronco."
+   }
+  ]
+ },
+ {
+  "n": 8,
+  "slug": "quadriceps",
+  "titulo": "Quadríceps",
+  "regiao": "Membros inferiores • Coxa",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "quadríceps",
+  "azul": "adutores",
+  "musculos": [
+   "Reto femoral",
+   "Vasto lateral",
+   "Vasto medial",
+   "Vasto intermédio"
+  ],
+  "funcoes": [
+   "Extensão do joelho",
+   "Flexão do quadril (reto femoral)",
+   "Estabilização da patela"
+  ],
+  "exemplos": [
+   "Agachamento livre",
+   "Leg press",
+   "Cadeira extensora",
+   "Afundo"
+  ],
+  "destaques": [
+   {
+    "nome": "Agachamento livre",
+    "como": "Desça com quadril para trás e joelhos alinhados aos pés; suba empurrando o chão."
+   },
+   {
+    "nome": "Leg press",
+    "como": "Pés na plataforma, desça controlando e empurre sem travar os joelhos."
+   },
+   {
+    "nome": "Cadeira extensora",
+    "como": "Sentado, estenda os joelhos até quase retos e desça devagar."
+   }
+  ]
+ },
+ {
+  "n": 9,
+  "slug": "posterior-de-coxa",
+  "titulo": "Posterior de Coxa",
+  "regiao": "Membros inferiores • Coxa",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "bíceps femoral",
+  "azul": "semitendinoso e semimembranoso",
+  "musculos": [
+   "Bíceps femoral (cabeça longa e curta)",
+   "Semitendinoso",
+   "Semimembranoso"
+  ],
+  "funcoes": [
+   "Flexão do joelho",
+   "Extensão do quadril",
+   "Rotação do joelho flexionado"
+  ],
+  "exemplos": [
+   "Stiff",
+   "Mesa flexora",
+   "Cadeira flexora",
+   "Nordic curl"
+  ],
+  "destaques": [
+   {
+    "nome": "Stiff",
+    "como": "Joelhos levemente flexionados, desça a barra rente às pernas levando o quadril para trás."
+   },
+   {
+    "nome": "Mesa flexora",
+    "como": "Deitado, flexione os joelhos levando o rolo em direção aos glúteos."
+   },
+   {
+    "nome": "Cadeira flexora",
+    "como": "Sentado, flexione os joelhos empurrando o rolo para baixo."
+   }
+  ]
+ },
+ {
+  "n": 10,
+  "slug": "panturrilha",
+  "titulo": "Panturrilha",
+  "regiao": "Membros inferiores • Perna",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "gastrocnêmio",
+  "azul": "sóleo",
+  "musculos": [
+   "Gastrocnêmio (medial e lateral)",
+   "Sóleo",
+   "Plantar delgado"
+  ],
+  "funcoes": [
+   "Flexão plantar do tornozelo",
+   "Flexão do joelho (gastrocnêmio)",
+   "Estabilidade na marcha e corrida"
+  ],
+  "exemplos": [
+   "Panturrilha em pé",
+   "Panturrilha sentado",
+   "Panturrilha no leg press",
+   "Panturrilha unilateral"
+  ],
+  "destaques": [
+   {
+    "nome": "Panturrilha em pé",
+    "como": "Na ponta dos pés, suba o máximo e desça alongando o calcanhar."
+   },
+   {
+    "nome": "Panturrilha sentado",
+    "como": "Sentado, joelhos a 90°, eleve os calcanhares contra a carga."
+   },
+   {
+    "nome": "Panturrilha no leg press",
+    "como": "Pontas dos pés na plataforma, empurre estendendo os tornozelos."
+   }
+  ]
+ },
+ {
+  "n": 11,
+  "slug": "peitoral-superior",
+  "titulo": "Peitoral Superior",
+  "regiao": "Tronco",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "peitoral maior (foco clavicular)",
+  "azul": "deltoide anterior",
+  "musculos": [
+   "Peitoral maior – porção clavicular",
+   "Deltoide anterior"
+  ],
+  "funcoes": [
+   "Flexão do ombro",
+   "Adução horizontal com braço elevado"
+  ],
+  "exemplos": [
+   "Supino inclinado",
+   "Crossover",
+   "Crucifixo com halteres",
+   "Flexão de braço"
+  ],
+  "destaques": [
+   {
+    "nome": "Supino inclinado",
+    "como": "Banco a 30–45°, desça a barra até a parte alta do peito e empurre para cima."
+   },
+   {
+    "nome": "Crossover",
+    "como": "No cabo, traga as mãos à frente do corpo em arco, cotovelos levemente flexionados."
+   },
+   {
+    "nome": "Crucifixo com halteres",
+    "como": "Braços semiflexionados, abra em arco até alongar o peito e feche contraindo."
+   }
+  ]
+ },
+ {
+  "n": 12,
+  "slug": "trapezio",
+  "titulo": "Trapézio",
+  "regiao": "Tronco • Costas",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "trapézio superior",
+  "azul": "trapézio médio e inferior",
+  "musculos": [
+   "Trapézio superior",
+   "Trapézio médio",
+   "Trapézio inferior"
+  ],
+  "funcoes": [
+   "Elevação da escápula",
+   "Retração da escápula",
+   "Depressão e rotação superior da escápula"
+  ],
+  "exemplos": [
+   "Encolhimento",
+   "Remada alta",
+   "Face pull",
+   "Y-T-W no banco"
+  ],
+  "destaques": [
+   {
+    "nome": "Encolhimento",
+    "como": "Segure os halteres e eleve os ombros em direção às orelhas, sem girar."
+   },
+   {
+    "nome": "Face pull",
+    "como": "Puxe a corda em direção ao rosto, abrindo os cotovelos e girando os ombros para fora."
+   },
+   {
+    "nome": "Y-T-W no banco",
+    "como": "Deitado de bruços no banco inclinado, eleve os braços formando Y, T e W."
+   }
+  ]
+ },
+ {
+  "n": 13,
+  "slug": "romboides",
+  "titulo": "Romboides",
+  "regiao": "Tronco • Costas",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "romboides (região)",
+  "azul": "levantador da escápula",
+  "musculos": [
+   "Romboide maior",
+   "Romboide menor",
+   "Trapézio médio"
+  ],
+  "funcoes": [
+   "Retração da escápula",
+   "Rotação inferior da escápula",
+   "Postura dos ombros"
+  ],
+  "exemplos": [
+   "Remada sentada",
+   "Face pull",
+   "Crucifixo inverso",
+   "Remada curvada"
+  ],
+  "destaques": [
+   {
+    "nome": "Remada sentada",
+    "como": "Puxe o cabo ao abdome, aproximando as escápulas sem jogar o tronco."
+   },
+   {
+    "nome": "Face pull",
+    "como": "Puxe a corda em direção ao rosto, abrindo os cotovelos e girando os ombros para fora."
+   },
+   {
+    "nome": "Crucifixo inverso",
+    "como": "Tronco inclinado, abra os braços para trás contraindo a parte posterior do ombro."
+   }
+  ]
+ },
+ {
+  "n": 14,
+  "slug": "eretores-da-espinha",
+  "titulo": "Eretores da Espinha",
+  "regiao": "Tronco • Lombar",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "eretores da espinha",
+  "azul": "latíssimo do dorso",
+  "musculos": [
+   "Iliocostal",
+   "Longuíssimo",
+   "Espinhal",
+   "Multífidos"
+  ],
+  "funcoes": [
+   "Extensão da coluna",
+   "Estabilização da coluna",
+   "Inclinação lateral do tronco"
+  ],
+  "exemplos": [
+   "Levantamento terra",
+   "Hiperextensão lombar",
+   "Bom-dia",
+   "Bird dog"
+  ],
+  "destaques": [
+   {
+    "nome": "Levantamento terra",
+    "como": "Coluna neutra, empurre o chão e estenda quadril e joelhos juntos."
+   },
+   {
+    "nome": "Hiperextensão lombar",
+    "como": "No banco romano, desça o tronco e suba até alinhar com as pernas."
+   },
+   {
+    "nome": "Bom-dia",
+    "como": "Barra nas costas, incline o tronco à frente levando o quadril para trás e volte."
+   }
+  ]
+ },
+ {
+  "n": 15,
+  "slug": "deltoide-lateral",
+  "titulo": "Deltoide Lateral",
+  "regiao": "Ombro",
+  "plano": "Pro",
+  "vista": "vista lateral",
+  "vermelho": "deltoide lateral",
+  "azul": "trapézio superior",
+  "musculos": [
+   "Deltoide médio",
+   "Supraespinal"
+  ],
+  "funcoes": [
+   "Abdução do ombro"
+  ],
+  "exemplos": [
+   "Elevação lateral",
+   "Desenvolvimento",
+   "Remada alta",
+   "Face pull"
+  ],
+  "destaques": [
+   {
+    "nome": "Elevação lateral",
+    "como": "Eleve os halteres lateralmente até a linha dos ombros, cotovelos levemente flexionados."
+   },
+   {
+    "nome": "Desenvolvimento",
+    "como": "Empurre os halteres acima da cabeça até estender os braços, core firme."
+   },
+   {
+    "nome": "Remada alta",
+    "como": "Puxe a barra junto ao corpo até a altura do peito, cotovelos à frente das mãos."
+   }
+  ]
+ },
+ {
+  "n": 16,
+  "slug": "deltoide-posterior",
+  "titulo": "Deltoide Posterior",
+  "regiao": "Ombro",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "deltoide posterior",
+  "azul": "infraespinal",
+  "musculos": [
+   "Deltoide posterior",
+   "Infraespinal",
+   "Redondo menor"
+  ],
+  "funcoes": [
+   "Abdução horizontal do ombro",
+   "Extensão do ombro",
+   "Rotação externa"
+  ],
+  "exemplos": [
+   "Crucifixo inverso",
+   "Face pull",
+   "Remada sentada",
+   "Rotação externa com elástico"
+  ],
+  "destaques": [
+   {
+    "nome": "Crucifixo inverso",
+    "como": "Tronco inclinado, abra os braços para trás contraindo a parte posterior do ombro."
+   },
+   {
+    "nome": "Face pull",
+    "como": "Puxe a corda em direção ao rosto, abrindo os cotovelos e girando os ombros para fora."
+   },
+   {
+    "nome": "Rotação externa com elástico",
+    "como": "Cotovelo junto ao corpo a 90°, gire o antebraço para fora contra o elástico."
+   }
+  ]
+ },
+ {
+  "n": 17,
+  "slug": "deltoide-anterior",
+  "titulo": "Deltoide Anterior",
+  "regiao": "Ombro",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "deltoide anterior",
+  "azul": "peitoral maior",
+  "musculos": [
+   "Deltoide anterior",
+   "Peitoral maior clavicular"
+  ],
+  "funcoes": [
+   "Flexão do ombro",
+   "Rotação interna",
+   "Adução horizontal"
+  ],
+  "exemplos": [
+   "Desenvolvimento",
+   "Elevação frontal",
+   "Supino inclinado",
+   "Flexão de braço"
+  ],
+  "destaques": [
+   {
+    "nome": "Desenvolvimento",
+    "como": "Empurre os halteres acima da cabeça até estender os braços, core firme."
+   },
+   {
+    "nome": "Elevação frontal",
+    "como": "Eleve o halter à frente até a altura dos ombros, sem balançar."
+   },
+   {
+    "nome": "Supino inclinado",
+    "como": "Banco a 30–45°, desça a barra até a parte alta do peito e empurre para cima."
+   }
+  ]
+ },
+ {
+  "n": 18,
+  "slug": "manguito-rotador",
+  "titulo": "Manguito Rotador",
+  "regiao": "Ombro",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "infraespinal",
+  "azul": "supraespinal",
+  "musculos": [
+   "Supraespinal",
+   "Infraespinal",
+   "Redondo menor",
+   "Subescapular"
+  ],
+  "funcoes": [
+   "Estabilização da cabeça do úmero",
+   "Rotação externa e interna",
+   "Início da abdução"
+  ],
+  "exemplos": [
+   "Rotação externa com elástico",
+   "Rotação interna no cabo",
+   "Face pull",
+   "Y-T-W no banco"
+  ],
+  "destaques": [
+   {
+    "nome": "Rotação externa com elástico",
+    "como": "Cotovelo junto ao corpo a 90°, gire o antebraço para fora contra o elástico."
+   },
+   {
+    "nome": "Rotação interna no cabo",
+    "como": "Cotovelo junto ao corpo, gire o antebraço para dentro contra o cabo."
+   },
+   {
+    "nome": "Face pull",
+    "como": "Puxe a corda em direção ao rosto, abrindo os cotovelos e girando os ombros para fora."
+   }
+  ]
+ },
+ {
+  "n": 19,
+  "slug": "braquial-braquiorradial",
+  "titulo": "Braquial e Braquiorradial",
+  "regiao": "Braço",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "braquiorradial",
+  "azul": "braquial (sob o bíceps)",
+  "musculos": [
+   "Braquial",
+   "Braquiorradial"
+  ],
+  "funcoes": [
+   "Flexão do cotovelo",
+   "Flexão em pegada neutra e pronada"
+  ],
+  "exemplos": [
+   "Rosca martelo",
+   "Rosca inversa",
+   "Rosca concentrada",
+   "Remada invertida"
+  ],
+  "destaques": [
+   {
+    "nome": "Rosca martelo",
+    "como": "Pegada neutra, flexione os cotovelos mantendo os polegares para cima."
+   },
+   {
+    "nome": "Rosca inversa",
+    "como": "Pegada pronada, flexione os cotovelos mantendo os punhos firmes."
+   },
+   {
+    "nome": "Rosca concentrada",
+    "como": "Sentado, cotovelo apoiado na coxa, flexione o braço devagar."
+   }
+  ]
+ },
+ {
+  "n": 20,
+  "slug": "antebraco",
+  "titulo": "Antebraço",
+  "regiao": "Membros superiores",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "flexores do punho",
+  "azul": "extensores do punho",
+  "musculos": [
+   "Flexor radial do carpo",
+   "Flexor ulnar do carpo",
+   "Extensores do punho",
+   "Flexores dos dedos"
+  ],
+  "funcoes": [
+   "Flexão e extensão do punho",
+   "Preensão",
+   "Pronação e supinação"
+  ],
+  "exemplos": [
+   "Rosca de punho",
+   "Rosca de punho inversa",
+   "Farmer walk",
+   "Rosca inversa"
+  ],
+  "destaques": [
+   {
+    "nome": "Rosca de punho",
+    "como": "Antebraços apoiados, flexione os punhos levantando a barra."
+   },
+   {
+    "nome": "Rosca de punho inversa",
+    "como": "Palmas para baixo, estenda os punhos levantando a barra."
+   },
+   {
+    "nome": "Farmer walk",
+    "como": "Caminhe segurando cargas pesadas ao lado do corpo, postura ereta."
+   }
+  ]
+ },
+ {
+  "n": 21,
+  "slug": "obliquos",
+  "titulo": "Oblíquos",
+  "regiao": "Core",
+  "plano": "Pro",
+  "vista": "vista lateral",
+  "vermelho": "oblíquo externo",
+  "azul": "serrátil anterior",
+  "musculos": [
+   "Oblíquo externo",
+   "Oblíquo interno"
+  ],
+  "funcoes": [
+   "Rotação do tronco",
+   "Inclinação lateral",
+   "Compressão abdominal"
+  ],
+  "exemplos": [
+   "Prancha lateral",
+   "Pallof press",
+   "Abdominal bicicleta",
+   "Abdominal crunch"
+  ],
+  "destaques": [
+   {
+    "nome": "Prancha lateral",
+    "como": "Apoio em um antebraço, quadril elevado e corpo em linha reta."
+   },
+   {
+    "nome": "Pallof press",
+    "como": "Cabo ao lado, empurre as mãos à frente resistindo à rotação do tronco."
+   },
+   {
+    "nome": "Abdominal bicicleta",
+    "como": "Leve o cotovelo em direção ao joelho oposto, alternando os lados."
+   }
+  ]
+ },
+ {
+  "n": 22,
+  "slug": "core-profundo",
+  "titulo": "Core Profundo",
+  "regiao": "Core",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "transverso do abdome",
+  "azul": "diafragma",
+  "musculos": [
+   "Transverso do abdome",
+   "Multífidos",
+   "Diafragma",
+   "Assoalho pélvico"
+  ],
+  "funcoes": [
+   "Estabilização da coluna",
+   "Pressão intra-abdominal",
+   "Controle respiratório"
+  ],
+  "exemplos": [
+   "Dead bug",
+   "Bird dog",
+   "Vacuum abdominal",
+   "Prancha"
+  ],
+  "destaques": [
+   {
+    "nome": "Dead bug",
+    "como": "Deitado, estenda braço e perna opostos mantendo a lombar no chão."
+   },
+   {
+    "nome": "Bird dog",
+    "como": "Em quatro apoios, estenda braço e perna opostos sem girar o quadril."
+   },
+   {
+    "nome": "Vacuum abdominal",
+    "como": "Expire todo o ar e puxe o umbigo para dentro, segurando alguns segundos."
+   }
+  ]
+ },
+ {
+  "n": 23,
+  "slug": "gluteo-medio",
+  "titulo": "Glúteo Médio",
+  "regiao": "Quadril",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "glúteo máximo",
+  "azul": "glúteo médio",
+  "musculos": [
+   "Glúteo médio",
+   "Glúteo mínimo",
+   "Tensor da fáscia lata"
+  ],
+  "funcoes": [
+   "Abdução do quadril",
+   "Estabilização da pelve em apoio unipodal",
+   "Rotação interna (fibras anteriores)"
+  ],
+  "exemplos": [
+   "Abdução de quadril",
+   "Caminhada lateral com elástico",
+   "Clamshell",
+   "Agachamento búlgaro"
+  ],
+  "destaques": [
+   {
+    "nome": "Abdução de quadril",
+    "como": "Afaste as pernas contra a resistência, sem balançar o tronco."
+   },
+   {
+    "nome": "Caminhada lateral com elástico",
+    "como": "Elástico nas pernas, semi-agachado, dê passos laterais sem juntar os pés."
+   },
+   {
+    "nome": "Clamshell",
+    "como": "Deitado de lado, joelhos flexionados, abra o joelho de cima mantendo os pés juntos."
+   }
+  ]
+ },
+ {
+  "n": 24,
+  "slug": "adutores",
+  "titulo": "Adutores",
+  "regiao": "Coxa",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "quadríceps",
+  "azul": "adutores",
+  "musculos": [
+   "Adutor longo",
+   "Adutor curto",
+   "Adutor magno",
+   "Grácil",
+   "Pectíneo"
+  ],
+  "funcoes": [
+   "Adução do quadril",
+   "Estabilização da pelve",
+   "Auxílio na extensão (adutor magno)"
+  ],
+  "exemplos": [
+   "Cadeira adutora",
+   "Agachamento sumô",
+   "Prancha de Copenhague",
+   "Afundo"
+  ],
+  "destaques": [
+   {
+    "nome": "Cadeira adutora",
+    "como": "Sentado, feche as pernas contra a resistência de forma controlada."
+   },
+   {
+    "nome": "Agachamento sumô",
+    "como": "Pés afastados e apontados para fora, desça mantendo o tronco ereto."
+   },
+   {
+    "nome": "Prancha de Copenhague",
+    "como": "Prancha lateral com a perna de cima apoiada no banco, quadril elevado."
+   }
+  ]
+ },
+ {
+  "n": 25,
+  "slug": "flexores-do-quadril",
+  "titulo": "Flexores do Quadril",
+  "regiao": "Quadril",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "iliopsoas (região do quadril)",
+  "azul": "reto femoral",
+  "musculos": [
+   "Iliopsoas (ilíaco e psoas maior)",
+   "Reto femoral",
+   "Sartório"
+  ],
+  "funcoes": [
+   "Flexão do quadril",
+   "Estabilização da lombar"
+  ],
+  "exemplos": [
+   "Elevação de joelhos",
+   "Mountain climber",
+   "Elevação de pernas",
+   "Afundo"
+  ],
+  "destaques": [
+   {
+    "nome": "Elevação de joelhos",
+    "como": "Pendurado ou apoiado, eleve os joelhos em direção ao peito."
+   },
+   {
+    "nome": "Mountain climber",
+    "como": "Em prancha alta, traga os joelhos ao peito alternadamente."
+   },
+   {
+    "nome": "Elevação de pernas",
+    "como": "Deitado ou pendurado, eleve as pernas controlando a lombar."
+   }
+  ]
+ },
+ {
+  "n": 26,
+  "slug": "tibial-anterior",
+  "titulo": "Tibial Anterior",
+  "regiao": "Perna",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "tibial anterior",
+  "azul": "fibulares",
+  "musculos": [
+   "Tibial anterior",
+   "Extensor longo dos dedos",
+   "Extensor longo do hálux"
+  ],
+  "funcoes": [
+   "Dorsiflexão do tornozelo",
+   "Inversão do pé",
+   "Controle da aterrissagem do pé"
+  ],
+  "exemplos": [
+   "Tibial raise",
+   "Dorsiflexão com elástico",
+   "Mobilidade de tornozelo na parede",
+   "Step-up"
+  ],
+  "destaques": [
+   {
+    "nome": "Tibial raise",
+    "como": "Costas na parede, eleve as pontas dos pés mantendo os calcanhares no chão."
+   },
+   {
+    "nome": "Dorsiflexão com elástico",
+    "como": "Elástico no peito do pé, puxe a ponta do pé em direção à canela."
+   },
+   {
+    "nome": "Mobilidade de tornozelo na parede",
+    "como": "Joelho em direção à parede sem tirar o calcanhar do chão."
+   }
+  ]
+ },
+ {
+  "n": 27,
+  "slug": "serratil-anterior",
+  "titulo": "Serrátil Anterior",
+  "regiao": "Tronco",
+  "plano": "Pro",
+  "vista": "vista lateral",
+  "vermelho": "oblíquo externo",
+  "azul": "serrátil anterior",
+  "musculos": [
+   "Serrátil anterior",
+   "Peitoral menor"
+  ],
+  "funcoes": [
+   "Protração da escápula",
+   "Rotação superior da escápula",
+   "Fixação da escápula no tórax"
+  ],
+  "exemplos": [
+   "Flexão plus",
+   "Soco no cabo",
+   "Wall slide",
+   "Pullover"
+  ],
+  "destaques": [
+   {
+    "nome": "Flexão plus",
+    "como": "Na flexão, ao final empurre o chão afastando as escápulas."
+   },
+   {
+    "nome": "Soco no cabo",
+    "como": "Cabo atrás, empurre a mão à frente projetando o ombro."
+   },
+   {
+    "nome": "Wall slide",
+    "como": "Costas e braços na parede, deslize os braços para cima sem perder o contato."
+   }
+  ]
+ },
+ {
+  "n": 28,
+  "slug": "cadeia-anterior",
+  "titulo": "Cadeia Anterior",
+  "regiao": "Visão geral",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "peitoral, abdome e quadríceps",
+  "azul": "deltoide anterior",
+  "musculos": [
+   "Peitoral maior",
+   "Deltoide anterior",
+   "Reto do abdome",
+   "Iliopsoas",
+   "Quadríceps"
+  ],
+  "funcoes": [
+   "Empurrar",
+   "Flexionar tronco e quadril",
+   "Estender o joelho"
+  ],
+  "exemplos": [
+   "Supino reto",
+   "Agachamento frontal",
+   "Prancha",
+   "Flexão de braço"
+  ],
+  "destaques": [
+   {
+    "nome": "Supino reto",
+    "como": "Deitado no banco, desça a barra até o meio do peito e empurre até estender os cotovelos."
+   },
+   {
+    "nome": "Agachamento frontal",
+    "como": "Barra à frente dos ombros, tronco ereto, desça e suba."
+   },
+   {
+    "nome": "Prancha",
+    "como": "Apoio em antebraços e pontas dos pés, corpo alinhado e abdome contraído."
+   }
+  ]
+ },
+ {
+  "n": 29,
+  "slug": "cadeia-posterior",
+  "titulo": "Cadeia Posterior",
+  "regiao": "Visão geral",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "glúteos e posterior de coxa",
+  "azul": "eretores e panturrilha",
+  "musculos": [
+   "Eretores da espinha",
+   "Glúteo máximo",
+   "Posterior de coxa",
+   "Gastrocnêmio"
+  ],
+  "funcoes": [
+   "Extensão do quadril",
+   "Postura ereta",
+   "Impulsão na corrida e salto"
+  ],
+  "exemplos": [
+   "Levantamento terra",
+   "Hip thrust",
+   "Stiff",
+   "Kettlebell swing"
+  ],
+  "destaques": [
+   {
+    "nome": "Levantamento terra",
+    "como": "Coluna neutra, empurre o chão e estenda quadril e joelhos juntos."
+   },
+   {
+    "nome": "Hip thrust",
+    "como": "Costas apoiadas no banco, eleve o quadril até alinhar com o tronco e contraia os glúteos no topo."
+   },
+   {
+    "nome": "Kettlebell swing",
+    "como": "Leve o kettlebell entre as pernas e projete à frente com explosão do quadril."
+   }
+  ]
+ },
+ {
+  "n": 30,
+  "slug": "cadeia-lateral",
+  "titulo": "Cadeia Lateral",
+  "regiao": "Visão geral",
+  "plano": "Pro",
+  "vista": "vista lateral",
+  "vermelho": "oblíquo externo",
+  "azul": "serrátil anterior",
+  "musculos": [
+   "Glúteo médio",
+   "Tensor da fáscia lata",
+   "Oblíquos",
+   "Quadrado lombar"
+  ],
+  "funcoes": [
+   "Estabilização no plano frontal",
+   "Inclinação lateral",
+   "Controle do joelho em valgo"
+  ],
+  "exemplos": [
+   "Prancha lateral",
+   "Caminhada lateral com elástico",
+   "Farmer walk",
+   "Abdução no cabo"
+  ],
+  "destaques": [
+   {
+    "nome": "Prancha lateral",
+    "como": "Apoio em um antebraço, quadril elevado e corpo em linha reta."
+   },
+   {
+    "nome": "Caminhada lateral com elástico",
+    "como": "Elástico nas pernas, semi-agachado, dê passos laterais sem juntar os pés."
+   },
+   {
+    "nome": "Farmer walk",
+    "como": "Caminhe segurando cargas pesadas ao lado do corpo, postura ereta."
+   }
+  ]
+ },
+ {
+  "n": 31,
+  "slug": "membros-superiores",
+  "titulo": "Membros Superiores (visão geral)",
+  "regiao": "Visão geral",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "deltoides",
+  "azul": "bíceps braquial (referência)",
+  "musculos": [
+   "Deltoides",
+   "Bíceps braquial",
+   "Tríceps braquial",
+   "Músculos do antebraço"
+  ],
+  "funcoes": [
+   "Movimentos do ombro",
+   "Flexão e extensão do cotovelo",
+   "Preensão"
+  ],
+  "exemplos": [
+   "Desenvolvimento",
+   "Rosca direta",
+   "Tríceps pulley",
+   "Farmer walk"
+  ],
+  "destaques": [
+   {
+    "nome": "Desenvolvimento",
+    "como": "Empurre os halteres acima da cabeça até estender os braços, core firme."
+   },
+   {
+    "nome": "Rosca direta",
+    "como": "Cotovelos fixos ao lado do corpo, flexione levando a barra aos ombros."
+   },
+   {
+    "nome": "Tríceps pulley",
+    "como": "Cotovelos fixos junto ao corpo, estenda os braços empurrando a barra para baixo."
+   }
+  ]
+ },
+ {
+  "n": 32,
+  "slug": "membros-inferiores",
+  "titulo": "Membros Inferiores (visão geral)",
+  "regiao": "Visão geral",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "quadríceps",
+  "azul": "adutores",
+  "musculos": [
+   "Glúteos",
+   "Quadríceps",
+   "Posterior de coxa",
+   "Adutores",
+   "Panturrilha"
+  ],
+  "funcoes": [
+   "Locomoção",
+   "Extensão e flexão de quadril e joelho",
+   "Sustentação do corpo"
+  ],
+  "exemplos": [
+   "Agachamento livre",
+   "Levantamento terra",
+   "Afundo",
+   "Panturrilha em pé"
+  ],
+  "destaques": [
+   {
+    "nome": "Agachamento livre",
+    "como": "Desça com quadril para trás e joelhos alinhados aos pés; suba empurrando o chão."
+   },
+   {
+    "nome": "Afundo",
+    "como": "Dê um passo à frente e desça até os dois joelhos ficarem perto de 90°."
+   },
+   {
+    "nome": "Panturrilha em pé",
+    "como": "Na ponta dos pés, suba o máximo e desça alongando o calcanhar."
+   }
+  ]
+ },
+ {
+  "n": 33,
+  "slug": "costas-visao-geral",
+  "titulo": "Costas (visão geral)",
+  "regiao": "Visão geral",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "latíssimo do dorso",
+  "azul": "infraespinal e redondo maior",
+  "musculos": [
+   "Latíssimo do dorso",
+   "Trapézio",
+   "Romboides",
+   "Eretores da espinha",
+   "Redondo maior"
+  ],
+  "funcoes": [
+   "Puxar",
+   "Retração da escápula",
+   "Extensão da coluna"
+  ],
+  "exemplos": [
+   "Puxada frontal",
+   "Remada curvada",
+   "Levantamento terra",
+   "Face pull"
+  ],
+  "destaques": [
+   {
+    "nome": "Puxada frontal",
+    "como": "Puxe a barra até a parte alta do peito, levando os cotovelos para baixo."
+   },
+   {
+    "nome": "Remada curvada",
+    "como": "Tronco inclinado e coluna neutra, puxe a barra em direção ao umbigo."
+   },
+   {
+    "nome": "Face pull",
+    "como": "Puxe a corda em direção ao rosto, abrindo os cotovelos e girando os ombros para fora."
+   }
+  ]
+ },
+ {
+  "n": 34,
+  "slug": "ombro-articulacao",
+  "titulo": "Articulação do Ombro",
+  "regiao": "Articulações e movimentos",
+  "plano": "Pro",
+  "vista": "vista lateral",
+  "vermelho": "deltoide lateral",
+  "azul": "trapézio superior",
+  "musculos": [
+   "Deltoides",
+   "Manguito rotador",
+   "Peitoral maior",
+   "Latíssimo do dorso"
+  ],
+  "funcoes": [
+   "Flexão/extensão",
+   "Abdução/adução",
+   "Rotação interna/externa",
+   "Circundução"
+  ],
+  "exemplos": [
+   "Desenvolvimento",
+   "Elevação lateral",
+   "Rotação externa com elástico",
+   "Puxada frontal"
+  ],
+  "destaques": [
+   {
+    "nome": "Desenvolvimento",
+    "como": "Empurre os halteres acima da cabeça até estender os braços, core firme."
+   },
+   {
+    "nome": "Rotação externa com elástico",
+    "como": "Cotovelo junto ao corpo a 90°, gire o antebraço para fora contra o elástico."
+   },
+   {
+    "nome": "Puxada frontal",
+    "como": "Puxe a barra até a parte alta do peito, levando os cotovelos para baixo."
+   }
+  ]
+ },
+ {
+  "n": 35,
+  "slug": "quadril-articulacao",
+  "titulo": "Articulação do Quadril",
+  "regiao": "Articulações e movimentos",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "glúteo máximo",
+  "azul": "glúteo médio",
+  "musculos": [
+   "Glúteos",
+   "Iliopsoas",
+   "Adutores",
+   "Posterior de coxa"
+  ],
+  "funcoes": [
+   "Flexão/extensão",
+   "Abdução/adução",
+   "Rotação interna/externa"
+  ],
+  "exemplos": [
+   "Agachamento livre",
+   "Hip thrust",
+   "Abdução de quadril",
+   "Elevação de joelhos"
+  ],
+  "destaques": [
+   {
+    "nome": "Agachamento livre",
+    "como": "Desça com quadril para trás e joelhos alinhados aos pés; suba empurrando o chão."
+   },
+   {
+    "nome": "Hip thrust",
+    "como": "Costas apoiadas no banco, eleve o quadril até alinhar com o tronco e contraia os glúteos no topo."
+   },
+   {
+    "nome": "Elevação de joelhos",
+    "como": "Pendurado ou apoiado, eleve os joelhos em direção ao peito."
+   }
+  ]
+ },
+ {
+  "n": 36,
+  "slug": "joelho-articulacao",
+  "titulo": "Articulação do Joelho",
+  "regiao": "Articulações e movimentos",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "quadríceps",
+  "azul": "adutores",
+  "musculos": [
+   "Quadríceps",
+   "Posterior de coxa",
+   "Gastrocnêmio",
+   "Poplíteo"
+  ],
+  "funcoes": [
+   "Flexão e extensão",
+   "Pequena rotação com joelho flexionado"
+  ],
+  "exemplos": [
+   "Cadeira extensora",
+   "Mesa flexora",
+   "Agachamento livre",
+   "Step-up"
+  ],
+  "destaques": [
+   {
+    "nome": "Cadeira extensora",
+    "como": "Sentado, estenda os joelhos até quase retos e desça devagar."
+   },
+   {
+    "nome": "Mesa flexora",
+    "como": "Deitado, flexione os joelhos levando o rolo em direção aos glúteos."
+   },
+   {
+    "nome": "Step-up",
+    "como": "Suba no banco com uma perna empurrando pelo calcanhar e desça controlando."
+   }
+  ]
+ },
+ {
+  "n": 37,
+  "slug": "coluna-movimentos",
+  "titulo": "Coluna: Movimentos",
+  "regiao": "Articulações e movimentos",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "eretores da espinha",
+  "azul": "latíssimo do dorso",
+  "musculos": [
+   "Eretores da espinha",
+   "Reto do abdome",
+   "Oblíquos",
+   "Quadrado lombar"
+  ],
+  "funcoes": [
+   "Flexão e extensão",
+   "Inclinação lateral",
+   "Rotação"
+  ],
+  "exemplos": [
+   "Hiperextensão lombar",
+   "Abdominal crunch",
+   "Prancha lateral",
+   "Pallof press"
+  ],
+  "destaques": [
+   {
+    "nome": "Hiperextensão lombar",
+    "como": "No banco romano, desça o tronco e suba até alinhar com as pernas."
+   },
+   {
+    "nome": "Abdominal crunch",
+    "como": "Deitado, eleve as escápulas do chão enrolando o tronco, sem puxar o pescoço."
+   },
+   {
+    "nome": "Pallof press",
+    "como": "Cabo ao lado, empurre as mãos à frente resistindo à rotação do tronco."
+   }
+  ]
+ },
+ {
+  "n": 38,
+  "slug": "planos-e-eixos",
+  "titulo": "Planos e Eixos de Movimento",
+  "regiao": "Articulações e movimentos",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "peitoral, abdome e quadríceps",
+  "azul": "deltoide anterior",
+  "musculos": [
+   "Plano sagital (flexão/extensão)",
+   "Plano frontal (abdução/adução)",
+   "Plano transversal (rotação)"
+  ],
+  "funcoes": [
+   "Classificar exercícios",
+   "Montar treinos equilibrados",
+   "Prevenir desequilíbrios"
+  ],
+  "exemplos": [
+   "Agachamento livre",
+   "Elevação lateral",
+   "Pallof press",
+   "Afundo"
+  ],
+  "destaques": [
+   {
+    "nome": "Agachamento livre",
+    "como": "Desça com quadril para trás e joelhos alinhados aos pés; suba empurrando o chão."
+   },
+   {
+    "nome": "Elevação lateral",
+    "como": "Eleve os halteres lateralmente até a linha dos ombros, cotovelos levemente flexionados."
+   },
+   {
+    "nome": "Pallof press",
+    "como": "Cabo ao lado, empurre as mãos à frente resistindo à rotação do tronco."
+   }
+  ]
+ },
+ {
+  "n": 39,
+  "slug": "empurrar-vs-puxar",
+  "titulo": "Empurrar x Puxar",
+  "regiao": "Visão geral",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "peitoral maior (foco clavicular)",
+  "azul": "deltoide anterior",
+  "musculos": [
+   "Peitoral, deltoide anterior, tríceps (empurrar)",
+   "Dorsais, romboides, bíceps (puxar)"
+  ],
+  "funcoes": [
+   "Equilíbrio muscular",
+   "Saúde do ombro",
+   "Organização de treino"
+  ],
+  "exemplos": [
+   "Supino reto",
+   "Remada curvada",
+   "Desenvolvimento",
+   "Barra fixa"
+  ],
+  "destaques": [
+   {
+    "nome": "Supino reto",
+    "como": "Deitado no banco, desça a barra até o meio do peito e empurre até estender os cotovelos."
+   },
+   {
+    "nome": "Remada curvada",
+    "como": "Tronco inclinado e coluna neutra, puxe a barra em direção ao umbigo."
+   },
+   {
+    "nome": "Barra fixa",
+    "como": "Pendurado, puxe o corpo até o queixo passar a barra, sem balanço."
+   }
+  ]
+ },
+ {
+  "n": 40,
+  "slug": "postura-escapular",
+  "titulo": "Estabilizadores da Escápula",
+  "regiao": "Ombro",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "trapézio superior",
+  "azul": "trapézio médio e inferior",
+  "musculos": [
+   "Trapézio",
+   "Romboides",
+   "Serrátil anterior",
+   "Levantador da escápula"
+  ],
+  "funcoes": [
+   "Posicionar a escápula",
+   "Proteger o ombro",
+   "Melhorar a postura"
+  ],
+  "exemplos": [
+   "Y-T-W no banco",
+   "Face pull",
+   "Wall slide",
+   "Flexão plus"
+  ],
+  "destaques": [
+   {
+    "nome": "Y-T-W no banco",
+    "como": "Deitado de bruços no banco inclinado, eleve os braços formando Y, T e W."
+   },
+   {
+    "nome": "Wall slide",
+    "como": "Costas e braços na parede, deslize os braços para cima sem perder o contato."
+   },
+   {
+    "nome": "Flexão plus",
+    "como": "Na flexão, ao final empurre o chão afastando as escápulas."
+   }
+  ]
+ },
+ {
+  "n": 41,
+  "slug": "quadrado-lombar",
+  "titulo": "Quadrado Lombar",
+  "regiao": "Lombar",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "eretores da espinha",
+  "azul": "latíssimo do dorso",
+  "musculos": [
+   "Quadrado lombar",
+   "Eretores da espinha"
+  ],
+  "funcoes": [
+   "Inclinação lateral do tronco",
+   "Estabilização da pelve e lombar",
+   "Elevação do quadril"
+  ],
+  "exemplos": [
+   "Prancha lateral",
+   "Farmer walk",
+   "Bird dog",
+   "Hiperextensão lombar"
+  ],
+  "destaques": [
+   {
+    "nome": "Prancha lateral",
+    "como": "Apoio em um antebraço, quadril elevado e corpo em linha reta."
+   },
+   {
+    "nome": "Farmer walk",
+    "como": "Caminhe segurando cargas pesadas ao lado do corpo, postura ereta."
+   },
+   {
+    "nome": "Bird dog",
+    "como": "Em quatro apoios, estenda braço e perna opostos sem girar o quadril."
+   }
+  ]
+ },
+ {
+  "n": 42,
+  "slug": "redondo-maior",
+  "titulo": "Redondo Maior",
+  "regiao": "Costas",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "latíssimo do dorso",
+  "azul": "infraespinal e redondo maior",
+  "musculos": [
+   "Redondo maior",
+   "Latíssimo do dorso"
+  ],
+  "funcoes": [
+   "Adução do ombro",
+   "Extensão do ombro",
+   "Rotação interna"
+  ],
+  "exemplos": [
+   "Remada unilateral",
+   "Puxada frontal",
+   "Pullover",
+   "Pulldown braço estendido"
+  ],
+  "destaques": [
+   {
+    "nome": "Remada unilateral",
+    "como": "Apoio no banco, puxe o halter ao quadril mantendo o tronco estável."
+   },
+   {
+    "nome": "Pullover",
+    "como": "Deitado, leve o halter atrás da cabeça e retorne em arco sobre o peito."
+   },
+   {
+    "nome": "Pulldown braço estendido",
+    "como": "Braços quase estendidos, leve a barra do alto até as coxas."
+   }
+  ]
+ },
+ {
+  "n": 43,
+  "slug": "tensor-fascia-lata",
+  "titulo": "Tensor da Fáscia Lata",
+  "regiao": "Quadril",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "glúteo máximo",
+  "azul": "trato iliotibial (continuação do TFL)",
+  "musculos": [
+   "Tensor da fáscia lata",
+   "Trato iliotibial",
+   "Glúteo médio"
+  ],
+  "funcoes": [
+   "Abdução do quadril",
+   "Flexão e rotação interna do quadril",
+   "Estabilização lateral do joelho"
+  ],
+  "exemplos": [
+   "Abdução no cabo",
+   "Abdução de quadril",
+   "Step-up",
+   "Caminhada lateral com elástico"
+  ],
+  "destaques": [
+   {
+    "nome": "Abdução no cabo",
+    "como": "Em pé, leve a perna para o lado contra o cabo, tronco estável."
+   },
+   {
+    "nome": "Step-up",
+    "como": "Suba no banco com uma perna empurrando pelo calcanhar e desça controlando."
+   },
+   {
+    "nome": "Caminhada lateral com elástico",
+    "como": "Elástico nas pernas, semi-agachado, dê passos laterais sem juntar os pés."
+   }
+  ]
+ },
+ {
+  "n": 44,
+  "slug": "vasto-medial",
+  "titulo": "Vasto Medial",
+  "regiao": "Coxa",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "quadríceps",
+  "azul": "adutores",
+  "musculos": [
+   "Vasto medial (VMO)",
+   "Vasto lateral"
+  ],
+  "funcoes": [
+   "Extensão do joelho",
+   "Estabilização medial da patela"
+  ],
+  "exemplos": [
+   "Cadeira extensora",
+   "Agachamento livre",
+   "Agachamento búlgaro",
+   "Step-up"
+  ],
+  "destaques": [
+   {
+    "nome": "Cadeira extensora",
+    "como": "Sentado, estenda os joelhos até quase retos e desça devagar."
+   },
+   {
+    "nome": "Agachamento búlgaro",
+    "como": "Pé de trás apoiado no banco, desça o joelho de trás em direção ao chão."
+   },
+   {
+    "nome": "Step-up",
+    "como": "Suba no banco com uma perna empurrando pelo calcanhar e desça controlando."
+   }
+  ]
+ },
+ {
+  "n": 45,
+  "slug": "reto-femoral",
+  "titulo": "Reto Femoral",
+  "regiao": "Coxa",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "iliopsoas (região do quadril)",
+  "azul": "reto femoral",
+  "musculos": [
+   "Reto femoral",
+   "Iliopsoas"
+  ],
+  "funcoes": [
+   "Extensão do joelho",
+   "Flexão do quadril"
+  ],
+  "exemplos": [
+   "Cadeira extensora",
+   "Agachamento frontal",
+   "Elevação de joelhos",
+   "Afundo"
+  ],
+  "destaques": [
+   {
+    "nome": "Cadeira extensora",
+    "como": "Sentado, estenda os joelhos até quase retos e desça devagar."
+   },
+   {
+    "nome": "Agachamento frontal",
+    "como": "Barra à frente dos ombros, tronco ereto, desça e suba."
+   },
+   {
+    "nome": "Elevação de joelhos",
+    "como": "Pendurado ou apoiado, eleve os joelhos em direção ao peito."
+   }
+  ]
+ },
+ {
+  "n": 46,
+  "slug": "gluteo-maximo",
+  "titulo": "Glúteo Máximo",
+  "regiao": "Quadril",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "glúteo máximo",
+  "azul": "glúteo médio",
+  "musculos": [
+   "Glúteo máximo",
+   "Posterior de coxa (sinergista)"
+  ],
+  "funcoes": [
+   "Extensão do quadril",
+   "Rotação externa",
+   "Estabilidade ao subir escadas e saltar"
+  ],
+  "exemplos": [
+   "Hip thrust",
+   "Glute bridge",
+   "Coice no cabo",
+   "Levantamento terra"
+  ],
+  "destaques": [
+   {
+    "nome": "Hip thrust",
+    "como": "Costas apoiadas no banco, eleve o quadril até alinhar com o tronco e contraia os glúteos no topo."
+   },
+   {
+    "nome": "Glute bridge",
+    "como": "Deitado, pés no chão, eleve o quadril contraindo os glúteos."
+   },
+   {
+    "nome": "Coice no cabo",
+    "como": "Estenda o quadril levando a perna para trás, sem arquear a lombar."
+   }
+  ]
+ },
+ {
+  "n": 47,
+  "slug": "soleo",
+  "titulo": "Sóleo",
+  "regiao": "Perna",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "gastrocnêmio",
+  "azul": "sóleo",
+  "musculos": [
+   "Sóleo",
+   "Gastrocnêmio"
+  ],
+  "funcoes": [
+   "Flexão plantar com joelho flexionado",
+   "Postura em pé",
+   "Bomba venosa da perna"
+  ],
+  "exemplos": [
+   "Panturrilha sentado",
+   "Panturrilha unilateral",
+   "Agachamento na parede",
+   "Panturrilha em pé"
+  ],
+  "destaques": [
+   {
+    "nome": "Panturrilha sentado",
+    "como": "Sentado, joelhos a 90°, eleve os calcanhares contra a carga."
+   },
+   {
+    "nome": "Panturrilha unilateral",
+    "como": "Na ponta de um pé só, suba e desça com controle."
+   },
+   {
+    "nome": "Agachamento na parede",
+    "como": "Costas na parede, joelhos a 90°, segure a posição."
+   }
+  ]
+ },
+ {
+  "n": 48,
+  "slug": "musculos-respiracao",
+  "titulo": "Músculos da Respiração",
+  "regiao": "Core",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "transverso do abdome",
+  "azul": "diafragma",
+  "musculos": [
+   "Diafragma",
+   "Intercostais externos e internos",
+   "Escalenos (acessórios)"
+  ],
+  "funcoes": [
+   "Inspiração e expiração",
+   "Estabilização do core",
+   "Controle da pressão abdominal"
+  ],
+  "exemplos": [
+   "Respiração diafragmática",
+   "Vacuum abdominal",
+   "Prancha",
+   "Dead bug"
+  ],
+  "destaques": [
+   {
+    "nome": "Respiração diafragmática",
+    "como": "Deitado, inspire expandindo o abdome e costelas, expire devagar."
+   },
+   {
+    "nome": "Vacuum abdominal",
+    "como": "Expire todo o ar e puxe o umbigo para dentro, segurando alguns segundos."
+   },
+   {
+    "nome": "Dead bug",
+    "como": "Deitado, estenda braço e perna opostos mantendo a lombar no chão."
+   }
+  ]
+ },
+ {
+  "n": 49,
+  "slug": "pescoco",
+  "titulo": "Pescoço",
+  "regiao": "Cabeça e pescoço",
+  "plano": "Pro",
+  "vista": "vista anterior",
+  "vermelho": "esternocleidomastóideo",
+  "azul": "trapézio superior e deltoide",
+  "musculos": [
+   "Esternocleidomastóideo",
+   "Escalenos",
+   "Esplênio da cabeça",
+   "Trapézio superior"
+  ],
+  "funcoes": [
+   "Flexão, extensão e rotação da cabeça",
+   "Inclinação lateral",
+   "Sustentação da cabeça"
+  ],
+  "exemplos": [
+   "Isometria de pescoço",
+   "Chin tuck",
+   "Encolhimento",
+   "Flexão de pescoço deitado"
+  ],
+  "destaques": [
+   {
+    "nome": "Isometria de pescoço",
+    "como": "Empurre a cabeça contra a mão sem deixar mover, segurando alguns segundos."
+   },
+   {
+    "nome": "Chin tuck",
+    "como": "Recolha o queixo para trás alinhando a cabeça sobre os ombros."
+   },
+   {
+    "nome": "Flexão de pescoço deitado",
+    "como": "Deitado, eleve a cabeça levando o queixo ao peito."
+   }
+  ]
+ },
+ {
+  "n": 50,
+  "slug": "potencia-explosao",
+  "titulo": "Músculos da Potência",
+  "regiao": "Visão geral",
+  "plano": "Pro",
+  "vista": "vista posterior",
+  "vermelho": "glúteos e posterior de coxa",
+  "azul": "eretores e panturrilha",
+  "musculos": [
+   "Glúteo máximo",
+   "Quadríceps",
+   "Posterior de coxa",
+   "Panturrilha"
+  ],
+  "funcoes": [
+   "Saltar",
+   "Arrancar",
+   "Mudar de direção"
+  ],
+  "exemplos": [
+   "Agachamento com salto",
+   "Kettlebell swing",
+   "Arremesso de medicine ball",
+   "Burpee"
+  ],
+  "destaques": [
+   {
+    "nome": "Agachamento com salto",
+    "como": "Agache e salte com força, aterrissando suave."
+   },
+   {
+    "nome": "Kettlebell swing",
+    "como": "Leve o kettlebell entre as pernas e projete à frente com explosão do quadril."
+   },
+   {
+    "nome": "Arremesso de medicine ball",
+    "como": "Arremesse a bola com explosão de quadril e braços."
+   }
+  ]
+ },
+ {
+  "n": 51,
+  "slug": "peitoral-inferior",
+  "titulo": "Peitoral Inferior",
+  "regiao": "Tronco",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "peitoral maior",
+  "azul": "serrátil anterior",
+  "musculos": [
+   "Peitoral maior – fibras inferiores",
+   "Tríceps (auxiliar)"
+  ],
+  "funcoes": [
+   "Adução e extensão do ombro a partir da flexão"
+  ],
+  "exemplos": [
+   "Supino declinado",
+   "Mergulho nas paralelas",
+   "Crossover",
+   "Flexão de braço"
+  ],
+  "destaques": [
+   {
+    "nome": "Supino declinado",
+    "como": "Banco declinado, desça a barra até a parte baixa do peito e empurre."
+   },
+   {
+    "nome": "Mergulho nas paralelas",
+    "como": "Tronco levemente inclinado à frente, desça flexionando os cotovelos e suba."
+   },
+   {
+    "nome": "Crossover",
+    "como": "No cabo, traga as mãos à frente do corpo em arco, cotovelos levemente flexionados."
+   }
+  ]
+ },
+ {
+  "n": 52,
+  "slug": "peitoral-menor",
+  "titulo": "Peitoral Menor",
+  "regiao": "Tronco",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "peitoral maior",
+  "azul": "serrátil anterior",
+  "musculos": [
+   "Peitoral menor",
+   "Serrátil anterior"
+  ],
+  "funcoes": [
+   "Protração e depressão da escápula",
+   "Auxílio na inspiração forçada"
+  ],
+  "exemplos": [
+   "Mergulho nas paralelas",
+   "Flexão plus",
+   "Encolhimento escapular na barra",
+   "Soco no cabo"
+  ],
+  "destaques": [
+   {
+    "nome": "Mergulho nas paralelas",
+    "como": "Tronco levemente inclinado à frente, desça flexionando os cotovelos e suba."
+   },
+   {
+    "nome": "Flexão plus",
+    "como": "Na flexão, ao final empurre o chão afastando as escápulas."
+   },
+   {
+    "nome": "Encolhimento escapular na barra",
+    "como": "Pendurado, deprima as escápulas sem flexionar os cotovelos."
+   }
+  ]
+ },
+ {
+  "n": 53,
+  "slug": "subclavio",
+  "titulo": "Subclávio",
+  "regiao": "Tronco",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "peitoral maior (foco clavicular)",
+  "azul": "deltoide anterior",
+  "musculos": [
+   "Subclávio"
+  ],
+  "funcoes": [
+   "Estabilização da clavícula",
+   "Depressão da clavícula"
+  ],
+  "exemplos": [
+   "Encolhimento escapular na barra",
+   "Mergulho nas paralelas",
+   "Flexão de braço",
+   "Prancha"
+  ],
+  "destaques": [
+   {
+    "nome": "Encolhimento escapular na barra",
+    "como": "Pendurado, deprima as escápulas sem flexionar os cotovelos."
+   },
+   {
+    "nome": "Mergulho nas paralelas",
+    "como": "Tronco levemente inclinado à frente, desça flexionando os cotovelos e suba."
+   },
+   {
+    "nome": "Flexão de braço",
+    "como": "Corpo alinhado, desça o peito até perto do chão e empurre sem perder o core."
+   }
+  ]
+ },
+ {
+  "n": 54,
+  "slug": "latissimo",
+  "titulo": "Latíssimo do Dorso",
+  "regiao": "Costas",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "latíssimo do dorso",
+  "azul": "infraespinal e redondo maior",
+  "musculos": [
+   "Latíssimo do dorso"
+  ],
+  "funcoes": [
+   "Adução, extensão e rotação interna do ombro",
+   "Auxílio na extensão do tronco"
+  ],
+  "exemplos": [
+   "Barra fixa",
+   "Pulldown braço estendido",
+   "Remada unilateral",
+   "Pullover"
+  ],
+  "destaques": [
+   {
+    "nome": "Barra fixa",
+    "como": "Pendurado, puxe o corpo até o queixo passar a barra, sem balanço."
+   },
+   {
+    "nome": "Pulldown braço estendido",
+    "como": "Braços quase estendidos, leve a barra do alto até as coxas."
+   },
+   {
+    "nome": "Remada unilateral",
+    "como": "Apoio no banco, puxe o halter ao quadril mantendo o tronco estável."
+   }
+  ]
+ },
+ {
+  "n": 55,
+  "slug": "trapezio-superior",
+  "titulo": "Trapézio Superior",
+  "regiao": "Costas",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "trapézio superior",
+  "azul": "trapézio médio e inferior",
+  "musculos": [
+   "Trapézio superior",
+   "Levantador da escápula"
+  ],
+  "funcoes": [
+   "Elevação da escápula",
+   "Extensão e inclinação do pescoço"
+  ],
+  "exemplos": [
+   "Encolhimento",
+   "Farmer walk",
+   "Remada alta",
+   "Isometria de pescoço"
+  ],
+  "destaques": [
+   {
+    "nome": "Encolhimento",
+    "como": "Segure os halteres e eleve os ombros em direção às orelhas, sem girar."
+   },
+   {
+    "nome": "Farmer walk",
+    "como": "Caminhe segurando cargas pesadas ao lado do corpo, postura ereta."
+   },
+   {
+    "nome": "Remada alta",
+    "como": "Puxe a barra junto ao corpo até a altura do peito, cotovelos à frente das mãos."
+   }
+  ]
+ },
+ {
+  "n": 56,
+  "slug": "trapezio-inferior",
+  "titulo": "Trapézio Inferior",
+  "regiao": "Costas",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "trapézio superior",
+  "azul": "trapézio médio e inferior",
+  "musculos": [
+   "Trapézio inferior",
+   "Trapézio médio"
+  ],
+  "funcoes": [
+   "Depressão e rotação superior da escápula"
+  ],
+  "exemplos": [
+   "Y-T-W no banco",
+   "Wall slide",
+   "Encolhimento escapular na barra",
+   "Face pull"
+  ],
+  "destaques": [
+   {
+    "nome": "Y-T-W no banco",
+    "como": "Deitado de bruços no banco inclinado, eleve os braços formando Y, T e W."
+   },
+   {
+    "nome": "Wall slide",
+    "como": "Costas e braços na parede, deslize os braços para cima sem perder o contato."
+   },
+   {
+    "nome": "Encolhimento escapular na barra",
+    "como": "Pendurado, deprima as escápulas sem flexionar os cotovelos."
+   }
+  ]
+ },
+ {
+  "n": 57,
+  "slug": "levantador-escapula",
+  "titulo": "Levantador da Escápula",
+  "regiao": "Pescoço",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "romboides (região)",
+  "azul": "levantador da escápula",
+  "musculos": [
+   "Levantador da escápula"
+  ],
+  "funcoes": [
+   "Elevação e rotação inferior da escápula",
+   "Inclinação do pescoço"
+  ],
+  "exemplos": [
+   "Encolhimento",
+   "Isometria de pescoço",
+   "Chin tuck",
+   "Farmer walk"
+  ],
+  "destaques": [
+   {
+    "nome": "Encolhimento",
+    "como": "Segure os halteres e eleve os ombros em direção às orelhas, sem girar."
+   },
+   {
+    "nome": "Isometria de pescoço",
+    "como": "Empurre a cabeça contra a mão sem deixar mover, segurando alguns segundos."
+   },
+   {
+    "nome": "Chin tuck",
+    "como": "Recolha o queixo para trás alinhando a cabeça sobre os ombros."
+   }
+  ]
+ },
+ {
+  "n": 58,
+  "slug": "infraespinal",
+  "titulo": "Infraespinal",
+  "regiao": "Ombro",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "infraespinal",
+  "azul": "supraespinal",
+  "musculos": [
+   "Infraespinal",
+   "Redondo menor"
+  ],
+  "funcoes": [
+   "Rotação externa do ombro",
+   "Estabilização da cabeça do úmero"
+  ],
+  "exemplos": [
+   "Rotação externa com elástico",
+   "Face pull",
+   "Crucifixo inverso",
+   "Y-T-W no banco"
+  ],
+  "destaques": [
+   {
+    "nome": "Rotação externa com elástico",
+    "como": "Cotovelo junto ao corpo a 90°, gire o antebraço para fora contra o elástico."
+   },
+   {
+    "nome": "Face pull",
+    "como": "Puxe a corda em direção ao rosto, abrindo os cotovelos e girando os ombros para fora."
+   },
+   {
+    "nome": "Crucifixo inverso",
+    "como": "Tronco inclinado, abra os braços para trás contraindo a parte posterior do ombro."
+   }
+  ]
+ },
+ {
+  "n": 59,
+  "slug": "supraespinal",
+  "titulo": "Supraespinal",
+  "regiao": "Ombro",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "infraespinal",
+  "azul": "supraespinal",
+  "musculos": [
+   "Supraespinal"
+  ],
+  "funcoes": [
+   "Início da abdução do ombro",
+   "Estabilização do úmero"
+  ],
+  "exemplos": [
+   "Elevação lateral",
+   "Y-T-W no banco",
+   "Rotação externa com elástico",
+   "Wall slide"
+  ],
+  "destaques": [
+   {
+    "nome": "Elevação lateral",
+    "como": "Eleve os halteres lateralmente até a linha dos ombros, cotovelos levemente flexionados."
+   },
+   {
+    "nome": "Y-T-W no banco",
+    "como": "Deitado de bruços no banco inclinado, eleve os braços formando Y, T e W."
+   },
+   {
+    "nome": "Rotação externa com elástico",
+    "como": "Cotovelo junto ao corpo a 90°, gire o antebraço para fora contra o elástico."
+   }
+  ]
+ },
+ {
+  "n": 60,
+  "slug": "subescapular",
+  "titulo": "Subescapular",
+  "regiao": "Ombro",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "infraespinal",
+  "azul": "supraespinal",
+  "musculos": [
+   "Subescapular"
+  ],
+  "funcoes": [
+   "Rotação interna do ombro",
+   "Estabilização anterior do ombro"
+  ],
+  "exemplos": [
+   "Rotação interna no cabo",
+   "Flexão de braço",
+   "Supino reto",
+   "Pullover"
+  ],
+  "destaques": [
+   {
+    "nome": "Rotação interna no cabo",
+    "como": "Cotovelo junto ao corpo, gire o antebraço para dentro contra o cabo."
+   },
+   {
+    "nome": "Flexão de braço",
+    "como": "Corpo alinhado, desça o peito até perto do chão e empurre sem perder o core."
+   },
+   {
+    "nome": "Supino reto",
+    "como": "Deitado no banco, desça a barra até o meio do peito e empurre até estender os cotovelos."
+   }
+  ]
+ },
+ {
+  "n": 61,
+  "slug": "redondo-menor",
+  "titulo": "Redondo Menor",
+  "regiao": "Ombro",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "deltoide posterior",
+  "azul": "infraespinal",
+  "musculos": [
+   "Redondo menor"
+  ],
+  "funcoes": [
+   "Rotação externa",
+   "Adução leve do ombro"
+  ],
+  "exemplos": [
+   "Rotação externa com elástico",
+   "Face pull",
+   "Crucifixo inverso",
+   "Remada sentada"
+  ],
+  "destaques": [
+   {
+    "nome": "Rotação externa com elástico",
+    "como": "Cotovelo junto ao corpo a 90°, gire o antebraço para fora contra o elástico."
+   },
+   {
+    "nome": "Face pull",
+    "como": "Puxe a corda em direção ao rosto, abrindo os cotovelos e girando os ombros para fora."
+   },
+   {
+    "nome": "Crucifixo inverso",
+    "como": "Tronco inclinado, abra os braços para trás contraindo a parte posterior do ombro."
+   }
+  ]
+ },
+ {
+  "n": 62,
+  "slug": "coracobraquial",
+  "titulo": "Coracobraquial",
+  "regiao": "Braço",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "deltoides",
+  "azul": "bíceps braquial (referência)",
+  "musculos": [
+   "Coracobraquial"
+  ],
+  "funcoes": [
+   "Flexão e adução do ombro"
+  ],
+  "exemplos": [
+   "Crossover",
+   "Elevação frontal",
+   "Supino inclinado",
+   "Pullover"
+  ],
+  "destaques": [
+   {
+    "nome": "Crossover",
+    "como": "No cabo, traga as mãos à frente do corpo em arco, cotovelos levemente flexionados."
+   },
+   {
+    "nome": "Elevação frontal",
+    "como": "Eleve o halter à frente até a altura dos ombros, sem balançar."
+   },
+   {
+    "nome": "Supino inclinado",
+    "como": "Banco a 30–45°, desça a barra até a parte alta do peito e empurre para cima."
+   }
+  ]
+ },
+ {
+  "n": 63,
+  "slug": "biceps-cabeca-longa",
+  "titulo": "Bíceps – Cabeça Longa",
+  "regiao": "Braço",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "bíceps braquial",
+  "azul": "braquiorradial",
+  "musculos": [
+   "Bíceps – cabeça longa"
+  ],
+  "funcoes": [
+   "Flexão do cotovelo",
+   "Flexão do ombro",
+   "Estabilização do ombro"
+  ],
+  "exemplos": [
+   "Rosca alternada",
+   "Rosca direta",
+   "Rosca martelo",
+   "Rosca concentrada"
+  ],
+  "destaques": [
+   {
+    "nome": "Rosca alternada",
+    "como": "Flexione um braço por vez girando a palma para cima durante a subida."
+   },
+   {
+    "nome": "Rosca direta",
+    "como": "Cotovelos fixos ao lado do corpo, flexione levando a barra aos ombros."
+   },
+   {
+    "nome": "Rosca martelo",
+    "como": "Pegada neutra, flexione os cotovelos mantendo os polegares para cima."
+   }
+  ]
+ },
+ {
+  "n": 64,
+  "slug": "triceps-cabeca-longa",
+  "titulo": "Tríceps – Cabeça Longa",
+  "regiao": "Braço",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "tríceps braquial",
+  "azul": "deltoide posterior",
+  "musculos": [
+   "Tríceps – cabeça longa"
+  ],
+  "funcoes": [
+   "Extensão do cotovelo",
+   "Extensão e adução do ombro"
+  ],
+  "exemplos": [
+   "Tríceps francês",
+   "Tríceps testa",
+   "Tríceps pulley",
+   "Supino fechado"
+  ],
+  "destaques": [
+   {
+    "nome": "Tríceps francês",
+    "como": "Halter atrás da cabeça, estenda os cotovelos apontando-os para cima."
+   },
+   {
+    "nome": "Tríceps testa",
+    "como": "Deitado, desça a barra até a testa flexionando só os cotovelos e estenda."
+   },
+   {
+    "nome": "Tríceps pulley",
+    "como": "Cotovelos fixos junto ao corpo, estenda os braços empurrando a barra para baixo."
+   }
+  ]
+ },
+ {
+  "n": 65,
+  "slug": "anconeo",
+  "titulo": "Ancôneo",
+  "regiao": "Braço",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "tríceps braquial",
+  "azul": "deltoide posterior",
+  "musculos": [
+   "Ancôneo"
+  ],
+  "funcoes": [
+   "Auxílio na extensão do cotovelo",
+   "Estabilização do cotovelo"
+  ],
+  "exemplos": [
+   "Tríceps pulley",
+   "Supino fechado",
+   "Mergulho no banco",
+   "Flexão de braço"
+  ],
+  "destaques": [
+   {
+    "nome": "Tríceps pulley",
+    "como": "Cotovelos fixos junto ao corpo, estenda os braços empurrando a barra para baixo."
+   },
+   {
+    "nome": "Supino fechado",
+    "como": "Pegada na largura dos ombros, cotovelos junto ao corpo, empurre a barra."
+   },
+   {
+    "nome": "Mergulho no banco",
+    "como": "Mãos no banco atrás do corpo, desça flexionando os cotovelos e suba."
+   }
+  ]
+ },
+ {
+  "n": 66,
+  "slug": "flexores-punho",
+  "titulo": "Flexores do Punho",
+  "regiao": "Antebraço",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "flexores do punho",
+  "azul": "extensores do punho",
+  "musculos": [
+   "Flexor radial do carpo",
+   "Flexor ulnar do carpo",
+   "Palmar longo"
+  ],
+  "funcoes": [
+   "Flexão do punho",
+   "Desvio radial e ulnar"
+  ],
+  "exemplos": [
+   "Rosca de punho",
+   "Farmer walk",
+   "Preensão com hand grip",
+   "Barra fixa"
+  ],
+  "destaques": [
+   {
+    "nome": "Rosca de punho",
+    "como": "Antebraços apoiados, flexione os punhos levantando a barra."
+   },
+   {
+    "nome": "Farmer walk",
+    "como": "Caminhe segurando cargas pesadas ao lado do corpo, postura ereta."
+   },
+   {
+    "nome": "Preensão com hand grip",
+    "como": "Feche e abra a mão contra a resistência do hand grip."
+   }
+  ]
+ },
+ {
+  "n": 67,
+  "slug": "extensores-punho",
+  "titulo": "Extensores do Punho",
+  "regiao": "Antebraço",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "flexores do punho",
+  "azul": "extensores do punho",
+  "musculos": [
+   "Extensor radial longo e curto do carpo",
+   "Extensor ulnar do carpo"
+  ],
+  "funcoes": [
+   "Extensão do punho",
+   "Estabilização da preensão"
+  ],
+  "exemplos": [
+   "Rosca de punho inversa",
+   "Rosca inversa",
+   "Abertura de dedos com elástico",
+   "Farmer walk"
+  ],
+  "destaques": [
+   {
+    "nome": "Rosca de punho inversa",
+    "como": "Palmas para baixo, estenda os punhos levantando a barra."
+   },
+   {
+    "nome": "Rosca inversa",
+    "como": "Pegada pronada, flexione os cotovelos mantendo os punhos firmes."
+   },
+   {
+    "nome": "Abertura de dedos com elástico",
+    "como": "Elástico nos dedos, abra-os contra a resistência."
+   }
+  ]
+ },
+ {
+  "n": 68,
+  "slug": "pronadores-supinadores",
+  "titulo": "Pronadores e Supinadores",
+  "regiao": "Antebraço",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "flexores do punho",
+  "azul": "extensores do punho",
+  "musculos": [
+   "Pronador redondo",
+   "Pronador quadrado",
+   "Supinador"
+  ],
+  "funcoes": [
+   "Pronação e supinação do antebraço"
+  ],
+  "exemplos": [
+   "Pronação/supinação com halter",
+   "Rosca alternada",
+   "Rosca martelo",
+   "Farmer walk"
+  ],
+  "destaques": [
+   {
+    "nome": "Pronação/supinação com halter",
+    "como": "Antebraço apoiado, gire o punho de palma para cima e para baixo."
+   },
+   {
+    "nome": "Rosca alternada",
+    "como": "Flexione um braço por vez girando a palma para cima durante a subida."
+   },
+   {
+    "nome": "Rosca martelo",
+    "como": "Pegada neutra, flexione os cotovelos mantendo os polegares para cima."
+   }
+  ]
+ },
+ {
+  "n": 69,
+  "slug": "musculos-mao",
+  "titulo": "Músculos da Mão",
+  "regiao": "Mão",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "flexores do punho",
+  "azul": "extensores do punho",
+  "musculos": [
+   "Músculos tenares",
+   "Músculos hipotenares",
+   "Interósseos",
+   "Lumbricais"
+  ],
+  "funcoes": [
+   "Preensão fina",
+   "Oposição do polegar",
+   "Força de pegada"
+  ],
+  "exemplos": [
+   "Preensão com hand grip",
+   "Abertura de dedos com elástico",
+   "Farmer walk",
+   "Rosca de punho"
+  ],
+  "destaques": [
+   {
+    "nome": "Preensão com hand grip",
+    "como": "Feche e abra a mão contra a resistência do hand grip."
+   },
+   {
+    "nome": "Abertura de dedos com elástico",
+    "como": "Elástico nos dedos, abra-os contra a resistência."
+   },
+   {
+    "nome": "Farmer walk",
+    "como": "Caminhe segurando cargas pesadas ao lado do corpo, postura ereta."
+   }
+  ]
+ },
+ {
+  "n": 70,
+  "slug": "reto-abdome",
+  "titulo": "Reto do Abdome",
+  "regiao": "Core",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "reto do abdome",
+  "azul": "oblíquo externo",
+  "musculos": [
+   "Reto do abdome"
+  ],
+  "funcoes": [
+   "Flexão do tronco",
+   "Retroversão da pelve"
+  ],
+  "exemplos": [
+   "Abdominal crunch",
+   "Abdominal roda",
+   "Elevação de pernas",
+   "Prancha"
+  ],
+  "destaques": [
+   {
+    "nome": "Abdominal crunch",
+    "como": "Deitado, eleve as escápulas do chão enrolando o tronco, sem puxar o pescoço."
+   },
+   {
+    "nome": "Abdominal roda",
+    "como": "Ajoelhado, role a roda à frente mantendo o core firme e volte."
+   },
+   {
+    "nome": "Elevação de pernas",
+    "como": "Deitado ou pendurado, eleve as pernas controlando a lombar."
+   }
+  ]
+ },
+ {
+  "n": 71,
+  "slug": "obliquo-externo",
+  "titulo": "Oblíquo Externo",
+  "regiao": "Core",
+  "plano": "Ilimitado",
+  "vista": "vista lateral",
+  "vermelho": "oblíquo externo",
+  "azul": "serrátil anterior",
+  "musculos": [
+   "Oblíquo externo"
+  ],
+  "funcoes": [
+   "Rotação para o lado oposto",
+   "Inclinação lateral",
+   "Compressão abdominal"
+  ],
+  "exemplos": [
+   "Abdominal bicicleta",
+   "Pallof press",
+   "Prancha lateral",
+   "Farmer walk"
+  ],
+  "destaques": [
+   {
+    "nome": "Abdominal bicicleta",
+    "como": "Leve o cotovelo em direção ao joelho oposto, alternando os lados."
+   },
+   {
+    "nome": "Pallof press",
+    "como": "Cabo ao lado, empurre as mãos à frente resistindo à rotação do tronco."
+   },
+   {
+    "nome": "Prancha lateral",
+    "como": "Apoio em um antebraço, quadril elevado e corpo em linha reta."
+   }
+  ]
+ },
+ {
+  "n": 72,
+  "slug": "obliquo-interno",
+  "titulo": "Oblíquo Interno",
+  "regiao": "Core",
+  "plano": "Ilimitado",
+  "vista": "vista lateral",
+  "vermelho": "oblíquo externo",
+  "azul": "serrátil anterior",
+  "musculos": [
+   "Oblíquo interno"
+  ],
+  "funcoes": [
+   "Rotação para o mesmo lado",
+   "Inclinação lateral"
+  ],
+  "exemplos": [
+   "Pallof press",
+   "Abdominal bicicleta",
+   "Prancha lateral",
+   "Dead bug"
+  ],
+  "destaques": [
+   {
+    "nome": "Pallof press",
+    "como": "Cabo ao lado, empurre as mãos à frente resistindo à rotação do tronco."
+   },
+   {
+    "nome": "Abdominal bicicleta",
+    "como": "Leve o cotovelo em direção ao joelho oposto, alternando os lados."
+   },
+   {
+    "nome": "Prancha lateral",
+    "como": "Apoio em um antebraço, quadril elevado e corpo em linha reta."
+   }
+  ]
+ },
+ {
+  "n": 73,
+  "slug": "transverso-abdome",
+  "titulo": "Transverso do Abdome",
+  "regiao": "Core",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "transverso do abdome",
+  "azul": "diafragma",
+  "musculos": [
+   "Transverso do abdome"
+  ],
+  "funcoes": [
+   "Compressão abdominal",
+   "Estabilização lombar"
+  ],
+  "exemplos": [
+   "Vacuum abdominal",
+   "Dead bug",
+   "Prancha",
+   "Bird dog"
+  ],
+  "destaques": [
+   {
+    "nome": "Vacuum abdominal",
+    "como": "Expire todo o ar e puxe o umbigo para dentro, segurando alguns segundos."
+   },
+   {
+    "nome": "Dead bug",
+    "como": "Deitado, estenda braço e perna opostos mantendo a lombar no chão."
+   },
+   {
+    "nome": "Prancha",
+    "como": "Apoio em antebraços e pontas dos pés, corpo alinhado e abdome contraído."
+   }
+  ]
+ },
+ {
+  "n": 74,
+  "slug": "multifidos",
+  "titulo": "Multífidos",
+  "regiao": "Lombar",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "eretores da espinha",
+  "azul": "latíssimo do dorso",
+  "musculos": [
+   "Multífidos",
+   "Rotadores"
+  ],
+  "funcoes": [
+   "Estabilização segmentar da coluna",
+   "Extensão e rotação leve"
+  ],
+  "exemplos": [
+   "Bird dog",
+   "Dead bug",
+   "Hiperextensão lombar",
+   "Prancha"
+  ],
+  "destaques": [
+   {
+    "nome": "Bird dog",
+    "como": "Em quatro apoios, estenda braço e perna opostos sem girar o quadril."
+   },
+   {
+    "nome": "Dead bug",
+    "como": "Deitado, estenda braço e perna opostos mantendo a lombar no chão."
+   },
+   {
+    "nome": "Hiperextensão lombar",
+    "como": "No banco romano, desça o tronco e suba até alinhar com as pernas."
+   }
+  ]
+ },
+ {
+  "n": 75,
+  "slug": "diafragma",
+  "titulo": "Diafragma",
+  "regiao": "Core",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "transverso do abdome",
+  "azul": "diafragma",
+  "musculos": [
+   "Diafragma"
+  ],
+  "funcoes": [
+   "Inspiração",
+   "Pressão intra-abdominal"
+  ],
+  "exemplos": [
+   "Respiração diafragmática",
+   "Vacuum abdominal",
+   "Dead bug",
+   "Prancha"
+  ],
+  "destaques": [
+   {
+    "nome": "Respiração diafragmática",
+    "como": "Deitado, inspire expandindo o abdome e costelas, expire devagar."
+   },
+   {
+    "nome": "Vacuum abdominal",
+    "como": "Expire todo o ar e puxe o umbigo para dentro, segurando alguns segundos."
+   },
+   {
+    "nome": "Dead bug",
+    "como": "Deitado, estenda braço e perna opostos mantendo a lombar no chão."
+   }
+  ]
+ },
+ {
+  "n": 76,
+  "slug": "assoalho-pelvico",
+  "titulo": "Assoalho Pélvico",
+  "regiao": "Core",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "transverso do abdome",
+  "azul": "diafragma",
+  "musculos": [
+   "Levantador do ânus",
+   "Coccígeo"
+  ],
+  "funcoes": [
+   "Sustentação dos órgãos pélvicos",
+   "Continência",
+   "Estabilidade do core"
+  ],
+  "exemplos": [
+   "Respiração diafragmática",
+   "Glute bridge",
+   "Dead bug",
+   "Agachamento sumô"
+  ],
+  "destaques": [
+   {
+    "nome": "Respiração diafragmática",
+    "como": "Deitado, inspire expandindo o abdome e costelas, expire devagar."
+   },
+   {
+    "nome": "Glute bridge",
+    "como": "Deitado, pés no chão, eleve o quadril contraindo os glúteos."
+   },
+   {
+    "nome": "Dead bug",
+    "como": "Deitado, estenda braço e perna opostos mantendo a lombar no chão."
+   }
+  ]
+ },
+ {
+  "n": 77,
+  "slug": "gluteo-minimo",
+  "titulo": "Glúteo Mínimo",
+  "regiao": "Quadril",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "glúteo máximo",
+  "azul": "glúteo médio",
+  "musculos": [
+   "Glúteo mínimo"
+  ],
+  "funcoes": [
+   "Abdução e rotação interna do quadril",
+   "Estabilização da pelve"
+  ],
+  "exemplos": [
+   "Clamshell",
+   "Abdução de quadril",
+   "Abdução no cabo",
+   "Step-up"
+  ],
+  "destaques": [
+   {
+    "nome": "Clamshell",
+    "como": "Deitado de lado, joelhos flexionados, abra o joelho de cima mantendo os pés juntos."
+   },
+   {
+    "nome": "Abdução de quadril",
+    "como": "Afaste as pernas contra a resistência, sem balançar o tronco."
+   },
+   {
+    "nome": "Abdução no cabo",
+    "como": "Em pé, leve a perna para o lado contra o cabo, tronco estável."
+   }
+  ]
+ },
+ {
+  "n": 78,
+  "slug": "piriforme",
+  "titulo": "Piriforme e Rotadores",
+  "regiao": "Quadril",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "glúteo máximo",
+  "azul": "glúteo médio",
+  "musculos": [
+   "Piriforme",
+   "Gêmeos superior e inferior",
+   "Obturador interno e externo",
+   "Quadrado femoral"
+  ],
+  "funcoes": [
+   "Rotação externa do quadril",
+   "Estabilização da cabeça do fêmur"
+  ],
+  "exemplos": [
+   "Clamshell",
+   "Glute bridge",
+   "Caminhada lateral com elástico",
+   "Agachamento sumô"
+  ],
+  "destaques": [
+   {
+    "nome": "Clamshell",
+    "como": "Deitado de lado, joelhos flexionados, abra o joelho de cima mantendo os pés juntos."
+   },
+   {
+    "nome": "Glute bridge",
+    "como": "Deitado, pés no chão, eleve o quadril contraindo os glúteos."
+   },
+   {
+    "nome": "Caminhada lateral com elástico",
+    "como": "Elástico nas pernas, semi-agachado, dê passos laterais sem juntar os pés."
+   }
+  ]
+ },
+ {
+  "n": 79,
+  "slug": "iliopsoas",
+  "titulo": "Iliopsoas",
+  "regiao": "Quadril",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "iliopsoas (região do quadril)",
+  "azul": "reto femoral",
+  "musculos": [
+   "Psoas maior",
+   "Ilíaco"
+  ],
+  "funcoes": [
+   "Flexão do quadril",
+   "Estabilização da lombar"
+  ],
+  "exemplos": [
+   "Elevação de joelhos",
+   "Mountain climber",
+   "Elevação de pernas",
+   "Step-up"
+  ],
+  "destaques": [
+   {
+    "nome": "Elevação de joelhos",
+    "como": "Pendurado ou apoiado, eleve os joelhos em direção ao peito."
+   },
+   {
+    "nome": "Mountain climber",
+    "como": "Em prancha alta, traga os joelhos ao peito alternadamente."
+   },
+   {
+    "nome": "Elevação de pernas",
+    "como": "Deitado ou pendurado, eleve as pernas controlando a lombar."
+   }
+  ]
+ },
+ {
+  "n": 80,
+  "slug": "sartorio",
+  "titulo": "Sartório",
+  "regiao": "Coxa",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "iliopsoas (região do quadril)",
+  "azul": "reto femoral",
+  "musculos": [
+   "Sartório"
+  ],
+  "funcoes": [
+   "Flexão, abdução e rotação externa do quadril",
+   "Flexão do joelho"
+  ],
+  "exemplos": [
+   "Step-up",
+   "Afundo",
+   "Elevação de joelhos",
+   "Agachamento sumô"
+  ],
+  "destaques": [
+   {
+    "nome": "Step-up",
+    "como": "Suba no banco com uma perna empurrando pelo calcanhar e desça controlando."
+   },
+   {
+    "nome": "Afundo",
+    "como": "Dê um passo à frente e desça até os dois joelhos ficarem perto de 90°."
+   },
+   {
+    "nome": "Elevação de joelhos",
+    "como": "Pendurado ou apoiado, eleve os joelhos em direção ao peito."
+   }
+  ]
+ },
+ {
+  "n": 81,
+  "slug": "vasto-lateral",
+  "titulo": "Vasto Lateral",
+  "regiao": "Coxa",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "quadríceps",
+  "azul": "adutores",
+  "musculos": [
+   "Vasto lateral"
+  ],
+  "funcoes": [
+   "Extensão do joelho",
+   "Estabilização lateral da patela"
+  ],
+  "exemplos": [
+   "Leg press",
+   "Agachamento hack",
+   "Cadeira extensora",
+   "Afundo"
+  ],
+  "destaques": [
+   {
+    "nome": "Leg press",
+    "como": "Pés na plataforma, desça controlando e empurre sem travar os joelhos."
+   },
+   {
+    "nome": "Agachamento hack",
+    "como": "Costas apoiadas no hack, desça flexionando joelhos e quadril."
+   },
+   {
+    "nome": "Cadeira extensora",
+    "como": "Sentado, estenda os joelhos até quase retos e desça devagar."
+   }
+  ]
+ },
+ {
+  "n": 82,
+  "slug": "biceps-femoral",
+  "titulo": "Bíceps Femoral",
+  "regiao": "Coxa",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "bíceps femoral",
+  "azul": "semitendinoso e semimembranoso",
+  "musculos": [
+   "Bíceps femoral – cabeça longa",
+   "Bíceps femoral – cabeça curta"
+  ],
+  "funcoes": [
+   "Flexão do joelho",
+   "Extensão do quadril",
+   "Rotação externa do joelho flexionado"
+  ],
+  "exemplos": [
+   "Mesa flexora",
+   "Stiff",
+   "Nordic curl",
+   "Bom-dia"
+  ],
+  "destaques": [
+   {
+    "nome": "Mesa flexora",
+    "como": "Deitado, flexione os joelhos levando o rolo em direção aos glúteos."
+   },
+   {
+    "nome": "Stiff",
+    "como": "Joelhos levemente flexionados, desça a barra rente às pernas levando o quadril para trás."
+   },
+   {
+    "nome": "Nordic curl",
+    "como": "Ajoelhado com os pés presos, desça o tronco à frente controlando com os posteriores."
+   }
+  ]
+ },
+ {
+  "n": 83,
+  "slug": "semitendinoso",
+  "titulo": "Semitendinoso e Semimembranoso",
+  "regiao": "Coxa",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "bíceps femoral",
+  "azul": "semitendinoso e semimembranoso",
+  "musculos": [
+   "Semitendinoso",
+   "Semimembranoso"
+  ],
+  "funcoes": [
+   "Flexão do joelho",
+   "Extensão do quadril",
+   "Rotação interna do joelho flexionado"
+  ],
+  "exemplos": [
+   "Cadeira flexora",
+   "Nordic curl",
+   "Stiff",
+   "Glute bridge"
+  ],
+  "destaques": [
+   {
+    "nome": "Cadeira flexora",
+    "como": "Sentado, flexione os joelhos empurrando o rolo para baixo."
+   },
+   {
+    "nome": "Nordic curl",
+    "como": "Ajoelhado com os pés presos, desça o tronco à frente controlando com os posteriores."
+   },
+   {
+    "nome": "Stiff",
+    "como": "Joelhos levemente flexionados, desça a barra rente às pernas levando o quadril para trás."
+   }
+  ]
+ },
+ {
+  "n": 84,
+  "slug": "adutor-magno",
+  "titulo": "Adutor Magno",
+  "regiao": "Coxa",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "quadríceps",
+  "azul": "adutores",
+  "musculos": [
+   "Adutor magno"
+  ],
+  "funcoes": [
+   "Adução do quadril",
+   "Extensão do quadril (porção posterior)"
+  ],
+  "exemplos": [
+   "Agachamento sumô",
+   "Cadeira adutora",
+   "Levantamento terra",
+   "Prancha de Copenhague"
+  ],
+  "destaques": [
+   {
+    "nome": "Agachamento sumô",
+    "como": "Pés afastados e apontados para fora, desça mantendo o tronco ereto."
+   },
+   {
+    "nome": "Cadeira adutora",
+    "como": "Sentado, feche as pernas contra a resistência de forma controlada."
+   },
+   {
+    "nome": "Levantamento terra",
+    "como": "Coluna neutra, empurre o chão e estenda quadril e joelhos juntos."
+   }
+  ]
+ },
+ {
+  "n": 85,
+  "slug": "gracil",
+  "titulo": "Grácil",
+  "regiao": "Coxa",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "quadríceps",
+  "azul": "adutores",
+  "musculos": [
+   "Grácil"
+  ],
+  "funcoes": [
+   "Adução do quadril",
+   "Flexão do joelho"
+  ],
+  "exemplos": [
+   "Cadeira adutora",
+   "Prancha de Copenhague",
+   "Agachamento sumô",
+   "Afundo"
+  ],
+  "destaques": [
+   {
+    "nome": "Cadeira adutora",
+    "como": "Sentado, feche as pernas contra a resistência de forma controlada."
+   },
+   {
+    "nome": "Prancha de Copenhague",
+    "como": "Prancha lateral com a perna de cima apoiada no banco, quadril elevado."
+   },
+   {
+    "nome": "Agachamento sumô",
+    "como": "Pés afastados e apontados para fora, desça mantendo o tronco ereto."
+   }
+  ]
+ },
+ {
+  "n": 86,
+  "slug": "popliteo",
+  "titulo": "Poplíteo",
+  "regiao": "Joelho",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "bíceps femoral",
+  "azul": "semitendinoso e semimembranoso",
+  "musculos": [
+   "Poplíteo"
+  ],
+  "funcoes": [
+   "Destrava o joelho estendido",
+   "Rotação interna da tíbia"
+  ],
+  "exemplos": [
+   "Mesa flexora",
+   "Cadeira flexora",
+   "Nordic curl",
+   "Step-up"
+  ],
+  "destaques": [
+   {
+    "nome": "Mesa flexora",
+    "como": "Deitado, flexione os joelhos levando o rolo em direção aos glúteos."
+   },
+   {
+    "nome": "Cadeira flexora",
+    "como": "Sentado, flexione os joelhos empurrando o rolo para baixo."
+   },
+   {
+    "nome": "Nordic curl",
+    "como": "Ajoelhado com os pés presos, desça o tronco à frente controlando com os posteriores."
+   }
+  ]
+ },
+ {
+  "n": 87,
+  "slug": "gastrocnemio",
+  "titulo": "Gastrocnêmio",
+  "regiao": "Perna",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "gastrocnêmio",
+  "azul": "sóleo",
+  "musculos": [
+   "Gastrocnêmio medial",
+   "Gastrocnêmio lateral"
+  ],
+  "funcoes": [
+   "Flexão plantar com joelho estendido",
+   "Flexão do joelho"
+  ],
+  "exemplos": [
+   "Panturrilha em pé",
+   "Panturrilha no leg press",
+   "Panturrilha unilateral",
+   "Agachamento com salto"
+  ],
+  "destaques": [
+   {
+    "nome": "Panturrilha em pé",
+    "como": "Na ponta dos pés, suba o máximo e desça alongando o calcanhar."
+   },
+   {
+    "nome": "Panturrilha no leg press",
+    "como": "Pontas dos pés na plataforma, empurre estendendo os tornozelos."
+   },
+   {
+    "nome": "Panturrilha unilateral",
+    "como": "Na ponta de um pé só, suba e desça com controle."
+   }
+  ]
+ },
+ {
+  "n": 88,
+  "slug": "fibulares",
+  "titulo": "Fibulares",
+  "regiao": "Perna",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "tibial anterior",
+  "azul": "fibulares",
+  "musculos": [
+   "Fibular longo",
+   "Fibular curto"
+  ],
+  "funcoes": [
+   "Eversão do pé",
+   "Flexão plantar",
+   "Estabilidade do tornozelo"
+  ],
+  "exemplos": [
+   "Panturrilha unilateral",
+   "Mobilidade de tornozelo na parede",
+   "Caminhada lateral com elástico",
+   "Step-up"
+  ],
+  "destaques": [
+   {
+    "nome": "Panturrilha unilateral",
+    "como": "Na ponta de um pé só, suba e desça com controle."
+   },
+   {
+    "nome": "Mobilidade de tornozelo na parede",
+    "como": "Joelho em direção à parede sem tirar o calcanhar do chão."
+   },
+   {
+    "nome": "Caminhada lateral com elástico",
+    "como": "Elástico nas pernas, semi-agachado, dê passos laterais sem juntar os pés."
+   }
+  ]
+ },
+ {
+  "n": 89,
+  "slug": "tibial-posterior",
+  "titulo": "Tibial Posterior",
+  "regiao": "Perna",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "gastrocnêmio",
+  "azul": "sóleo",
+  "musculos": [
+   "Tibial posterior",
+   "Flexor longo dos dedos",
+   "Flexor longo do hálux"
+  ],
+  "funcoes": [
+   "Inversão do pé",
+   "Sustentação do arco plantar"
+  ],
+  "exemplos": [
+   "Panturrilha unilateral",
+   "Elevação do arco",
+   "Toalha com os dedos",
+   "Panturrilha sentado"
+  ],
+  "destaques": [
+   {
+    "nome": "Panturrilha unilateral",
+    "como": "Na ponta de um pé só, suba e desça com controle."
+   },
+   {
+    "nome": "Elevação do arco",
+    "como": "Encurte o pé elevando o arco sem dobrar os dedos."
+   },
+   {
+    "nome": "Toalha com os dedos",
+    "como": "Puxe uma toalha no chão usando os dedos dos pés."
+   }
+  ]
+ },
+ {
+  "n": 90,
+  "slug": "musculos-pe",
+  "titulo": "Músculos do Pé",
+  "regiao": "Pé",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "tibial anterior",
+  "azul": "fibulares",
+  "musculos": [
+   "Flexor curto dos dedos",
+   "Abdutor do hálux",
+   "Quadrado plantar"
+  ],
+  "funcoes": [
+   "Sustentação do arco",
+   "Equilíbrio",
+   "Impulsão na marcha"
+  ],
+  "exemplos": [
+   "Elevação do arco",
+   "Toalha com os dedos",
+   "Panturrilha unilateral",
+   "Mobilidade de tornozelo na parede"
+  ],
+  "destaques": [
+   {
+    "nome": "Elevação do arco",
+    "como": "Encurte o pé elevando o arco sem dobrar os dedos."
+   },
+   {
+    "nome": "Toalha com os dedos",
+    "como": "Puxe uma toalha no chão usando os dedos dos pés."
+   },
+   {
+    "nome": "Panturrilha unilateral",
+    "como": "Na ponta de um pé só, suba e desça com controle."
+   }
+  ]
+ },
+ {
+  "n": 91,
+  "slug": "escalenos",
+  "titulo": "Escalenos",
+  "regiao": "Pescoço",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "esternocleidomastóideo",
+  "azul": "trapézio superior e deltoide",
+  "musculos": [
+   "Escaleno anterior, médio e posterior"
+  ],
+  "funcoes": [
+   "Inclinação do pescoço",
+   "Elevação das costelas na inspiração"
+  ],
+  "exemplos": [
+   "Isometria de pescoço",
+   "Respiração diafragmática",
+   "Chin tuck",
+   "Flexão de pescoço deitado"
+  ],
+  "destaques": [
+   {
+    "nome": "Isometria de pescoço",
+    "como": "Empurre a cabeça contra a mão sem deixar mover, segurando alguns segundos."
+   },
+   {
+    "nome": "Respiração diafragmática",
+    "como": "Deitado, inspire expandindo o abdome e costelas, expire devagar."
+   },
+   {
+    "nome": "Chin tuck",
+    "como": "Recolha o queixo para trás alinhando a cabeça sobre os ombros."
+   }
+  ]
+ },
+ {
+  "n": 92,
+  "slug": "esternocleidomastoideo",
+  "titulo": "Esternocleidomastóideo",
+  "regiao": "Pescoço",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "esternocleidomastóideo",
+  "azul": "trapézio superior e deltoide",
+  "musculos": [
+   "Esternocleidomastóideo"
+  ],
+  "funcoes": [
+   "Flexão e rotação da cabeça",
+   "Auxílio na inspiração"
+  ],
+  "exemplos": [
+   "Flexão de pescoço deitado",
+   "Isometria de pescoço",
+   "Chin tuck",
+   "Prancha"
+  ],
+  "destaques": [
+   {
+    "nome": "Flexão de pescoço deitado",
+    "como": "Deitado, eleve a cabeça levando o queixo ao peito."
+   },
+   {
+    "nome": "Isometria de pescoço",
+    "como": "Empurre a cabeça contra a mão sem deixar mover, segurando alguns segundos."
+   },
+   {
+    "nome": "Chin tuck",
+    "como": "Recolha o queixo para trás alinhando a cabeça sobre os ombros."
+   }
+  ]
+ },
+ {
+  "n": 93,
+  "slug": "intercostais",
+  "titulo": "Intercostais",
+  "regiao": "Tronco",
+  "plano": "Ilimitado",
+  "vista": "vista lateral",
+  "vermelho": "oblíquo externo",
+  "azul": "serrátil anterior",
+  "musculos": [
+   "Intercostais externos",
+   "Intercostais internos"
+  ],
+  "funcoes": [
+   "Elevação e depressão das costelas na respiração"
+  ],
+  "exemplos": [
+   "Respiração diafragmática",
+   "Pullover",
+   "Prancha",
+   "Vacuum abdominal"
+  ],
+  "destaques": [
+   {
+    "nome": "Respiração diafragmática",
+    "como": "Deitado, inspire expandindo o abdome e costelas, expire devagar."
+   },
+   {
+    "nome": "Pullover",
+    "como": "Deitado, leve o halter atrás da cabeça e retorne em arco sobre o peito."
+   },
+   {
+    "nome": "Prancha",
+    "como": "Apoio em antebraços e pontas dos pés, corpo alinhado e abdome contraído."
+   }
+  ]
+ },
+ {
+  "n": 94,
+  "slug": "cotovelo-articulacao",
+  "titulo": "Articulação do Cotovelo",
+  "regiao": "Articulações e movimentos",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "bíceps braquial",
+  "azul": "braquiorradial",
+  "musculos": [
+   "Bíceps braquial",
+   "Braquial",
+   "Braquiorradial",
+   "Tríceps"
+  ],
+  "funcoes": [
+   "Flexão e extensão",
+   "Pronação e supinação"
+  ],
+  "exemplos": [
+   "Rosca direta",
+   "Tríceps pulley",
+   "Rosca martelo",
+   "Pronação/supinação com halter"
+  ],
+  "destaques": [
+   {
+    "nome": "Rosca direta",
+    "como": "Cotovelos fixos ao lado do corpo, flexione levando a barra aos ombros."
+   },
+   {
+    "nome": "Tríceps pulley",
+    "como": "Cotovelos fixos junto ao corpo, estenda os braços empurrando a barra para baixo."
+   },
+   {
+    "nome": "Rosca martelo",
+    "como": "Pegada neutra, flexione os cotovelos mantendo os polegares para cima."
+   }
+  ]
+ },
+ {
+  "n": 95,
+  "slug": "tornozelo-articulacao",
+  "titulo": "Articulação do Tornozelo",
+  "regiao": "Articulações e movimentos",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "gastrocnêmio",
+  "azul": "sóleo",
+  "musculos": [
+   "Gastrocnêmio",
+   "Sóleo",
+   "Tibial anterior",
+   "Fibulares"
+  ],
+  "funcoes": [
+   "Flexão plantar e dorsiflexão",
+   "Inversão e eversão"
+  ],
+  "exemplos": [
+   "Panturrilha em pé",
+   "Tibial raise",
+   "Mobilidade de tornozelo na parede",
+   "Panturrilha unilateral"
+  ],
+  "destaques": [
+   {
+    "nome": "Panturrilha em pé",
+    "como": "Na ponta dos pés, suba o máximo e desça alongando o calcanhar."
+   },
+   {
+    "nome": "Tibial raise",
+    "como": "Costas na parede, eleve as pontas dos pés mantendo os calcanhares no chão."
+   },
+   {
+    "nome": "Mobilidade de tornozelo na parede",
+    "como": "Joelho em direção à parede sem tirar o calcanhar do chão."
+   }
+  ]
+ },
+ {
+  "n": 96,
+  "slug": "punho-articulacao",
+  "titulo": "Articulação do Punho",
+  "regiao": "Articulações e movimentos",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "flexores do punho",
+  "azul": "extensores do punho",
+  "musculos": [
+   "Flexores do punho",
+   "Extensores do punho"
+  ],
+  "funcoes": [
+   "Flexão e extensão",
+   "Desvio radial e ulnar"
+  ],
+  "exemplos": [
+   "Rosca de punho",
+   "Rosca de punho inversa",
+   "Farmer walk",
+   "Preensão com hand grip"
+  ],
+  "destaques": [
+   {
+    "nome": "Rosca de punho",
+    "como": "Antebraços apoiados, flexione os punhos levantando a barra."
+   },
+   {
+    "nome": "Rosca de punho inversa",
+    "como": "Palmas para baixo, estenda os punhos levantando a barra."
+   },
+   {
+    "nome": "Farmer walk",
+    "como": "Caminhe segurando cargas pesadas ao lado do corpo, postura ereta."
+   }
+  ]
+ },
+ {
+  "n": 97,
+  "slug": "escapula-movimentos",
+  "titulo": "Escápula: Movimentos",
+  "regiao": "Articulações e movimentos",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "trapézio superior",
+  "azul": "trapézio médio e inferior",
+  "musculos": [
+   "Trapézio",
+   "Romboides",
+   "Serrátil anterior",
+   "Peitoral menor"
+  ],
+  "funcoes": [
+   "Elevação/depressão",
+   "Protração/retração",
+   "Rotação superior/inferior"
+  ],
+  "exemplos": [
+   "Encolhimento",
+   "Remada sentada",
+   "Flexão plus",
+   "Y-T-W no banco"
+  ],
+  "destaques": [
+   {
+    "nome": "Encolhimento",
+    "como": "Segure os halteres e eleve os ombros em direção às orelhas, sem girar."
+   },
+   {
+    "nome": "Remada sentada",
+    "como": "Puxe o cabo ao abdome, aproximando as escápulas sem jogar o tronco."
+   },
+   {
+    "nome": "Flexão plus",
+    "como": "Na flexão, ao final empurre o chão afastando as escápulas."
+   }
+  ]
+ },
+ {
+  "n": 98,
+  "slug": "cadeias-cruzadas",
+  "titulo": "Cadeias Cruzadas (X posterior)",
+  "regiao": "Visão geral",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "latíssimo do dorso",
+  "azul": "infraespinal e redondo maior",
+  "musculos": [
+   "Latíssimo do dorso",
+   "Fáscia toracolombar",
+   "Glúteo máximo contralateral"
+  ],
+  "funcoes": [
+   "Transferência de força na marcha, corrida e arremesso"
+  ],
+  "exemplos": [
+   "Bird dog",
+   "Remada unilateral",
+   "Kettlebell swing",
+   "Arremesso de medicine ball"
+  ],
+  "destaques": [
+   {
+    "nome": "Bird dog",
+    "como": "Em quatro apoios, estenda braço e perna opostos sem girar o quadril."
+   },
+   {
+    "nome": "Remada unilateral",
+    "como": "Apoio no banco, puxe o halter ao quadril mantendo o tronco estável."
+   },
+   {
+    "nome": "Kettlebell swing",
+    "como": "Leve o kettlebell entre as pernas e projete à frente com explosão do quadril."
+   }
+  ]
+ },
+ {
+  "n": 99,
+  "slug": "musculos-postura",
+  "titulo": "Músculos da Postura",
+  "regiao": "Visão geral",
+  "plano": "Ilimitado",
+  "vista": "vista posterior",
+  "vermelho": "eretores da espinha",
+  "azul": "latíssimo do dorso",
+  "musculos": [
+   "Eretores da espinha",
+   "Glúteos",
+   "Trapézio inferior",
+   "Core profundo"
+  ],
+  "funcoes": [
+   "Manter alinhamento",
+   "Reduzir sobrecarga articular"
+  ],
+  "exemplos": [
+   "Y-T-W no banco",
+   "Prancha",
+   "Glute bridge",
+   "Chin tuck"
+  ],
+  "destaques": [
+   {
+    "nome": "Y-T-W no banco",
+    "como": "Deitado de bruços no banco inclinado, eleve os braços formando Y, T e W."
+   },
+   {
+    "nome": "Prancha",
+    "como": "Apoio em antebraços e pontas dos pés, corpo alinhado e abdome contraído."
+   },
+   {
+    "nome": "Glute bridge",
+    "como": "Deitado, pés no chão, eleve o quadril contraindo os glúteos."
+   }
+  ]
+ },
+ {
+  "n": 100,
+  "slug": "musculos-estabilizadores-joelho",
+  "titulo": "Estabilizadores do Joelho",
+  "regiao": "Visão geral",
+  "plano": "Ilimitado",
+  "vista": "vista anterior",
+  "vermelho": "quadríceps",
+  "azul": "adutores",
+  "musculos": [
+   "Vasto medial",
+   "Glúteo médio",
+   "Posterior de coxa",
+   "Poplíteo"
+  ],
+  "funcoes": [
+   "Controle do valgo",
+   "Proteção ligamentar",
+   "Estabilidade em saltos"
+  ],
+  "exemplos": [
+   "Agachamento búlgaro",
+   "Caminhada lateral com elástico",
+   "Nordic curl",
+   "Step-up"
+  ],
+  "destaques": [
+   {
+    "nome": "Agachamento búlgaro",
+    "como": "Pé de trás apoiado no banco, desça o joelho de trás em direção ao chão."
+   },
+   {
+    "nome": "Caminhada lateral com elástico",
+    "como": "Elástico nas pernas, semi-agachado, dê passos laterais sem juntar os pés."
+   },
+   {
+    "nome": "Nordic curl",
+    "como": "Ajoelhado com os pés presos, desça o tronco à frente controlando com os posteriores."
+   }
+  ]
+ }
+]

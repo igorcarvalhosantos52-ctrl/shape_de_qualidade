@@ -733,18 +733,43 @@ const FREQ={semanal:7,quinzenal:15,mensal:30};
 function revNext(F){const r=F.rev;if(!r)return null;const d=r.freq==="personalizada"?(+r.dias||0):FREQ[r.freq];if(!d)return null;return new Date(r.base+d*864e5)}
 function revHTML(){const r=S.rev||{freq:"",dias:""},nx=revNext(S);return `<div class="noprint"><h3>📅 Revisão do treino</h3><div class="row"><select id="revF"><option value="">Sem revisão definida</option>${["semanal","quinzenal","mensal","personalizada"].map(x=>`<option ${r.freq===x?"selected":""} value="${x}">${x[0].toUpperCase()+x.slice(1)}</option>`).join("")}</select><input id="revD" type="number" min="1" max="365" placeholder="dias" value="${esc(r.dias||"")}" class="${r.freq==="personalizada"?"":"hide"}" style="max-width:90px"></div>${nx?`<p id="revNext"><b>Próxima revisão:</b> ${nx.toLocaleDateString("pt-BR")}${nx<NOW()?' <span class="badge blk">VENCIDA</span>':""}</p>`:""}</div>`}
 function bindRev(){const f=$("#revF");if(!f)return;const up=()=>{const fr=f.value,d=$("#revD").value;S.rev=fr?{freq:fr,dias:fr==="personalizada"?d:"",base:Date.now()}:null;save();render()};f.onchange=up;$("#revD").onchange=up}
-let pq="",pf="todos",panelOpen=true;
+let pq="",pf="todos",panelOpen=true,cardReg="",cardData=null,cardLoading=null,cardList=[],cardIdx=0;
+function cardBanner(d){const n=d.cards.filter(c=>!c.locked).length;if(!n)return"No plano Básico os cards ficam bloqueados. Faça upgrade para o Pro (50 cards) ou para o Ilimitado (os 100).";if(n===d.cards.length)return"Os 100 cards estão liberados no seu plano.";return"Os cards com cadeado são do plano Ilimitado. Faça upgrade para abrir."}
+function paintCards(){const d=cardData,body=$("#cardStudyBody");if(!d||!body)return;const regs=[...new Set(d.cards.map(c=>c.regiao))].sort((a,b)=>a.localeCompare(b,"pt"));
+ const list=d.cards.filter(c=>!cardReg||c.regiao===cardReg);
+ body.innerHTML=`<p class="cardhint">${esc(cardBanner(d))}</p><select id="cardReg"><option value="">Todas as regiões</option>${regs.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join("")}</select><div class="cardgrid">${list.map(c=>c.locked?`<button type="button" class="cardtile locked" data-id="${c.id}"><span class="lock">🔒</span><b>${esc(c.titulo)}</b><small>${esc(c.plano==="Pro"?"Pro":"Ilimitado")}</small></button>`:`<button type="button" class="cardtile" data-id="${c.id}"><img alt="${esc(c.titulo)}" loading="lazy" src="/api/cards/${c.id}/img"><b>${esc(c.titulo)}</b><small>${esc(c.regiao)}</small></button>`).join("")||"<p>Nenhum card nesta região.</p>"}</div>`;
+ const sel=$("#cardReg");sel.value=cardReg;sel.onchange=()=>{cardReg=sel.value;paintCards()};
+ body.querySelectorAll(".cardtile").forEach(b=>b.onclick=()=>openCard(+b.dataset.id,list))}
+function loadCards(){const body=$("#cardStudyBody");if(!body)return;if(cardData){paintCards();return}if(cardLoading)return cardLoading;
+ body.textContent="Carregando…";
+ cardLoading=fetch("/api/cards").then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Não foi possível carregar os cards.");cardData=j;paintCards()}).catch(e=>{if($("#cardStudyBody"))$("#cardStudyBody").innerHTML=`<p class="cardhint">${esc(e.message)}</p>`}).finally(()=>{cardLoading=null});
+ return cardLoading}
+function ensureCardView(){let v=$("#cardView");if(v)return v;v=document.createElement("div");v.id="cardView";v.className="cardview hide";
+ v.innerHTML=`<div class="cvtop"><button type="button" id="cardPrev" aria-label="Anterior">‹</button><button type="button" id="cardViewX" aria-label="Fechar">✕</button><button type="button" id="cardNext" aria-label="Próximo">›</button></div><div id="cardStage"></div><p id="cardCap"></p>`;
+ document.body.appendChild(v);let x0=null;
+ $("#cardStage").addEventListener("touchstart",e=>{x0=e.changedTouches[0].clientX},{passive:true});
+ $("#cardStage").addEventListener("touchend",e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(dx<-40)cardStep(1);else if(dx>40)cardStep(-1)},{passive:true});
+ $("#cardPrev").onclick=()=>cardStep(-1);$("#cardNext").onclick=()=>cardStep(1);$("#cardViewX").onclick=()=>v.classList.add("hide");return v}
+function openCard(id,list){cardList=list;cardIdx=Math.max(0,list.findIndex(c=>c.id===id));ensureCardView();showCard()}
+function cardStep(d){const n=cardIdx+d;if(n<0||n>=cardList.length)return;cardIdx=n;showCard()}
+function showCard(){const c=cardList[cardIdx],v=$("#cardView");if(!c||!v)return;v.classList.remove("hide");
+ const up=c.locked?(cardData&&cardData.cards.every(x=>x.locked)?"No plano Básico este card está bloqueado. Faça upgrade para o Pro ou Ilimitado.":"Este card é do plano Ilimitado. Faça upgrade para abrir."):"";
+ $("#cardStage").innerHTML=c.locked?`<div class="cvlock"><span>🔒</span><p>${esc(up)}</p></div>`:`<img alt="${esc(c.titulo)}" src="/api/cards/${c.id}/img">`;
+ $("#cardCap").textContent=c.titulo+" · "+c.regiao+" ("+(cardIdx+1)+"/"+cardList.length+")";
+ $("#cardPrev").disabled=cardIdx===0;$("#cardNext").disabled=cardIdx===cardList.length-1}
 function stuList(){const A=accounts();return Object.keys(A).map(u=>{const F=loadF(u);const st=F.status==="aprovado"?"apr":F.plan?"pend":"none";return{u,nome:A[u].nome,st,F}})}
-function renderPanel(){const p=$("#stuPanel");p.classList.toggle("hide",!unlocked);if(!unlocked){p.innerHTML="";return}
+function renderPanel(){const p=$("#stuPanel");const cardStudyOpen=!!($("#cardStudySec")&&$("#cardStudySec").open);p.classList.toggle("hide",!unlocked);if(!unlocked){p.innerHTML="";return}
  const L=stuList(),q=norm(pq);let v=L.filter(x=>!q||norm(x.nome+" "+x.u).includes(q)).filter(x=>pf==="todos"||(pf==="pend"?x.st!=="apr":x.st==="apr"));
  v.sort((a,b)=>(a.st==="apr")-(b.st==="apr")||a.nome.localeCompare(b.nome));
  const np=L.filter(x=>x.st!=="apr").length,na=L.length-np;
  p.innerHTML=`<details id="stuDet" ${panelOpen?"open":""}><summary>👥 Alunos (${L.length})</summary><div class="srch"><span>🔍</span><input id="stuQ" placeholder="Buscar aluno pelo nome" value="${esc(pq)}"></div>
  <div class="flt">${[["todos","Todos ("+L.length+")"],["pend","Pendentes ("+np+")"],["apr","Aprovados ("+na+")"]].map(([k,l])=>`<button data-f="${k}" class="${pf===k?"on":""}">${l}</button>`).join("")}</div>
- ${v.map(x=>`<div class="stu ${x.st} ${viewing===x.u?"sel":""}" data-u="${esc(x.u)}"><div><b>${esc(x.nome)}</b><small>@${esc(x.u)}${revNext(x.F)?" · rev. "+revNext(x.F).toLocaleDateString("pt-BR"):""}</small></div>${x.st==="apr"?'<span class="badge apr">Aprovado</span>':x.st==="pend"?(x.F.status==="bloqueado"?'<span class="badge blk">Bloqueado</span>':'<span class="badge pend">Pendente</span>'):'<span class="badge">Sem treino</span>'}</div>`).join("")||'<p style="color:var(--mut)">Nenhum aluno encontrado.</p>'}</details>`;
+ ${v.map(x=>`<div class="stu ${x.st} ${viewing===x.u?"sel":""}" data-u="${esc(x.u)}"><div><b>${esc(x.nome)}</b><small>@${esc(x.u)}${revNext(x.F)?" · rev. "+revNext(x.F).toLocaleDateString("pt-BR"):""}</small></div>${x.st==="apr"?'<span class="badge apr">Aprovado</span>':x.st==="pend"?(x.F.status==="bloqueado"?'<span class="badge blk">Bloqueado</span>':'<span class="badge pend">Pendente</span>'):'<span class="badge">Sem treino</span>'}</div>`).join("")||'<p style="color:var(--mut)">Nenhum aluno encontrado.</p>'}</details>
+ <details id="cardStudySec" class="cardstudy noprint" ${cardStudyOpen?"open":""}><summary>📚 Cards de memorização para estudo</summary><div id="cardStudyBody"></div></details>`;
  $("#stuDet").ontoggle=e=>{panelOpen=e.target.open};const qi=$("#stuQ");qi.oninput=()=>{pq=qi.value;const pos=qi.selectionStart;renderPanel();const n=$("#stuQ");n.focus();n.setSelectionRange(pos,pos)};
  p.querySelectorAll(".flt button").forEach(b=>b.onclick=()=>{pf=b.dataset.f;renderPanel()});
- p.querySelectorAll(".stu").forEach(d=>d.onclick=()=>openStu(d.dataset.u))}
+ p.querySelectorAll(".stu").forEach(d=>d.onclick=()=>openStu(d.dataset.u));
+ const sec=$("#cardStudySec");if(sec){sec.ontoggle=()=>{if(sec.open)loadCards()};if(cardStudyOpen)loadCards()}}
 function openStu(u){viewing=u;if(innerWidth<=700)panelOpen=false;CK=fkey(u);S=loadF(u);render()}
 function closeStu(){viewing=null;S=load();render()}
 function showTab(t){if(t==="aluno"&&viewing)closeStu();["login","aluno","personal"].forEach(x=>$("#t-"+x).classList.toggle("hide",x!==t));render()}

@@ -45,6 +45,22 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await Promise.all([p.waitForNavigation(), p.click('#pwGo')]);
     await p.waitForSelector('#planBox'); const tb = await p.$eval('#planBox', e => e.innerText);
     ok(/TESTE GRÁTIS – 4 dia/.test(tb) && /Básico/.test(tb), 'novo personal ganha 4 dias grátis no plano escolhido (Básico)');
+    const trialCards = await p.evaluate(async () => { const r = await fetch('/api/cards'); const j = await r.json(); const img = await fetch('/api/cards/1/img'); const c = j.cards && j.cards[0]; return { st: r.status, plan: j.plan, trial: j.trial, n: j.cards.length, locked: j.cards.filter(x => x.locked).length, okf: !!(c && c.titulo && c.regiao && c.plano && 'locked' in c), img: img.status }; });
+    ok(trialCards.st === 200 && trialCards.trial && trialCards.plan === 'basico' && trialCards.n === 100 && trialCards.locked === 100 && trialCards.okf && trialCards.img === 403, 'no teste grátis do Básico o plano escolhido deixa os 100 cards bloqueados');
+    await p.waitForSelector('#cardStudySec');
+    const abaixoTrial = await p.evaluate(() => { const a = document.querySelector('#stuDet').getBoundingClientRect(), b = document.querySelector('#cardStudySec').getBoundingClientRect(); return b.top > a.top && /Cards de memorização para estudo/.test(document.querySelector('#cardStudySec').innerText); });
+    ok(abaixoTrial, 'seção de cards fica abaixo da lista de alunos');
+    await p.evaluate(() => document.querySelector('#cardStudySec').scrollIntoView());
+    await p.click('#cardStudySec summary');
+    await p.waitForSelector('.cardtile.locked');
+    const basUi = await p.evaluate(() => ({ locks: document.querySelectorAll('.cardtile.locked').length, imgs: document.querySelectorAll('.cardtile img').length, msg: document.querySelector('#cardStudyBody').innerText }));
+    ok(basUi.locks === 100 && basUi.imgs === 0 && /Básico/.test(basUi.msg) && /upgrade/i.test(basUi.msg), 'Básico vê cadeado e o aviso de upgrade, sem baixar as imagens');
+    await p.click('.cardtile.locked');
+    await p.waitForSelector('#cardView:not(.hide) .cvlock');
+    ok(/upgrade/i.test(await p.$eval('#cardView', e => e.innerText)) && !(await p.$('#cardView img')), 'card bloqueado abre o aviso de upgrade, sem a imagem');
+    await p.click('#cardNext');
+    ok(/\(2\//.test(await p.$eval('#cardCap', e => e.textContent)) && await p.$('#cardView .cvlock'), 'na tela cheia o próximo card também fica bloqueado');
+    await p.click('#cardViewX');
     // teste grátis acaba -> paywall com escolha de plano
     const pid = (await sql.prepare("SELECT id FROM personals WHERE email='igor@teste.com'").get()).id;
     const sess = await sql.prepare("SELECT role, user_id FROM sessions WHERE user_id=? AND role='personal'").get(pid);
@@ -100,6 +116,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(!micIdle.live && micIdle.listening === false, 'o microfone não liga sozinho depois que o coach fala');
     ok(/Seu personal ainda não cadastrou o WhatsApp/.test(await a.$eval('#waTop', e => e.innerText)) && !(await a.$('#waTop .waPers')), 'sem número, o aluno vê que o personal ainda não cadastrou o WhatsApp');
     ok((await a.evaluate(async () => (await fetch('/api/personal/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status)) === 401, 'aluno não cadastra o WhatsApp do personal');
+    ok((await a.evaluate(async () => (await fetch('/api/cards')).status)) === 403 && (await a.evaluate(async () => (await fetch('/api/cards/1/img')).status)) === 403, 'aluno não lista nem baixa os cards');
     const answers = ['19 anos', 'ganho de massa muscular', 'glúteos', 'errei, a prioridade é o peito', 'em 3 meses', 'treino há 1 ano', '2 dias', 'errei, posso treinar quatro vezes por semana', '1 hora', 'não', 'não tenho'];
     for (const t of answers) { const n = await a.$$eval('#chat .msg', x => x.length); await a.type('#txt', t); await a.keyboard.press('Enter');
       await a.waitForFunction(n => document.querySelectorAll('#chat .msg').length > n + 1 || !document.querySelector('#anamCard') || document.querySelector('#anamCard').classList.contains('hide'), { timeout: 15000 }, n); await sleep(300); }
@@ -396,6 +413,51 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const stVoz = await vozPg.$eval('#stVoz', e => e.textContent);
     ok(/voz do navegador|speechSynthesis|mudo|falhou/i.test(stVoz), 'botão Testar voz do navegador responde (' + stVoz + ')');
     console.log('DIAG /teste-voz:', JSON.stringify({ ...diag, stAudio, stVoz }));
+    const anon = await browser.newPage(); await anon.goto(URL, { waitUntil: 'networkidle0' });
+    ok((await anon.evaluate(async () => (await fetch('/api/cards')).status)) === 401, 'sem login a lista de cards pede entrada');
+    async function contaCards(email, plano) {
+      const ctx = await browser.createBrowserContext(), pg = await ctx.newPage(); await pg.setViewport(phone);
+      await pg.goto(URL, { waitUntil: 'networkidle0' });
+      const api = await pg.evaluate(async (email, plano) => {
+        const s = await fetch('/api/personal/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Cards ' + plano, email, senha: 'senha1234', plano }) });
+        const list = await fetch('/api/cards'); const j = await list.json();
+        const img = async id => { const r = await fetch('/api/cards/' + id + '/img'); return { st: r.status, cache: r.headers.get('cache-control') || '', type: r.headers.get('content-type') || '' }; };
+        return { signup: s.status, plan: j.plan, trial: j.trial, open: j.cards.filter(c => !c.locked).length, shut: j.cards.filter(c => c.locked).length, i1: await img(1), i51: await img(51), i100: await img(100) };
+      }, email, plano);
+      return { pg, api };
+    }
+    const proC = await contaCards('cards-pro@teste.com', 'pro');
+    ok(proC.api.signup === 200 && proC.api.trial && proC.api.plan === 'pro' && proC.api.open === 50 && proC.api.shut === 50 && proC.api.i1.st === 200 && /jpeg/.test(proC.api.i1.type) && /private/.test(proC.api.i1.cache) && proC.api.i51.st === 403, 'Pro no teste libera 50 cards e a imagem; o restante responde 403');
+    await proC.pg.goto(URL + '/?area=personal', { waitUntil: 'networkidle0' });
+    await proC.pg.waitForSelector('#cardStudySec'); await proC.pg.click('#cardStudySec summary');
+    await proC.pg.waitForSelector('.cardtile img');
+    ok((await proC.pg.$$('.cardtile img')).length === 50 && (await proC.pg.$$('.cardtile.locked')).length === 50, 'grade do Pro mostra 50 miniaturas e 50 cadeados');
+    await proC.pg.select('#cardReg', 'Mão');
+    await proC.pg.waitForFunction(() => document.querySelectorAll('.cardtile').length === 1 && document.querySelector('.cardtile.locked'));
+    ok(true, 'filtro de região reduz a grade');
+    await proC.pg.select('#cardReg', '');
+    await proC.pg.waitForSelector('.cardtile img');
+    await proC.pg.click('.cardtile:not(.locked)');
+    await proC.pg.waitForSelector('#cardView:not(.hide) img');
+    const antes = await proC.pg.$eval('#cardCap', e => e.textContent);
+    await proC.pg.click('#cardNext');
+    const depois = await proC.pg.$eval('#cardCap', e => e.textContent);
+    ok(antes !== depois && /2\//.test(depois), 'tela cheia troca de card com o botão próximo');
+    const swiped = await proC.pg.evaluate(() => new Promise(res => {
+      const s = document.getElementById('cardStage'), cap = () => document.getElementById('cardCap').textContent;
+      const before = cap();
+      const fire = (type, x) => { const t = new Touch({ identifier: 1, target: s, clientX: x, clientY: 80 }); s.dispatchEvent(new TouchEvent(type, { bubbles: true, cancelable: true, changedTouches: [t] })); };
+      try { fire('touchstart', 280); fire('touchend', 40); } catch (e) { return res({ before, after: cap(), err: String(e) }); }
+      setTimeout(() => res({ before, after: cap() }), 50);
+    }));
+    ok(swiped.after !== swiped.before, 'deslizar na tela cheia muda o card' + (swiped.err ? ' (' + swiped.err + ')' : ''));
+    const iliC = await contaCards('cards-ili@teste.com', 'ilimitado');
+    ok(iliC.api.trial && iliC.api.plan === 'ilimitado' && iliC.api.open === 100 && iliC.api.shut === 0 && iliC.api.i1.st === 200 && iliC.api.i100.st === 200, 'Ilimitado no teste libera os 100 cards');
+    const unkId = (await sql.prepare("SELECT id FROM personals WHERE email='cards-pro@teste.com'").get()).id;
+    await sql.prepare('UPDATE subscriptions SET plan=? WHERE personal_id=?').run('xyz', unkId);
+    await sql.prepare('UPDATE personals SET plan=? WHERE id=?').run('xyz', unkId);
+    const unk = await proC.pg.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); return { plan: j.plan, open: j.cards.filter(c => !c.locked).length }; });
+    ok(unk.plan === 'xyz' && unk.open === 50, 'plano desconhecido no teste vale como Pro');
     console.log('\nTODOS OS TESTES PASSARAM');
   } catch (e) { console.error(e); process.exitCode = 1; } finally { await browser.close(); srv.kill(); }
 })();

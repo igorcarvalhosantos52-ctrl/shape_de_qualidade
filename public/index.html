@@ -118,6 +118,25 @@ header h1 .logo{font-family:'Anton','Bebas Neue',Impact,'Arial Black','Helvetica
 #detDrawer .dhead{display:flex;align-items:center;gap:10px;position:sticky;top:-14px;background:#fff;padding:6px 0}#detDrawer h3{margin:0;color:#7a5a00;font-size:1.1rem}#detDrawer h4{margin:14px 0 4px;color:#000}#detDrawer p,#detDrawer li{line-height:1.45;font-size:.93rem;color:#333}#detDrawer ol{padding-left:20px;margin:4px 0}
 .dback{background:#000;color:#d4af37;border:0;border-radius:50%;width:36px;height:36px;font-size:1.2rem;cursor:pointer;flex:0 0 auto}.dmeta{color:#7a5a00!important;font-weight:600}.dvid{display:inline-block;margin-top:14px;text-decoration:none}
 @media(max-width:600px){#detDrawer{width:100%;border-left:0}}
+.cardstudy{margin-top:14px;padding-top:8px;border-top:1px dashed var(--line)}
+.cardstudy>summary{font-size:.78rem;font-weight:600;color:#8a7a55;cursor:pointer}
+.cardhint{font-size:.75rem;color:#6b5a32;margin:8px 0}
+.cardstudy select{font-size:.8rem;margin-bottom:8px}
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cardtile{display:flex;flex-direction:column;gap:3px;padding:5px;border:1px solid var(--line);border-radius:10px;background:#fff;text-align:left;cursor:pointer;font:inherit;font-size:.72rem;color:#333}
+.cardtile img{width:100%;height:78px;object-fit:cover;border-radius:6px;background:#f4f0e4}
+.cardtile .lock{height:78px;display:flex;align-items:center;justify-content:center;background:#f6f1e4;border-radius:6px;font-size:1.3rem}
+.cardtile small{color:var(--mut)}
+.cardview{position:fixed;inset:0;z-index:120;background:#111;color:#fff;display:flex;flex-direction:column}
+.cardview.hide{display:none}
+.cvtop{display:flex;justify-content:space-between;align-items:center;padding:8px}
+.cvtop button{background:#222;color:#f4e2a8;border:0;border-radius:10px;width:46px;height:42px;font-size:1.4rem;cursor:pointer}
+.cvtop button:disabled{opacity:.35}
+#cardStage{flex:1;display:flex;align-items:center;justify-content:center;padding:0 12px;touch-action:pan-y}
+#cardStage img{max-width:100%;max-height:calc(100vh - 130px);object-fit:contain}
+.cvlock{text-align:center;padding:24px;max-width:22rem}
+.cvlock span{font-size:2.4rem}
+#cardCap{text-align:center;margin:8px 12px 16px;font-size:.9rem;color:#f4e2a8}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
 </head>

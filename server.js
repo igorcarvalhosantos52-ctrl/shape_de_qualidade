@@ -1,6 +1,6 @@
 // Shape de Qualidade – servidor (Express + SQLite ou Turso)
 const express = require('express'), cookieParser = require('cookie-parser'), bcrypt = require('bcrypt'), crypto = require('crypto'), path = require('path');
-const db = require('./src/db'), pay = require('./src/payments');
+const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards');
 const app = express(); app.set('trust proxy', 1);
 const PROD = process.env.NODE_ENV === 'production', DAY = 864e5;
 app.use(express.json({ limit: '2mb', verify: (req, _r, buf) => { req.rawBody = buf.toString(); } }));
@@ -228,6 +228,28 @@ app.post('/api/admin/reset-link', admin, async (req, res) => { const p = await d
 app.post('/api/admin/plans', admin, async (req, res) => { try { res.json({ ok: true, plans: await pay.setPlans(req.body || {}) }); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.get('/admin', admin, (_q, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/teste-voz', (_q, res) => res.sendFile(path.join(__dirname, 'public', 'teste-voz.html')));
+
+function onlyPersonal(req, res, next) {
+  if (!req.sess) return res.status(401).json({ error: 'Faça login.' });
+  if (req.sess.role !== 'personal') return res.status(403).json({ error: 'Só o personal pode ver os cards de estudo.' });
+  next();
+}
+app.get('/api/cards', onlyPersonal, async (req, res) => {
+  const sub = await pay.subscriptionOf(req.sess.user_id);
+  res.json({
+    plan: sub.plan, plan_nome: sub.plan_nome, trial: !!sub.trial,
+    cards: cards.CARDS.map(c => ({ id: c.n, titulo: c.titulo, regiao: c.regiao, plano: c.plano, locked: cards.cardLocked(c, sub.plan) })),
+  });
+});
+app.get('/api/cards/:id/img', onlyPersonal, async (req, res) => {
+  const card = cards.CARDS.find(c => c.n === +req.params.id);
+  if (!card) return res.status(404).json({ error: 'Card não encontrado.' });
+  const sub = await pay.subscriptionOf(req.sess.user_id);
+  if (cards.cardLocked(card, sub.plan)) return res.status(403).json({ error: sub.plan === 'basico' ? 'No plano Básico os cards ficam bloqueados. Faça upgrade para o Pro ou Ilimitado.' : 'Este card faz parte do plano Ilimitado.' });
+  res.set('Cache-Control', 'private, max-age=86400');
+  res.type('jpg');
+  res.sendFile(cards.cardFile(card));
+});
 
 app.use(express.static(path.join(__dirname, 'public'), { index: 'index.html' }));
 app.get('/redefinir', (_q, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
