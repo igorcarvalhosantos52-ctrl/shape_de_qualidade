@@ -79,7 +79,8 @@ renderPanel = function () {
   _renderPanel();
   if (!unlocked || ME.role !== "personal") return;
   const pub = location.origin + "/p/" + ME.personal.invite_code, direto = location.origin + "/convite/" + ME.personal.invite_code, end = new Date(ME.sub.current_period_end).toLocaleDateString("pt-BR");
-  $("#stuPanel").insertAdjacentHTML("afterbegin", `<div class="alert ok noprint" id="invBox" style="font-size:.85rem">🔗 <b>Seu link público</b><br><small>Para a bio do Instagram ou o WhatsApp. Código: <b id="invCode">${esc(ME.personal.invite_code)}</b></small><br><input id="invLink" readonly value="${esc(pub)}" style="margin:6px 0;font-size:.8rem"><button class="btn sm" id="invCopy">Copiar link</button> <a class="btn sm sec" id="invShare" target="_blank" href="https://wa.me/?text=${encodeURIComponent("Treine comigo no Shape de Qualidade: " + pub)}">Compartilhar no WhatsApp</a><br><small>Quem você já combinou direto entra por <span id="invDireto">${esc(direto)}</span> e você aprova na hora.</small></div>${planBox(end)}`);
+  const soft = s => esc(s).replace(/([/.-])/g, "$1<wbr>");
+  $("#stuPanel").insertAdjacentHTML("afterbegin", `<div class="alert ok noprint" id="invBox">🔗 <b>Seu link público</b><small>Para a bio do Instagram ou o WhatsApp. Código: <b id="invCode">${esc(ME.personal.invite_code)}</b></small><input id="invLink" readonly value="${esc(pub)}"><div class="invActs"><button class="btn sm" id="invCopy" type="button">Copiar link</button><a class="btn sm sec" id="invShare" target="_blank" href="https://wa.me/?text=${encodeURIComponent("Treine comigo no Shape de Qualidade: " + pub)}">Compartilhar no WhatsApp</a></div><small>Quem você já combinou direto entra por <span id="invDireto">${soft(direto)}</span> e você aprova na hora.</small></div>${planBox(end)}`);
   bindPlanBox();
   $("#invCopy").onclick = () => { navigator.clipboard && navigator.clipboard.writeText(pub); __toast("Link copiado!"); };
 };

@@ -101,6 +101,14 @@ header h1 .logo{font-family:'Anton','Bebas Neue',Impact,'Arial Black','Helvetica
 .hbtns{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .perslink{background:none;border:0;color:#bfae7a;font-size:.72rem;text-decoration:underline;cursor:pointer;padding:2px 4px;opacity:.8}
 .pwrap{display:grid;grid-template-columns:240px 1fr;gap:12px;align-items:start}
+#invBox{font-size:.85rem;line-height:1.4;container-type:inline-size}
+#invBox small{display:block;margin-top:8px;line-height:1.45;overflow-wrap:break-word}
+#invBox #invDireto{overflow-wrap:anywhere;word-break:break-word}
+#invBox #invLink{display:block;width:100%;margin:8px 0 0;font-size:.8rem}
+#invBox .invActs{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+#invBox .invActs .btn{display:flex;align-items:center;justify-content:center;width:100%;margin:0;text-align:center;text-decoration:none;white-space:nowrap;line-height:1.2;box-sizing:border-box}
+@container (max-width:210px){#invBox .invActs .btn{font-size:.78rem;padding:8px 8px}}
+@container (min-width:440px){#invBox .invActs{flex-direction:row}#invBox .invActs .btn{flex:1;width:auto}}
 @media(max-width:700px){.pwrap{display:block}}
 #stuPanel summary{font-weight:700;cursor:pointer;color:var(--gold)}
 .srch{position:relative;margin:8px 0}.srch span{position:absolute;left:10px;top:50%;transform:translateY(-50%)}.srch input{padding-left:34px}
