@@ -233,12 +233,14 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       return { next: senha && senha.nextElementSibling && senha.nextElementSibling.id, text: box ? box.textContent : '', preload: v && v.getAttribute('preload'), src: v && v.getAttribute('src') };
     });
     ok(tuto.next === 'tutoBox' && /Como usar o app/.test(tuto.text), 'Como usar o app fica logo abaixo de Senhas');
-    ok(/Cadastrar e convidar aluno/.test(tuto.text) && /Aprovar a ficha/.test(tuto.text) && /Montar os dias da semana/.test(tuto.text) && /Trocar o treino de hoje/.test(tuto.text) && /Chave Pix e mensalidade/.test(tuto.text) && /Cards de memorização/.test(tuto.text) && /WhatsApp e senhas/.test(tuto.text), 'lista os sete vídeos do personal');
+    ok(/Cadastrar e convidar aluno/.test(tuto.text) && /Aprovar a ficha/.test(tuto.text) && /Montar os dias da semana/.test(tuto.text) && /Trocar o treino de hoje/.test(tuto.text) && /Chave Pix e mensalidade/.test(tuto.text) && /Como funciona a mensalidade/.test(tuto.text) && tuto.text.indexOf('Chave Pix e mensalidade') < tuto.text.indexOf('Como funciona a mensalidade') && tuto.text.indexOf('Como funciona a mensalidade') < tuto.text.indexOf('Cards de memorização') && /Cards de memorização/.test(tuto.text) && /WhatsApp e senhas/.test(tuto.text), 'lista os oito vídeos do personal, com a mensalidade depois do Pix');
     ok(tuto.preload === 'none' && !tuto.src, 'o vídeo não carrega antes do toque');
     await p.evaluate(() => { document.querySelector('#tutoBox').open = true; document.querySelector('[data-tuto="link"]').click(); });
     await p.waitForFunction(() => (document.querySelector('#tutoPlayer').getAttribute('src') || '') === '/api/tutoriais/link');
     const personalVid = await p.evaluate(async () => { const r = await fetch('/api/tutoriais/link', { headers: { Range: 'bytes=0-1' } }); return { s: r.status, t: r.headers.get('content-type') || '' }; });
     ok((personalVid.s === 206 || personalVid.s === 200) && /mp4/.test(personalVid.t), 'personal autenticado recebe o vídeo');
+    const mensalVid = await p.evaluate(async () => { const r = await fetch('/api/tutoriais/mensalidade', { headers: { Range: 'bytes=0-1' } }); return { s: r.status, t: r.headers.get('content-type') || '' }; });
+    ok((mensalVid.s === 206 || mensalVid.s === 200) && /mp4/.test(mensalVid.t), 'o vídeo da mensalidade abre para qualquer personal logado');
     ok(await a.evaluate(async () => (await fetch('/api/tutoriais/link')).status) === 401, 'aluno não baixa o vídeo');
     ok(await p.evaluate(async () => (await fetch('/api/tutoriais/nao-existe')).status) === 404, 'vídeo desconhecido responde 404');
 

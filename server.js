@@ -306,7 +306,7 @@ app.get('/api/cards', onlyPersonal, async (req, res) => {
     cards: cards.CARDS.map(c => ({ id: c.n, titulo: c.titulo, regiao: c.regiao, plano: c.plano, locked: owner ? false : cards.cardLocked(c, sub.plan, paid) })),
   });
 });
-const TUTOS = { link: '01-convidar.mp4', aprovar: '02-aprovar.mp4', dias: '03-dias.mp4', troca: '04-troca.mp4', pix: '05-pix.mp4', cards: '06-cards.mp4', acesso: '07-whatsapp-senhas.mp4' };
+const TUTOS = { link: '01-convidar.mp4', aprovar: '02-aprovar.mp4', dias: '03-dias.mp4', troca: '04-troca.mp4', pix: '05-pix.mp4', mensalidade: '08-mensalidade.mp4', cards: '06-cards.mp4', acesso: '07-whatsapp-senhas.mp4' };
 app.get('/api/tutoriais/:id', need('personal'), (req, res) => {
   const file = TUTOS[req.params.id];
   if (!file) return res.status(404).json({ error: 'Vídeo não encontrado.' });
