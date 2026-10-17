@@ -49,13 +49,94 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     p.on('pageerror', e => console.error('erro na página (personal):', e.message));
     await p.goto(URL, { waitUntil: 'networkidle0' });
     await p.screenshot({ path: SHOTS + '/01-login-aluno.png' });
+    await p.waitForSelector('#baixarApp');
+    const baixarLogin = await p.evaluate(() => {
+      const b = document.querySelector('#baixarApp');
+      const r = b.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { text: b.textContent, w: r.width, h: r.height, top: r.top, hit: !!(hit && (hit === b || b.contains(hit))) };
+    });
+    ok(baixarLogin.text === '📲 Baixar app' && baixarLogin.w > 200 && baixarLogin.h >= 48 && baixarLogin.top >= 0 && baixarLogin.top < 360 && baixarLogin.hit, 'a entrada mostra o botão Baixar app bem visível');
+    await p.click('#baixarApp');
+    await p.waitForSelector('#baixarOv:not(.hide)');
+    const passoAndroid = await p.$eval('#baixarPasso', e => e.textContent);
+    ok(/três pontinhos/.test(passoAndroid) && /Instalar app/.test(passoAndroid) && !/Compartilhar/.test(passoAndroid) && !/[—–]/.test(passoAndroid), 'sem o prompt nativo, o Chrome mostra o passo a passo do Android');
+    await p.click('#baixarOk');
+    await p.waitForSelector('#baixarOv.hide');
+    await p.evaluate(() => {
+      window.__pwaPrompted = 0;
+      const ev = new Event('beforeinstallprompt', { cancelable: true });
+      ev.prompt = () => { window.__pwaPrompted += 1; return Promise.resolve(); };
+      ev.userChoice = Promise.resolve({ outcome: 'dismissed' });
+      window.dispatchEvent(ev);
+    });
+    await p.click('#baixarApp');
+    await p.waitForFunction(() => window.__pwaPrompted === 1);
+    ok(await p.$eval('#baixarOv', e => e.classList.contains('hide')) && !(await p.$eval('#baixarBar', e => e.classList.contains('hide'))), 'no Chrome o toque chama prompt() e o botão continua se a pessoa recusar');
+    const man = await p.evaluate(async () => {
+      const j = await (await fetch('/manifest.webmanifest')).json();
+      const icons = [];
+      for (const i of j.icons || []) {
+        const ir = await fetch(i.src);
+        const b = new Uint8Array(await ir.arrayBuffer());
+        icons.push({ sizes: i.sizes, type: ir.headers.get('content-type') || '', w: (b[16] << 24) | (b[17] << 16) | (b[18] << 8) | b[19], h: (b[20] << 24) | (b[21] << 16) | (b[22] << 8) | b[23] });
+      }
+      const sw = await (await fetch('/sw.js')).text();
+      return { name: j.name, display: j.display, icons, sw: sw.slice(0, 160) };
+    });
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && /png/.test(i.type)) && /sq-v21/.test(man.sw) && man.sw.includes('"/baixar.js"'), 'o manifest tem nome, ícones de 192 e 512 px e display standalone');
+    const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
+    await ios.setViewport(phone);
+    await ios.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1');
+    await ios.goto(URL, { waitUntil: 'networkidle0' });
+    await ios.waitForSelector('#baixarApp');
+    await ios.click('#baixarApp');
+    await ios.waitForSelector('#baixarOv:not(.hide)');
+    const passoIos = await ios.$eval('#baixarPasso', e => e.textContent);
+    ok(/Compartilhar/.test(passoIos) && /Adicionar à Tela de Início/.test(passoIos) && !/três pontinhos/.test(passoIos) && !/[—–]/.test(passoIos), 'no iPhone o passo a passo pede Compartilhar e Adicionar à Tela de Início');
+    await ctxIos.close();
+    const ctxSolo = await browser.createBrowserContext(), solo = await ctxSolo.newPage();
+    await solo.setViewport(phone);
+    await solo.evaluateOnNewDocument(() => {
+      const orig = window.matchMedia.bind(window);
+      window.matchMedia = q => String(q).indexOf('display-mode: standalone') >= 0
+        ? { matches: true, media: String(q), addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {}, dispatchEvent() { return false; } }
+        : orig(q);
+    });
+    await solo.goto(URL, { waitUntil: 'networkidle0' });
+    await solo.waitForSelector('header');
+    ok(!(await solo.$('#baixarApp')), 'com o app já instalado em standalone o botão some');
+    await ctxSolo.close();
+    const ctxNav = await browser.createBrowserContext(), navSt = await ctxNav.newPage();
+    await navSt.setViewport(phone);
+    await navSt.evaluateOnNewDocument(() => { Object.defineProperty(Navigator.prototype, 'standalone', { configurable: true, get() { return true; } }); });
+    await navSt.goto(URL, { waitUntil: 'networkidle0' });
+    await navSt.waitForSelector('header');
+    ok(!(await navSt.$('#baixarApp')), 'com navigator.standalone o botão some');
+    await ctxNav.close();
+    const ctxAcc = await browser.createBrowserContext(), acc = await ctxAcc.newPage();
+    await acc.setViewport(phone);
+    await acc.goto(URL, { waitUntil: 'networkidle0' });
+    await acc.waitForSelector('#baixarApp');
+    await acc.evaluate(() => {
+      const ev = new Event('beforeinstallprompt', { cancelable: true });
+      ev.prompt = () => Promise.resolve();
+      ev.userChoice = Promise.resolve({ outcome: 'accepted' });
+      window.dispatchEvent(ev);
+    });
+    await acc.click('#baixarApp');
+    await acc.waitForSelector('#baixarBar.hide');
+    ok(true, 'se a pessoa aceita instalar, o botão some');
+    await ctxAcc.close();
     await p.click('#goPers'); await p.waitForSelector('#pSwap'); await p.click('#pSwap');
     await p.type('#pNomeAcc', 'Igor Personal'); await p.type('#pEmail', 'igor@teste.com'); await p.type('#pCrefAcc', '012345-G/MS');
     await p.type('#pw1', 'senha1234'); await p.type('#pw2', 'senha1234'); await p.click('label[data-plan="basico"]');
     ok(/2 dias grátis/.test(await p.$eval('body', e => e.innerText)), 'o cadastro avisa que o teste grátis dura 2 dias');
     await p.screenshot({ path: SHOTS + '/02-cadastro-personal.png', fullPage: true });
     await Promise.all([p.waitForNavigation(), p.click('#pwGo')]);
-    await p.waitForSelector('#planBox'); const tb = await p.$eval('#planBox', e => e.innerText);
+    await p.waitForSelector('#planBox');
+    ok((await p.$eval('#baixarApp', e => e.textContent)) === '📲 Baixar app' && !(await p.$eval('#baixarBar', e => e.classList.contains('hide'))), 'o painel do personal mostra Baixar app');
+    const tb = await p.$eval('#planBox', e => e.innerText);
     ok(/TESTE GRÁTIS – 2 dia/.test(tb) && /Básico/.test(tb), 'novo personal ganha 2 dias grátis no plano escolhido (Básico)');
     const ctxExtra = await browser.createBrowserContext(), extraPg = await ctxExtra.newPage();
     await extraPg.goto(URL, { waitUntil: 'networkidle0' });
@@ -136,10 +217,12 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     });
     await a.goto(URL + '/convite/' + code, { waitUntil: 'networkidle0' });
     await a.waitForFunction(() => /convidado por/.test(document.querySelector('#lgInfo').textContent));
+    ok((await a.$eval('#baixarApp', e => e.textContent)) === '📲 Baixar app' && !(await a.$eval('#baixarBar', e => e.classList.contains('hide'))), 'o link /convite/CÓDIGO mostra Baixar app');
     await a.type('#lgNome', 'Pamela'); await a.type('#lgUser', 'pamela'); await a.type('#lgPw', 'aluna123'); await a.type('#lgPw2', 'aluna123');
     await a.screenshot({ path: SHOTS + '/05-cadastro-aluno-convite.png' });
     await Promise.all([a.waitForNavigation(), a.click('#lgGo')]);
     await a.waitForSelector('#t-aluno:not(.hide)');
+    ok((await a.$eval('#baixarApp', e => e.textContent)) === '📲 Baixar app' && !(await a.$eval('#baixarBar', e => e.classList.contains('hide'))), 'a área do aluno mostra Baixar app');
     ok(!(await a.$('#autoL')), 'não existe mais a opção de ouvir automaticamente');
     await a.waitForFunction(() => /Olá, Pamela/.test(document.querySelector('#chat').textContent), { timeout: 15000 }); ok(true, 'coach cumprimenta "Olá, Pamela" sem perguntar o nome');
     await a.waitForFunction(() => (window.__played || []).some(s => /Quantos anos você tem/.test(s.text)), { timeout: 8000 });
@@ -714,8 +797,13 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const ctxPub = await browser.createBrowserContext(), pub = await ctxPub.newPage(); await pub.setViewport(phone);
     pub.on('pageerror', e => console.error('erro na página (link):', e.message));
     await pub.goto(URL + '/p/' + codeLia, { waitUntil: 'networkidle0' });
-    const capa = await pub.evaluate(() => ({ t: document.body.innerText, foto: !!document.querySelector('img.foto'), quero: !!document.querySelector('#quero') }));
+    const capa = await pub.evaluate(() => {
+      const b = document.querySelector('#baixarApp');
+      const r = b ? b.getBoundingClientRect() : { width: 0, height: 0, top: 999 };
+      return { t: document.body.innerText, foto: !!document.querySelector('img.foto'), quero: !!document.querySelector('#quero'), baixar: b ? b.textContent : '', w: r.width, h: r.height, top: r.top, hide: !!(document.querySelector('#baixarBar') && document.querySelector('#baixarBar').classList.contains('hide')) };
+    });
     ok(/Lia Personal/.test(capa.t) && /Treino de força/.test(capa.t) && /150/.test(capa.t) && capa.quero && capa.foto, 'quem abre o link vê nome, bio, foto, preço e Quero ser aluno');
+    ok(capa.baixar === '📲 Baixar app' && capa.w > 200 && capa.h >= 48 && capa.top < 80 && !capa.hide, 'a página pública /p/CÓDIGO mostra Baixar app');
     await pub.click('#quero');
     await pub.waitForSelector('#form:not(.hide)');
     await pub.type('#nome', 'Caio Aluno'); await pub.type('#user', 'caio'); await pub.type('#pw', 'aluno123'); await pub.type('#pw2', 'aluno123');
@@ -763,9 +851,8 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const direto = await f.$eval('.stu[data-u="davi"]', e => ({ t: e.innerText, bad: !!e.querySelector('.feeDot.bad') }));
     ok(/Sem treino/.test(direto.t) && !/Pendente de aprovação/.test(direto.t) && direto.bad, 'aluno do convite direto continua Sem treino e fica vermelho se a mensalidade venceu');
     await f.click('.stu[data-u="davi"]');
-    await f.waitForSelector('#feeEditBody');
-    await f.waitForFunction(() => !/Carregando/.test((document.querySelector('#feeEditBody') || {}).innerText || ''));
-    ok(!(await f.$('#feeNo')) && /Marcar como pago/.test(await f.$eval('#feeEdit', e => e.innerText)), 'convite direto não tem Recusar; o personal marca como pago se quiser');
+    await f.waitForFunction(() => viewing === 'davi' && /Marcar como pago/.test((document.querySelector('#feeEdit') || {}).innerText || '') && !document.querySelector('#feeNo'));
+    ok(true, 'convite direto não tem Recusar; o personal marca como pago se quiser');
     const recusaDireto = await f.evaluate(async () => { const r = await fetch('/api/personal/tuition/davi/gate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: 'recusar' }) }); return { st: r.status, j: await r.json() }; });
     ok(recusaDireto.st === 400 && /ficha/.test(recusaDireto.j.error), 'recusar o convite direto é barrado');
     const ctxD = await browser.createBrowserContext(), dv = await ctxD.newPage(); await dv.setViewport(phone);

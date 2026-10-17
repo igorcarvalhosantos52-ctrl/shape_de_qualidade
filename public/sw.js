@@ -1,4 +1,4 @@
-const C = "sq-v20", ASSETS = ["/", "/index.html", "/shim.js", "/app.js", "/glue.js", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/audio/clips.js", "/audio/silence.mp3", "/audio/teste.mp3", "/teste-voz"];
+const C = "sq-v21", ASSETS = ["/", "/index.html", "/shim.js", "/app.js", "/glue.js", "/baixar.js", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/audio/clips.js", "/audio/silence.mp3", "/audio/teste.mp3", "/teste-voz"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(C).then(c => c.addAll(ASSETS))); self.skipWaiting(); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== C).map(x => caches.delete(x))))); self.clients.claim(); });
 // rede primeiro (sempre a versão nova); cache só quando estiver offline. A API nunca é cacheada, inclusive /api/cards, /api/tutoriais e /api/ebook.

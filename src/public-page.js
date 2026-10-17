@@ -43,6 +43,6 @@ form.onsubmit=async ev=>{ev.preventDefault();const er=document.getElementById('e
 if(document.getElementById('pw').value!==document.getElementById('pw2').value){er.innerHTML='<div class="erro">As senhas não conferem.</div>';return}
 try{const r=await fetch('/api/student/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:document.getElementById('nome').value.trim(),usuario:document.getElementById('user').value.trim(),senha:document.getElementById('pw').value,convite:code,origem:'publico'})});
 const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Não foi possível criar a conta.');location.href=j.pix?'/?pos=pix':'/'}catch(e){er.innerHTML='<div class="erro">'+e.message.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</div>'}};}
-</script></body></html>`;
+</script><script src="/baixar.js"></script></body></html>`;
 }
 module.exports = { page };
