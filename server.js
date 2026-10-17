@@ -341,6 +341,7 @@ app.get('/api/cards/:id/img', onlyPersonal, async (req, res) => {
   res.sendFile(cards.cardFile(card));
 });
 
+app.get('/favicon.ico', (_q, res) => res.sendFile(path.join(__dirname, 'public', 'icons', 'icon-192.png')));
 app.use(express.static(path.join(__dirname, 'public'), { index: 'index.html' }));
 app.get('/redefinir', (_q, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/convite/:code', (_q, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));

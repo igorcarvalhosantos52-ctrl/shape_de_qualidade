@@ -50,6 +50,11 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     // ---- personal
     const ctxP = await browser.createBrowserContext(), p = await ctxP.newPage(); await p.setViewport(phone);
     p.on('pageerror', e => console.error('erro na página (personal):', e.message));
+    await p.evaluateOnNewDocument(() => {
+      window.addEventListener('beforeinstallprompt', function (e) {
+        if (e.isTrusted) { e.preventDefault(); e.stopImmediatePropagation(); }
+      }, true);
+    });
     await p.goto(URL, { waitUntil: 'networkidle0' });
     await p.screenshot({ path: SHOTS + '/01-login-aluno.png' });
     await p.waitForSelector('#baixarApp');
@@ -82,15 +87,23 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       for (const i of j.icons || []) {
         const ir = await fetch(i.src);
         const b = new Uint8Array(await ir.arrayBuffer());
-        icons.push({ sizes: i.sizes, type: ir.headers.get('content-type') || '', w: (b[16] << 24) | (b[17] << 16) | (b[18] << 8) | b[19], h: (b[20] << 24) | (b[21] << 16) | (b[22] << 8) | b[23] });
+        icons.push({ sizes: i.sizes, type: ir.headers.get('content-type') || '', purpose: i.purpose || '', w: (b[16] << 24) | (b[17] << 16) | (b[18] << 8) | b[19], h: (b[20] << 24) | (b[21] << 16) | (b[22] << 8) | b[23], png: b[0] === 137 && b[1] === 80 });
       }
       const sw = await (await fetch('/sw.js')).text();
-      return { name: j.name, display: j.display, icons, sw: sw.slice(0, 160) };
+      const head = document.head.firstElementChild;
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v23/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && /png/.test(i.type)) && /sq-v22/.test(man.sw) && man.sw.includes('"/baixar.js"'), 'o manifest tem nome, ícones de 192 e 512 px e display standalone');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v23');
+    const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
+    ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
     await ios.setViewport(phone);
     await ios.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1');
+    await ios.evaluateOnNewDocument(() => {
+      window.addEventListener('beforeinstallprompt', function (e) {
+        if (e.isTrusted) { e.preventDefault(); e.stopImmediatePropagation(); }
+      }, true);
+    });
     await ios.goto(URL, { waitUntil: 'networkidle0' });
     await ios.waitForSelector('#baixarApp');
     await ios.click('#baixarApp');
@@ -122,9 +135,13 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await acc.goto(URL, { waitUntil: 'networkidle0' });
     await acc.waitForSelector('#baixarApp');
     await acc.evaluate(() => {
+      window.addEventListener('beforeinstallprompt', function (e) {
+        if (e.isTrusted) { e.preventDefault(); e.stopImmediatePropagation(); }
+      }, true);
       const ev = new Event('beforeinstallprompt', { cancelable: true });
       ev.prompt = () => Promise.resolve();
       ev.userChoice = Promise.resolve({ outcome: 'accepted' });
+      window.__pwaPrompt = ev;
       window.dispatchEvent(ev);
     });
     await acc.click('#baixarApp');
@@ -770,6 +787,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(avisou.informed && avisou.tone === 'soon', 'pagamento informado não pinta de verde');
     const pagina = pubPage.page({ nome: 'Lia', bio: 'Força', foto: '', fee_cents: 15000, active: true, full: false, code: 'ABC12345' });
     ok(/Lia/.test(pagina) && /Força/.test(pagina) && /Quero ser aluno/.test(pagina) && /Mensalidade/.test(pagina) && /150/.test(pagina), 'página pública mostra nome, bio, preço e o botão');
+    ok(pagina.indexOf('__pwaPrompt') > 0 && pagina.indexOf('__pwaPrompt') < pagina.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(pagina), 'a página /p registra o prompt e o service worker no começo do head');
     const cheia = pubPage.page({ nome: 'Lia', bio: '', foto: '', fee_cents: 0, active: true, full: true, code: 'ABC12345' });
     ok(/limite/.test(cheia) && !/Quero ser aluno/.test(cheia), 'página pública some com o botão quando o plano está cheio');
     const parada = pubPage.page({ nome: 'Lia', bio: '', foto: '', fee_cents: 15000, active: false, full: false, code: 'ABC12345' });

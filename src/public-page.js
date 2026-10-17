@@ -5,7 +5,12 @@ function page(p) {
   const foto = p.foto && /^data:image\/(jpeg|png|webp);base64,[a-z0-9+/=\s]+$/i.test(p.foto) ? p.foto : '';
   const preco = p.fee_cents > 0 ? brl(p.fee_cents) : '';
   const bloqueio = !p.active ? 'A assinatura deste personal está inativa.' : p.full ? 'Este personal atingiu o limite de alunos do plano. Peça para ele liberar uma vaga.' : '';
-  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Treinar com ${esc(p.nome)}</title>
+  return `<!doctype html><html lang="pt-BR"><head><script>
+window.__pwaPrompt=null;
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__pwaPrompt=e;});
+window.addEventListener("appinstalled",function(){window.__pwaPrompt=null;window.__pwaInstalled=true;});
+if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js").catch(function(){});
+</script><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#000000"><link rel="icon" href="/icons/icon-192.png" type="image/png"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Treinar com ${esc(p.nome)}</title>
 <style>
 body{margin:0;background:#f6f1e4;color:#1a1a1a;font:16px/1.45 system-ui,sans-serif}
 main{max-width:420px;margin:0 auto;padding:28px 18px 40px}

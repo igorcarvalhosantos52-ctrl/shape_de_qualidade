@@ -6,6 +6,7 @@
   var AND = "No Android, toque nos três pontinhos e depois em Instalar app.";
   var promptEv = null;
   function installed() {
+    if (window.__pwaInstalled) return true;
     try { if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) return true; } catch (e) {}
     return navigator.standalone === true;
   }
@@ -22,8 +23,9 @@
   window.addEventListener("beforeinstallprompt", function (e) {
     e.preventDefault();
     promptEv = e;
+    window.__pwaPrompt = e;
   });
-  window.addEventListener("appinstalled", function () { promptEv = null; hideBar(); });
+  window.addEventListener("appinstalled", function () { promptEv = null; window.__pwaPrompt = null; window.__pwaInstalled = true; hideBar(); });
   function mount() {
     if (!document.body || installed() || document.getElementById("baixarBar")) return;
     var css = document.createElement("style");
@@ -43,18 +45,35 @@
     ov.setAttribute("aria-labelledby", "baixarTit");
     ov.innerHTML = '<div id="baixarBox"><h2 id="baixarTit">Baixar o app</h2><p id="baixarPasso"></p><button type="button" id="baixarOk">Entendi</button></div>';
     document.body.appendChild(ov);
-    document.getElementById("baixarApp").onclick = function () {
-      if (promptEv && typeof promptEv.prompt === "function") {
-        var ev = promptEv;
-        promptEv = null;
-        var pending = ev.prompt();
-        var after = function (choice) { if (choice && choice.outcome === "accepted") hideBar(); };
-        if (pending && pending.then) pending.then(function () { return ev.userChoice; }).then(after).catch(function () {});
-        else after(ev.userChoice);
-        return;
-      }
+    var waiting = false;
+    function pronto(ev) { return ev && typeof ev.prompt === "function"; }
+    function pegar() { return pronto(window.__pwaPrompt) ? window.__pwaPrompt : (pronto(promptEv) ? promptEv : null); }
+    function abrirPrompt(ev) {
+      promptEv = null;
+      window.__pwaPrompt = null;
+      var pending, choice = ev.userChoice;
+      try { pending = ev.prompt(); }
+      catch (e) { passoAPasso(); return; }
+      var after = function (c) { if (c && c.outcome === "accepted") hideBar(); };
+      if (pending && pending.then) pending.then(function () { return choice; }).then(after).catch(function () { passoAPasso(); });
+      else if (choice && choice.then) choice.then(after).catch(function () { passoAPasso(); });
+      else after(choice);
+    }
+    function passoAPasso() {
       document.getElementById("baixarPasso").textContent = iosLike() ? IOS : AND;
       ov.classList.remove("hide");
+    }
+    document.getElementById("baixarApp").onclick = function () {
+      var ev = pegar();
+      if (ev) { abrirPrompt(ev); return; }
+      if (waiting) return;
+      waiting = true;
+      var t0 = Date.now();
+      var timer = setInterval(function () {
+        var got = pegar();
+        if (got) { clearInterval(timer); waiting = false; abrirPrompt(got); return; }
+        if (Date.now() - t0 >= 3000) { clearInterval(timer); waiting = false; passoAPasso(); }
+      }, 100);
     };
     document.getElementById("baixarOk").onclick = function () { ov.classList.add("hide"); };
     ov.addEventListener("click", function (e) { if (e.target === ov) ov.classList.add("hide"); });
