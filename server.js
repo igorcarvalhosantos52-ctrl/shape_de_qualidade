@@ -1,6 +1,6 @@
 // Shape de Qualidade – servidor (Express + SQLite ou Turso)
 const express = require('express'), cookieParser = require('cookie-parser'), bcrypt = require('bcrypt'), crypto = require('crypto'), path = require('path');
-const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards'), tuition = require('./src/tuition'), publicPage = require('./src/public-page');
+const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards'), tuition = require('./src/tuition'), publicPage = require('./src/public-page'), ebook = require('./src/ebook');
 const app = express(); app.set('trust proxy', 1);
 const PROD = process.env.NODE_ENV === 'production', DAY = 864e5;
 app.use(express.json({ limit: '2mb', verify: (req, _r, buf) => { req.rawBody = buf.toString(); } }));
@@ -178,10 +178,11 @@ app.get('/api/me', async (req, res) => {
   if (req.sess.role === 'personal') {
     const p = await db.prepare('SELECT * FROM personals WHERE id=?').get(req.sess.user_id); if (!p) return res.json({ role: null, ...P });
     const sub = await pay.subscriptionOf(p.id);
+    const paid = await pay.hasPaidAccess(p.id);
     const fees = sub.active ? await tuition.summaryForPersonal(p.id) : {};
     const students = sub.active ? (await db.prepare('SELECT username,nome,ficha FROM students WHERE personal_id=? ORDER BY nome').all(p.id)).map(s => ({ u: s.username, nome: s.nome, ficha: parse(s.ficha), fee: fees[s.username] || { tone: 'none', label: 'Sem mensalidade', origin: 'convite', gate: '' } })) : [];
     const count = (await db.prepare('SELECT COUNT(*) n FROM students WHERE personal_id=?').get(p.id)).n;
-    return res.json({ role: 'personal', personal: { ...pubP(p), foto: p.foto || '' }, sub, students, count, ...P });
+    return res.json({ role: 'personal', personal: { ...pubP(p), foto: p.foto || '' }, sub, paid, students, count, ...P });
   }
   if (req.sess.role === 'student') {
     const s = await db.prepare('SELECT s.*,p.nome pnome,p.cref pcref,p.whatsapp pzap FROM students s JOIN personals p ON p.id=s.personal_id WHERE s.id=?').get(req.sess.user_id);
@@ -285,6 +286,18 @@ app.get('/api/tutoriais/:id', need('personal'), (req, res) => {
   if (!file) return res.status(404).json({ error: 'Vídeo não encontrado.' });
   res.set('Cache-Control', 'private, no-store');
   res.sendFile(path.join(__dirname, 'tutoriais', file), { acceptRanges: true });
+});
+app.get('/api/ebook', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  if (!req.sess) return res.status(401).json({ error: 'Faça login.' });
+  if (req.sess.role !== 'personal') return res.status(403).json({ error: 'Só o personal pode abrir o ebook.' });
+  const sub = await pay.subscriptionOf(req.sess.user_id);
+  const paid = await pay.hasPaidAccess(req.sess.user_id);
+  const g = ebook.gate(sub, paid);
+  if (!g.open) return res.status(403).json({ error: g.message });
+  res.set('Content-Disposition', 'inline; filename="guia-pratico-dos-exercicios.pdf"');
+  res.type('pdf');
+  res.sendFile(ebook.file());
 });
 app.get('/api/cards/:id/img', onlyPersonal, async (req, res) => {
   const card = cards.CARDS.find(c => c.n === +req.params.id);

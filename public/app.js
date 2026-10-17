@@ -758,6 +758,8 @@ function showCard(){const c=cardList[cardIdx],v=$("#cardView");if(!c||!v)return;
  $("#cardCap").textContent=c.titulo+" · "+c.regiao+" ("+(cardIdx+1)+"/"+cardList.length+")";
  $("#cardPrev").disabled=cardIdx===0;$("#cardNext").disabled=cardIdx===cardList.length-1}
 function stuList(){const A=accounts();return Object.keys(A).map(u=>{const F=loadF(u);const st=F.status==="aprovado"?"apr":F.plan?"pend":"none";return{u,nome:A[u].nome,st,F}})}
+function ebookView(){const sub=ME.sub||{},paid=!!ME.paid;if(paid&&sub.plan==="ilimitado")return{open:true,msg:""};if(sub.trial||!paid)return{open:false,msg:"Liberado após a assinatura"};return{open:false,msg:"Exclusivo do plano Ilimitado"}}
+function ebookCard(){const v=ebookView();const body=v.open?'<button type="button" class="btn sm" id="ebookGo">Abrir ebook</button>':'<p class="ebooklock">🔒 '+esc(v.msg)+'</p>';return '<section id="ebookSec" class="ebookcard noprint"><h3>📘 Ebook: Guia Prático dos Exercícios</h3><div class="ebookcover"><b>Guia Prático dos Exercícios de Musculação</b><span>abordagem anatômica</span></div>'+body+'</section>'}
 function renderPanel(){const p=$("#stuPanel");const cardStudyOpen=!!($("#cardStudySec")&&$("#cardStudySec").open);p.classList.toggle("hide",!unlocked);if(!unlocked){p.innerHTML="";return}
  const L=stuList(),q=norm(pq);let v=L.filter(x=>!q||norm(x.nome+" "+x.u).includes(q)).filter(x=>pf==="todos"||(pf==="pend"?x.st!=="apr":x.st==="apr"));
  v.sort((a,b)=>(a.st==="apr")-(b.st==="apr")||a.nome.localeCompare(b.nome));
@@ -765,11 +767,13 @@ function renderPanel(){const p=$("#stuPanel");const cardStudyOpen=!!($("#cardStu
  p.innerHTML=`<details id="stuDet" ${panelOpen?"open":""}><summary>👥 Alunos (${L.length})</summary><div class="srch"><span>🔍</span><input id="stuQ" placeholder="Buscar aluno pelo nome" value="${esc(pq)}"></div>
  <div class="flt">${[["todos","Todos ("+L.length+")"],["pend","Pendentes ("+np+")"],["apr","Aprovados ("+na+")"]].map(([k,l])=>`<button data-f="${k}" class="${pf===k?"on":""}">${l}</button>`).join("")}</div>
  ${v.map(x=>`<div class="stu ${x.st} ${viewing===x.u?"sel":""}" data-u="${esc(x.u)}"><div><b>${esc(x.nome)}</b><small>@${esc(x.u)}${revNext(x.F)?" · rev. "+revNext(x.F).toLocaleDateString("pt-BR"):""}</small></div>${x.st==="apr"?'<span class="badge apr">Aprovado</span>':x.st==="pend"?(x.F.status==="bloqueado"?'<span class="badge blk">Bloqueado</span>':'<span class="badge pend">Pendente</span>'):'<span class="badge">Sem treino</span>'}</div>`).join("")||'<p style="color:var(--mut)">Nenhum aluno encontrado.</p>'}</details>
- <details id="cardStudySec" class="cardstudy noprint" ${cardStudyOpen?"open":""}><summary>📚 Cards de memorização para estudo</summary><div id="cardStudyBody"></div></details>`;
+ <details id="cardStudySec" class="cardstudy noprint" ${cardStudyOpen?"open":""}><summary>📚 Cards de memorização para estudo</summary><div id="cardStudyBody"></div></details>
+ ${ebookCard()}`;
  $("#stuDet").ontoggle=e=>{panelOpen=e.target.open};const qi=$("#stuQ");qi.oninput=()=>{pq=qi.value;const pos=qi.selectionStart;renderPanel();const n=$("#stuQ");n.focus();n.setSelectionRange(pos,pos)};
  p.querySelectorAll(".flt button").forEach(b=>b.onclick=()=>{pf=b.dataset.f;renderPanel()});
  p.querySelectorAll(".stu").forEach(d=>d.onclick=()=>openStu(d.dataset.u));
- const sec=$("#cardStudySec");if(sec){sec.ontoggle=()=>{if(sec.open)loadCards()};if(cardStudyOpen)loadCards()}}
+ const sec=$("#cardStudySec");if(sec){sec.ontoggle=()=>{if(sec.open)loadCards()};if(cardStudyOpen)loadCards()}
+ const eg=$("#ebookGo");if(eg)eg.onclick=()=>window.open("/api/ebook","_blank","noopener")}
 function openStu(u){viewing=u;if(innerWidth<=700)panelOpen=false;CK=fkey(u);S=loadF(u);render()}
 function closeStu(){viewing=null;S=load();render()}
 function showTab(t){if(t==="aluno"&&viewing)closeStu();["login","aluno","personal"].forEach(x=>$("#t-"+x).classList.toggle("hide",x!==t));render()}

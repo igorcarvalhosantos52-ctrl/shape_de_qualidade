@@ -51,6 +51,12 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await p.waitForSelector('#cardStudySec');
     const abaixoTrial = await p.evaluate(() => { const a = document.querySelector('#stuDet').getBoundingClientRect(), b = document.querySelector('#cardStudySec').getBoundingClientRect(); return b.top > a.top && /Cards de memorização para estudo/.test(document.querySelector('#cardStudySec').innerText); });
     ok(abaixoTrial, 'seção de cards fica abaixo da lista de alunos');
+    const ebookTrialUi = await p.evaluate(async () => {
+      const c = document.querySelector('#cardStudySec'), e = document.querySelector('#ebookSec');
+      const r = await fetch('/api/ebook'); const j = await r.json().catch(() => ({}));
+      return { next: c && c.nextElementSibling && c.nextElementSibling.id, text: e ? e.textContent : '', btn: !!document.querySelector('#ebookGo'), st: r.status, err: j.error || '', cache: r.headers.get('cache-control') || '' };
+    });
+    ok(ebookTrialUi.next === 'ebookSec' && /Ebook: Guia Prático dos Exercícios/.test(ebookTrialUi.text) && /Guia Prático dos Exercícios de Musculação/.test(ebookTrialUi.text) && /Liberado após a assinatura/.test(ebookTrialUi.text) && !ebookTrialUi.btn && ebookTrialUi.st === 403 && /Liberado após a assinatura/.test(ebookTrialUi.err) && /no-store/.test(ebookTrialUi.cache), 'ebook fica abaixo dos cards e trancado no teste grátis');
     await p.evaluate(() => document.querySelector('#cardStudySec').scrollIntoView());
     await p.click('#cardStudySec summary');
     await p.waitForSelector('.cardtile.locked');
@@ -83,6 +89,8 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await p.waitForSelector('#invCode'); const code = await p.$eval('#invCode', e => e.textContent); ok(code.length === 8, 'pagamento demo ativou o plano; código de convite ' + code);
     const demoCards = await p.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); const img = await fetch('/api/cards/1/img'); const ej = await img.json().catch(() => ({})); return { paid: j.paid, locked: j.cards.filter(x => x.locked).length, img: img.status, err: ej.error || '' }; });
     ok(demoCards.paid === false && demoCards.locked === 100 && demoCards.img === 403 && /assinatura/.test(demoCards.err), 'pagamento simulado não libera os cards');
+    const ebookDemo = await p.evaluate(async () => { const r = await fetch('/api/ebook'); const j = await r.json().catch(() => ({})); const me = await (await fetch('/api/me')).json(); return { st: r.status, err: j.error || '', paid: me.paid, trial: !!(me.sub && me.sub.trial), text: (document.querySelector('#ebookSec') || {}).textContent || '' }; });
+    ok(ebookDemo.paid === false && ebookDemo.trial === false && ebookDemo.st === 403 && /Liberado após a assinatura/.test(ebookDemo.err) && /Liberado após a assinatura/.test(ebookDemo.text) && !/Abrir ebook/.test(ebookDemo.text), 'pagamento simulado não abre o ebook');
     await sleep(500); await p.screenshot({ path: SHOTS + '/04-painel-personal-convite.png' });
     // ---- aluno
     const ctxA = await browser.createBrowserContext(), a = await ctxA.newPage(); await a.setViewport(phone);
@@ -127,6 +135,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(/Seu personal ainda não cadastrou o WhatsApp/.test(await a.$eval('#waTop', e => e.innerText)) && !(await a.$('#waTop .waPers')), 'sem número, o aluno vê que o personal ainda não cadastrou o WhatsApp');
     ok((await a.evaluate(async () => (await fetch('/api/personal/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status)) === 401, 'aluno não cadastra o WhatsApp do personal');
     ok((await a.evaluate(async () => (await fetch('/api/cards')).status)) === 403 && (await a.evaluate(async () => (await fetch('/api/cards/1/img')).status)) === 403, 'aluno não lista nem baixa os cards');
+    ok((await a.evaluate(async () => (await fetch('/api/ebook')).status)) === 403 && !(await a.$('#ebookSec')), 'aluno não baixa o ebook nem vê o card');
     const answers = ['19 anos', 'ganho de massa muscular', 'glúteos', 'errei, a prioridade é o peito', 'em 3 meses', 'treino há 1 ano', '2 dias', 'errei, posso treinar quatro vezes por semana', '1 hora', 'não', 'não tenho'];
     for (const t of answers) { const n = await a.$$eval('#chat .msg', x => x.length); await a.type('#txt', t); await a.keyboard.press('Enter');
       await a.waitForFunction(n => document.querySelectorAll('#chat .msg').length > n + 1 || !document.querySelector('#anamCard') || document.querySelector('#anamCard').classList.contains('hide'), { timeout: 15000 }, n); await sleep(300); }
@@ -441,6 +450,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     console.log('DIAG /teste-voz:', JSON.stringify({ ...diag, stAudio, stVoz }));
     const anon = await browser.newPage(); await anon.goto(URL, { waitUntil: 'networkidle0' });
     ok((await anon.evaluate(async () => (await fetch('/api/cards')).status)) === 401, 'sem login a lista de cards pede entrada');
+    ok((await anon.evaluate(async () => (await fetch('/api/ebook')).status)) === 401 && (await anon.evaluate(async () => (await fetch('/ebook-completo.pdf')).status)) === 404 && (await anon.evaluate(async () => (await fetch('/ebooks/ebook-completo.pdf')).status)) === 404, 'sem login o ebook pede entrada e o pdf não fica público');
     async function contaCards(email, plano) {
       const ctx = await browser.createBrowserContext(), pg = await ctx.newPage(); await pg.setViewport(phone);
       await pg.goto(URL, { waitUntil: 'networkidle0' });
@@ -469,6 +479,8 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await proC.pg.waitForSelector('.cardtile img');
     const proPago = await proC.pg.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); const img = await fetch('/api/cards/1/img'); const img51 = await fetch('/api/cards/51/img'); return { paid: j.paid, open: j.cards.filter(c => !c.locked).length, shut: j.cards.filter(c => c.locked).length, i1: img.status, type: img.headers.get('content-type') || '', cache: img.headers.get('cache-control') || '', i51: img51.status }; });
     ok(proPago.paid && proPago.open === 50 && proPago.shut === 50 && proPago.i1 === 200 && /jpeg/.test(proPago.type) && /private/.test(proPago.cache) && proPago.i51 === 403, 'Pro com pagamento confirmado libera 50 cards e a imagem; o restante responde 403');
+    const ebookPro = await proC.pg.evaluate(async () => { const r = await fetch('/api/ebook'); const j = await r.json().catch(() => ({})); return { st: r.status, err: j.error || '', text: (document.querySelector('#ebookSec') || {}).textContent || '', btn: !!document.querySelector('#ebookGo') }; });
+    ok(ebookPro.st === 403 && /Exclusivo do plano Ilimitado/.test(ebookPro.err) && /Exclusivo do plano Ilimitado/.test(ebookPro.text) && !ebookPro.btn, 'Pro pago vê o ebook como exclusivo do Ilimitado');
     ok((await proC.pg.$$('.cardtile img')).length === 50 && (await proC.pg.$$('.cardtile.locked')).length === 50, 'grade do Pro pago mostra 50 miniaturas e 50 cadeados');
     await proC.pg.select('#cardReg', 'Mão');
     await proC.pg.waitForFunction(() => document.querySelectorAll('.cardtile').length === 1 && document.querySelector('.cardtile.locked'));
@@ -495,13 +507,23 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await sql.prepare('INSERT INTO payments(personal_id,provider,external_id,amount_cents,status,test,created_at,plan) VALUES(?,?,?,?,?,?,?,?)').run(iliId, 'mercadopago', 'live_ili_ainda_trial', 7990, 'approved', 0, Date.now(), 'ilimitado');
     const aindaTrial = await iliC.pg.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); return { trial: j.trial, paid: j.paid, open: j.cards.filter(c => !c.locked).length }; });
     ok(aindaTrial.trial && aindaTrial.paid === false && aindaTrial.open === 0, 'pagamento confirmado não abre card enquanto o teste grátis segue valendo');
+    const ebookAinda = await iliC.pg.evaluate(async () => { const r = await fetch('/api/ebook'); const j = await r.json().catch(() => ({})); return { st: r.status, err: j.error || '' }; });
+    ok(ebookAinda.st === 403 && /Liberado após a assinatura/.test(ebookAinda.err), 'Ilimitado no teste não baixa o ebook mesmo com pagamento lançado');
     await sql.prepare("UPDATE subscriptions SET status='active', provider='mercadopago', amount_cents=7990, current_period_end=? WHERE personal_id=?").run(Date.now() + 30 * 864e5, iliId);
     const iliPago = await iliC.pg.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); const i1 = await fetch('/api/cards/1/img'); const i100 = await fetch('/api/cards/100/img'); return { paid: j.paid, open: j.cards.filter(c => !c.locked).length, shut: j.cards.filter(c => c.locked).length, i1: i1.status, i100: i100.status }; });
     ok(iliPago.paid && iliPago.open === 100 && iliPago.shut === 0 && iliPago.i1 === 200 && iliPago.i100 === 200, 'Ilimitado com pagamento confirmado libera os 100 cards');
+    const ebookIli = await iliC.pg.evaluate(async () => { const r = await fetch('/api/ebook'); const buf = r.ok ? new Uint8Array(await r.arrayBuffer()) : null; const j = r.ok ? {} : await r.json().catch(() => ({})); return { st: r.status, type: r.headers.get('content-type') || '', cache: r.headers.get('cache-control') || '', n: buf ? buf.length : 0, head: buf ? String.fromCharCode(buf[0], buf[1], buf[2], buf[3], buf[4]) : '', err: j.error || '' }; });
+    ok(ebookIli.st === 200 && /pdf/.test(ebookIli.type) && /no-store/.test(ebookIli.cache) && ebookIli.head === '%PDF-' && ebookIli.n > 100000, 'Ilimitado pago recebe o PDF do ebook');
+    await iliC.pg.goto(URL + '/?area=personal', { waitUntil: 'networkidle0' });
+    await iliC.pg.waitForSelector('#ebookGo');
+    const ebookAberto = await iliC.pg.evaluate(() => { const c = document.querySelector('#cardStudySec'), e = document.querySelector('#ebookSec'); const box = e.getBoundingClientRect(), btn = document.querySelector('#ebookGo').getBoundingClientRect(); return { next: c.nextElementSibling && c.nextElementSibling.id, text: e.textContent, lock: !!e.querySelector('.ebooklock'), overflow: btn.right > box.right + 2 || btn.width > box.width + 2 }; });
+    ok(ebookAberto.next === 'ebookSec' && /Abrir ebook/.test(ebookAberto.text) && /Guia Prático dos Exercícios de Musculação/.test(ebookAberto.text) && !ebookAberto.lock && !ebookAberto.overflow, 'Ilimitado pago mostra Abrir ebook abaixo dos cards');
     const basC = await contaCards('cards-basico@teste.com', 'basico');
     await marcarPago('cards-basico@teste.com', 'basico');
     const basPago = await basC.pg.evaluate(async () => { const j = await (await fetch('/api/cards')).json(); const img = await fetch('/api/cards/1/img'); const ej = await img.json().catch(() => ({})); return { paid: j.paid, open: j.cards.filter(c => !c.locked).length, img: img.status, err: ej.error || '' }; });
     ok(basPago.paid && basPago.open === 0 && basPago.img === 403 && /Básico/.test(basPago.err) && /upgrade/i.test(basPago.err), 'Básico pago continua sem cards e pede upgrade');
+    const ebookBas = await basC.pg.evaluate(async () => { const r = await fetch('/api/ebook'); const j = await r.json().catch(() => ({})); return { st: r.status, err: j.error || '' }; });
+    ok(ebookBas.st === 403 && ebookBas.err === 'Exclusivo do plano Ilimitado', 'Básico pago não abre o ebook');
     const unkId = (await sql.prepare("SELECT id FROM personals WHERE email='cards-pro@teste.com'").get()).id;
     await sql.prepare('UPDATE subscriptions SET plan=? WHERE personal_id=?').run('xyz', unkId);
     await sql.prepare('UPDATE personals SET plan=? WHERE id=?').run('xyz', unkId);
