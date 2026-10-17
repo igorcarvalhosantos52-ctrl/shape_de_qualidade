@@ -214,6 +214,33 @@ function senhaBox() {
   <p style="margin:8px 0 4px"><b>Trocar minha senha</b></p><input type="password" id="myOld" placeholder="Senha atual" style="margin-bottom:6px"><input type="password" id="myNew" placeholder="Nova senha (mín. 8)" style="margin-bottom:6px"><button class="btn sm" id="myGo">Trocar minha senha</button>
   <p style="margin:12px 0 4px"><b>Nova senha para um aluno</b> (quando ele esquecer)</p>${opts ? `<select id="stSel" style="margin-bottom:6px">${opts}</select><input type="text" id="stNew" placeholder="Nova senha do aluno (mín. 6)" style="margin-bottom:6px"><button class="btn sm" id="stGo">Definir senha do aluno</button>` : "<small>Você ainda não tem alunos.</small>"}<div id="pwdMsg"></div></details>`;
 }
+const TUTOS = [["link", "Cadastrar e convidar aluno"], ["aprovar", "Aprovar a ficha"], ["dias", "Montar os dias da semana"], ["troca", "Trocar o treino de hoje"], ["pix", "Chave Pix e mensalidade"], ["cards", "Cards de memorização"], ["acesso", "WhatsApp e senhas"]];
+function tutoBox() {
+  return `<details class="alert ok noprint" id="tutoBox"><summary><b>🎬 Como usar o app</b></summary>
+  <div class="tutoList">${TUTOS.map(([id, t]) => `<button type="button" class="btn sm sec tutoItem" data-tuto="${id}">${esc(t)}</button>`).join("")}</div>
+  <video id="tutoPlayer" controls playsinline preload="none" hidden></video></details>`;
+}
+function bindTuto(prev) {
+  const box = $("#tutoBox"); if (!box) return;
+  const player = $("#tutoPlayer");
+  const show = id => {
+    const url = "/api/tutoriais/" + encodeURIComponent(id);
+    player.hidden = false;
+    if (player.getAttribute("src") !== url) player.setAttribute("src", url);
+    const go = player.play(); if (go && go.catch) go.catch(() => {});
+    box.querySelectorAll("[data-tuto]").forEach(b => b.classList.toggle("on", b.dataset.tuto === id));
+  };
+  box.querySelectorAll("[data-tuto]").forEach(b => { b.onclick = () => show(b.dataset.tuto); });
+  if (!prev || !prev.id) return;
+  player.hidden = false;
+  player.setAttribute("src", "/api/tutoriais/" + encodeURIComponent(prev.id));
+  box.querySelectorAll("[data-tuto]").forEach(b => b.classList.toggle("on", b.dataset.tuto === prev.id));
+  const resume = () => {
+    if (prev.t > 0.2) { try { player.currentTime = prev.t; } catch (e) {} }
+    if (prev.playing) { const go = player.play(); if (go && go.catch) go.catch(() => {}); }
+  };
+  if (player.readyState >= 1) resume(); else player.addEventListener("loadedmetadata", resume, { once: true });
+}
 function reais(c) { return c > 0 ? (c / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ""; }
 function pixBox() {
   const px = (ME.personal && ME.personal.pix) || {}, foto = ME.personal && ME.personal.foto;
@@ -357,8 +384,10 @@ async function loadFeeEdit(u) {
 }
 const _renderPanel2 = renderPanel;
 renderPanel = function () { _renderPanel2(); paintFeeDots(); if (!unlocked || ME.role !== "personal" || !$("#planBox")) return;
-  const o = $("#pwdBox") && $("#pwdBox").open, zo = $("#zapBox") && $("#zapBox").open, po = $("#pixBox") && $("#pixBox").open;
-  $("#planBox").insertAdjacentHTML("afterend", zapBox() + pixBox() + senhaBox()); if (o) $("#pwdBox").open = true; if (zo) $("#zapBox").open = true; if (po) $("#pixBox").open = true;
+  const o = $("#pwdBox") && $("#pwdBox").open, zo = $("#zapBox") && $("#zapBox").open, po = $("#pixBox") && $("#pixBox").open, to = $("#tutoBox") && $("#tutoBox").open;
+  const tv = $("#tutoPlayer"), prev = tv && tv.getAttribute("src") ? { id: tv.getAttribute("src").split("/").pop(), t: tv.currentTime || 0, playing: !tv.paused && !tv.ended } : null;
+  $("#planBox").insertAdjacentHTML("afterend", zapBox() + pixBox() + senhaBox() + tutoBox()); if (o) $("#pwdBox").open = true; if (zo) $("#zapBox").open = true; if (po) $("#pixBox").open = true; if (to) $("#tutoBox").open = true;
+  bindTuto(prev);
   bindPix();
   const zmsg = (m, ok) => ($("#zapMsg").innerHTML = `<div class="alert ${ok ? "ok" : "bad"}">${esc(m)}</div>`);
   $("#zapGo").onclick = async () => { try { const r = await api("/api/personal/whatsapp", { numero: $("#zapNum").value }); ME.personal.whatsapp = r.whatsapp; $("#zapNum").value = r.whatsapp; zmsg(r.whatsapp ? "WhatsApp salvo. Seus alunos já podem falar com você." : "Número apagado.", 1); } catch (e) { zmsg(e.message); } };
