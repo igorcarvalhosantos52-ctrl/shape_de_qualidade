@@ -8,7 +8,9 @@ const SCHEMA = `
 CREATE TABLE IF NOT EXISTS personals(
   id INTEGER PRIMARY KEY, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL, cref TEXT DEFAULT '', hash TEXT NOT NULL,
   invite_code TEXT UNIQUE NOT NULL, created_at INTEGER NOT NULL, plan TEXT DEFAULT 'pro', trial_used INTEGER DEFAULT 0,
-  reset_requested_at INTEGER, whatsapp TEXT DEFAULT '');
+  reset_requested_at INTEGER, whatsapp TEXT DEFAULT '',
+  pix_tipo TEXT DEFAULT '', pix_chave TEXT DEFAULT '', pix_nome TEXT DEFAULT '', pix_cidade TEXT DEFAULT '',
+  bio TEXT DEFAULT '', foto TEXT DEFAULT '', fee_cents INTEGER DEFAULT 0, fee_day INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS subscriptions(
   id INTEGER PRIMARY KEY, personal_id INTEGER NOT NULL REFERENCES personals(id) ON DELETE CASCADE,
   provider TEXT NOT NULL, external_id TEXT, status TEXT NOT NULL, amount_cents INTEGER NOT NULL, current_period_end INTEGER,
@@ -19,7 +21,14 @@ CREATE TABLE IF NOT EXISTS payments(
   created_at INTEGER NOT NULL, plan TEXT DEFAULT 'pro', UNIQUE(provider, external_id));
 CREATE TABLE IF NOT EXISTS students(
   id INTEGER PRIMARY KEY, personal_id INTEGER NOT NULL REFERENCES personals(id) ON DELETE CASCADE,
-  username TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, hash TEXT NOT NULL, ficha TEXT, updated_at INTEGER, created_at INTEGER NOT NULL);
+  username TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, hash TEXT NOT NULL, ficha TEXT, updated_at INTEGER, created_at INTEGER NOT NULL,
+  origin TEXT DEFAULT 'convite', gate TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS tuition(
+  student_id INTEGER PRIMARY KEY, amount_cents INTEGER, due_day INTEGER, exempt INTEGER DEFAULT 0,
+  paid_through TEXT, informed_for TEXT, informed_at INTEGER);
+CREATE TABLE IF NOT EXISTS tuition_payments(
+  id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL, due_on TEXT NOT NULL, amount_cents INTEGER NOT NULL,
+  informed_at INTEGER, confirmed_at INTEGER, undone INTEGER DEFAULT 0, created_at INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS sessions(
   token TEXT PRIMARY KEY, role TEXT NOT NULL, user_id INTEGER NOT NULL, expires INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
@@ -34,6 +43,16 @@ const ALTERS = [
   "ALTER TABLE personals ADD COLUMN whatsapp TEXT DEFAULT ''",
   "ALTER TABLE subscriptions ADD COLUMN plan TEXT DEFAULT 'pro'",
   "ALTER TABLE payments ADD COLUMN plan TEXT DEFAULT 'pro'",
+  "ALTER TABLE personals ADD COLUMN pix_tipo TEXT DEFAULT ''",
+  "ALTER TABLE personals ADD COLUMN pix_chave TEXT DEFAULT ''",
+  "ALTER TABLE personals ADD COLUMN pix_nome TEXT DEFAULT ''",
+  "ALTER TABLE personals ADD COLUMN pix_cidade TEXT DEFAULT ''",
+  "ALTER TABLE personals ADD COLUMN bio TEXT DEFAULT ''",
+  "ALTER TABLE personals ADD COLUMN foto TEXT DEFAULT ''",
+  "ALTER TABLE personals ADD COLUMN fee_cents INTEGER DEFAULT 0",
+  "ALTER TABLE personals ADD COLUMN fee_day INTEGER DEFAULT 0",
+  "ALTER TABLE students ADD COLUMN origin TEXT DEFAULT 'convite'",
+  "ALTER TABLE students ADD COLUMN gate TEXT DEFAULT ''",
 ];
 
 const num = v => (typeof v === 'bigint' ? Number(v) : v);

@@ -1,6 +1,6 @@
 // Shape de Qualidade – servidor (Express + SQLite ou Turso)
 const express = require('express'), cookieParser = require('cookie-parser'), bcrypt = require('bcrypt'), crypto = require('crypto'), path = require('path');
-const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards');
+const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards'), tuition = require('./src/tuition'), publicPage = require('./src/public-page');
 const app = express(); app.set('trust proxy', 1);
 const PROD = process.env.NODE_ENV === 'production', DAY = 864e5;
 app.use(express.json({ limit: '2mb', verify: (req, _r, buf) => { req.rawBody = buf.toString(); } }));
@@ -26,7 +26,7 @@ const hits = new Map();
 function limit(req, res, next) { const k = req.ip + req.path, n = (hits.get(k) || []).filter(t => t > Date.now() - 15 * 60e3); n.push(Date.now()); hits.set(k, n); if (n.length > 20) return res.status(429).json({ error: 'Muitas tentativas. Aguarde 15 minutos.' }); next(); }
 const emailOk = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e), userOk = u => /^[a-z0-9._-]{3,30}$/.test(u);
 const code = () => crypto.randomBytes(4).toString('hex').toUpperCase();
-const pubP = p => ({ id: p.id, nome: p.nome, email: p.email, cref: p.cref, invite_code: p.invite_code, whatsapp: p.whatsapp || "" });
+const pubP = p => ({ id: p.id, nome: p.nome, email: p.email, cref: p.cref, invite_code: p.invite_code, whatsapp: p.whatsapp || "", pix: tuition.pixPublic(p), has_foto: !!(p && p.foto) });
 function waNorm(raw) {
   let d = String(raw || "").replace(/\D/g, "");
   if (d.startsWith("55") && d.length > 11) d = d.slice(2);
@@ -96,6 +96,38 @@ async function changeOwn(req, res, tbl, min) {
   await db.prepare('DELETE FROM sessions WHERE role=? AND user_id=? AND token<>?').run(req.sess.role, u.id, req.sess.token); res.json({ ok: true });
 }
 app.post('/api/personal/password', limit, need('personal'), (req, res) => changeOwn(req, res, 'personals', 8));
+app.post('/api/personal/pix', need('personal'), async (req, res) => {
+  try { res.json(await tuition.savePix(req.sess.user_id, req.body || {})); }
+  catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+});
+app.get('/api/personal/tuition/:u', need('personal'), async (req, res) => {
+  try { res.json(await tuition.detail(req.sess.user_id, req.params.u)); }
+  catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+});
+app.post('/api/personal/tuition/:u', need('personal'), async (req, res) => {
+  try { res.json({ ok: true, ...(await tuition.saveStudentFee(req.sess.user_id, req.params.u, req.body || {})) }); }
+  catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+});
+app.post('/api/personal/tuition/:u/confirm', need('personal'), async (req, res) => {
+  try { res.json({ ok: true, ...(await tuition.confirm(req.sess.user_id, req.params.u)) }); }
+  catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+});
+app.post('/api/personal/tuition/:u/undo', need('personal'), async (req, res) => {
+  try { res.json({ ok: true, ...(await tuition.undo(req.sess.user_id, req.params.u)) }); }
+  catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+});
+app.post('/api/personal/tuition/:u/gate', need('personal'), async (req, res) => {
+  try { res.json(await tuition.setGate(req.sess.user_id, req.params.u, String((req.body || {}).acao || ''))); }
+  catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+});
+app.get('/api/student/tuition', need('student'), async (req, res) => {
+  try { res.json(await tuition.studentCard(req.sess.user_id)); }
+  catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+});
+app.post('/api/student/tuition/inform', need('student'), async (req, res) => {
+  try { res.json({ ok: true, fee: await tuition.inform(req.sess.user_id) }); }
+  catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+});
 app.post('/api/personal/whatsapp', need('personal'), async (req, res) => {
   try { const w = waNorm(req.body.numero); await db.prepare('UPDATE personals SET whatsapp=? WHERE id=?').run(w, req.sess.user_id); res.json({ ok: true, whatsapp: w }); }
   catch (e) { res.status(e.status || 400).json({ error: e.message }); }
@@ -127,8 +159,10 @@ app.post('/api/student/signup', limit, async (req, res) => {
   if (nome.length < 2) return res.status(400).json({ error: 'Informe seu nome.' });
   if (pw.length < 6) return res.status(400).json({ error: 'A senha precisa ter pelo menos 6 caracteres.' });
   if (await db.prepare('SELECT 1 FROM students WHERE username=?').get(u)) return res.status(409).json({ error: 'Esse usuário já existe.' });
-  const r = await db.prepare('INSERT INTO students(personal_id,username,nome,hash,created_at) VALUES(?,?,?,?,?)').run(p.id, u, nome, await bcrypt.hash(pw, 11), Date.now());
-  await newSession(res, 'student', r.lastInsertRowid); res.json({ ok: true });
+  const origin = req.body.origem === 'publico' ? 'publico' : 'convite';
+  const r = await db.prepare('INSERT INTO students(personal_id,username,nome,hash,created_at,origin) VALUES(?,?,?,?,?,?)').run(p.id, u, nome, await bcrypt.hash(pw, 11), Date.now(), origin);
+  await newSession(res, 'student', r.lastInsertRowid);
+  res.json({ ok: true, pix: origin === 'publico' && (p.fee_cents || 0) > 0 });
 });
 app.post('/api/student/login', limit, async (req, res) => {
   const s = await db.prepare('SELECT * FROM students WHERE username=?').get(String(req.body.usuario || '').trim().toLowerCase());
@@ -144,14 +178,16 @@ app.get('/api/me', async (req, res) => {
   if (req.sess.role === 'personal') {
     const p = await db.prepare('SELECT * FROM personals WHERE id=?').get(req.sess.user_id); if (!p) return res.json({ role: null, ...P });
     const sub = await pay.subscriptionOf(p.id);
-    const students = sub.active ? (await db.prepare('SELECT username,nome,ficha FROM students WHERE personal_id=? ORDER BY nome').all(p.id)).map(s => ({ u: s.username, nome: s.nome, ficha: parse(s.ficha) })) : [];
+    const fees = sub.active ? await tuition.summaryForPersonal(p.id) : {};
+    const students = sub.active ? (await db.prepare('SELECT username,nome,ficha FROM students WHERE personal_id=? ORDER BY nome').all(p.id)).map(s => ({ u: s.username, nome: s.nome, ficha: parse(s.ficha), fee: fees[s.username] || { tone: 'none', label: 'Sem mensalidade', origin: 'convite', gate: '' } })) : [];
     const count = (await db.prepare('SELECT COUNT(*) n FROM students WHERE personal_id=?').get(p.id)).n;
-    return res.json({ role: 'personal', personal: pubP(p), sub, students, count, ...P });
+    return res.json({ role: 'personal', personal: { ...pubP(p), foto: p.foto || '' }, sub, students, count, ...P });
   }
   if (req.sess.role === 'student') {
     const s = await db.prepare('SELECT s.*,p.nome pnome,p.cref pcref,p.whatsapp pzap FROM students s JOIN personals p ON p.id=s.personal_id WHERE s.id=?').get(req.sess.user_id);
     if (!s) return res.json({ role: null, ...P });
-    return res.json({ role: 'student', u: s.username, nome: s.nome, personal: { nome: s.pnome, cref: s.pcref, whatsapp: s.pzap || "" }, active: (await pay.subscriptionOf(s.personal_id)).active, ficha: parse(s.ficha), ...P });
+    const extra = await tuition.attachStudent(s);
+    return res.json({ role: 'student', u: s.username, nome: s.nome, personal: { nome: s.pnome, cref: s.pcref, whatsapp: s.pzap || "" }, active: (await pay.subscriptionOf(s.personal_id)).active, ficha: parse(s.ficha), ...extra, ...P });
   }
   res.json({ role: null, ...P });
 });
@@ -173,6 +209,7 @@ app.put('/api/ficha/:u', async (req, res) => {
   } else if (req.sess.role === 'personal') {
     if (req.sess.user_id !== s.personal_id) return res.status(403).json({ error: 'proibido' });
     if (!(await pay.subscriptionOf(s.personal_id)).active) return res.status(402).json({ error: 'Assinatura inativa.' });
+    if (F.status === 'aprovado') await tuition.clearGateOnApprove(s.id);
   } else return res.status(403).json({ error: 'proibido' });
   await db.prepare('UPDATE students SET ficha=?,updated_at=? WHERE id=?').run(JSON.stringify(F), Date.now(), s.id); res.json({ ok: true });
 });
@@ -256,6 +293,16 @@ app.get('/api/cards/:id/img', onlyPersonal, async (req, res) => {
 app.use(express.static(path.join(__dirname, 'public'), { index: 'index.html' }));
 app.get('/redefinir', (_q, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/convite/:code', (_q, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/p/:code', async (req, res) => {
+  try {
+    const code = String(req.params.code || '').toUpperCase();
+    const p = await db.prepare('SELECT * FROM personals WHERE invite_code=?').get(code);
+    if (!p) return res.status(404).send('Link não encontrado.');
+    const sb = await pay.subscriptionOf(p.id);
+    const cnt = (await db.prepare('SELECT COUNT(*) n FROM students WHERE personal_id=?').get(p.id)).n;
+    res.type('html').send(publicPage.page({ nome: p.nome, bio: p.bio || '', foto: p.foto || '', fee_cents: p.fee_cents || 0, active: !!sb.active, full: !!(sb.limit && cnt >= sb.limit), code }));
+  } catch (e) { res.status(500).send('Não foi possível abrir este link.'); }
+});
 setInterval(() => { db.prepare('DELETE FROM sessions WHERE expires<?').run(Date.now()).catch(e => console.error('limpeza de sessões', e.message)); }, 3600e3).unref();
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {

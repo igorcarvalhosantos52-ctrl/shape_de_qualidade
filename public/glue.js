@@ -78,10 +78,10 @@ const _renderPanel = renderPanel;
 renderPanel = function () {
   _renderPanel();
   if (!unlocked || ME.role !== "personal") return;
-  const link = location.origin + "/convite/" + ME.personal.invite_code, end = new Date(ME.sub.current_period_end).toLocaleDateString("pt-BR");
-  $("#stuPanel").insertAdjacentHTML("afterbegin", `<div class="alert ok noprint" id="invBox" style="font-size:.85rem">📨 <b>Convide seus alunos</b><br>Código: <b id="invCode">${esc(ME.personal.invite_code)}</b><br><input id="invLink" readonly value="${esc(link)}" style="margin:6px 0;font-size:.8rem"><button class="btn sm" id="invCopy">Copiar link</button> <a class="btn sm sec" target="_blank" href="https://wa.me/?text=${encodeURIComponent("Crie sua conta no app Shape de Qualidade: " + link)}">WhatsApp</a></div>${planBox(end)}`);
+  const pub = location.origin + "/p/" + ME.personal.invite_code, direto = location.origin + "/convite/" + ME.personal.invite_code, end = new Date(ME.sub.current_period_end).toLocaleDateString("pt-BR");
+  $("#stuPanel").insertAdjacentHTML("afterbegin", `<div class="alert ok noprint" id="invBox" style="font-size:.85rem">🔗 <b>Seu link público</b><br><small>Para a bio do Instagram ou o WhatsApp. Código: <b id="invCode">${esc(ME.personal.invite_code)}</b></small><br><input id="invLink" readonly value="${esc(pub)}" style="margin:6px 0;font-size:.8rem"><button class="btn sm" id="invCopy">Copiar link</button> <a class="btn sm sec" id="invShare" target="_blank" href="https://wa.me/?text=${encodeURIComponent("Treine comigo no Shape de Qualidade: " + pub)}">Compartilhar no WhatsApp</a><br><small>Quem você já combinou direto entra por <span id="invDireto">${esc(direto)}</span> e você aprova na hora.</small></div>${planBox(end)}`);
   bindPlanBox();
-  $("#invCopy").onclick = () => { navigator.clipboard && navigator.clipboard.writeText(link); __toast("Link copiado!"); };
+  $("#invCopy").onclick = () => { navigator.clipboard && navigator.clipboard.writeText(pub); __toast("Link copiado!"); };
 };
 function planBox(end) {
   const S2 = ME.sub, L = S2.limit, full = L && ME.count >= L, left = Math.max(0, Math.ceil((S2.current_period_end - Date.now()) / 864e5));
@@ -125,6 +125,8 @@ render = function () {
   document.querySelectorAll("#lockNow").forEach(b => (b.onclick = logoutAll));
   const fg = $("#pwForgot"); if (fg) fg.remove();
   mountWa();
+  mountFeeStudent();
+  mountFeeEditor();
 };
 const _renderChat = renderChat;
 renderChat = function () { _renderChat(); mountWa(); };
@@ -134,6 +136,18 @@ renderChat = function () { _renderChat(); mountWa(); };
 if (ME.role === "student" && !ME.active) {
   $("#t-login .lockbox").innerHTML = `<h2>⏸️ Acesso pausado</h2><p>Olá, <b>${esc(ME.nome)}</b>. A assinatura do seu personal (<b>${esc(ME.personal.nome)}</b>) está inativa no momento. Fale com ele para reativar.</p><div class="waSlot">${waBlock()}</div><button class="btn" id="out2">Sair</button>`;
   ["login", "aluno", "personal"].forEach(x => $("#t-" + x).classList.toggle("hide", x !== "login")); $("#out2").onclick = logoutAll;
+} else if (ME.role === "student" && ME.gate === "recusado") {
+  ["login", "aluno", "personal"].forEach(x => $("#t-" + x).classList.toggle("hide", x !== "aluno"));
+  $("#whoName").textContent = "👤 " + (ME.nome || "");
+  $("#anamCard").classList.add("hide");
+  if (!$("#feeHold")) $("#whoName").parentElement.insertAdjacentHTML("afterend", `<div class="card" id="feeHold"><h2>Aguardando o personal</h2><p>Seu personal ainda não aprovou seu acesso. Fale com ele por aqui.</p></div>`);
+  mountWa();
+} else if (pixAntesDaAnamnese()) {
+  ["login", "aluno", "personal"].forEach(x => $("#t-" + x).classList.toggle("hide", x !== "aluno"));
+  $("#whoName").textContent = "👤 " + (ME.nome || "");
+  $("#anamCard").classList.add("hide");
+  mountWa();
+  mountFeeStudent();
 } else {
   boot();
   if (ME.role === "personal" || new URLSearchParams(location.search).get("area") === "personal") showTab("personal");
@@ -199,10 +213,152 @@ function senhaBox() {
   <p style="margin:8px 0 4px"><b>Trocar minha senha</b></p><input type="password" id="myOld" placeholder="Senha atual" style="margin-bottom:6px"><input type="password" id="myNew" placeholder="Nova senha (mín. 8)" style="margin-bottom:6px"><button class="btn sm" id="myGo">Trocar minha senha</button>
   <p style="margin:12px 0 4px"><b>Nova senha para um aluno</b> (quando ele esquecer)</p>${opts ? `<select id="stSel" style="margin-bottom:6px">${opts}</select><input type="text" id="stNew" placeholder="Nova senha do aluno (mín. 6)" style="margin-bottom:6px"><button class="btn sm" id="stGo">Definir senha do aluno</button>` : "<small>Você ainda não tem alunos.</small>"}<div id="pwdMsg"></div></details>`;
 }
+function reais(c) { return c > 0 ? (c / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ""; }
+function pixBox() {
+  const px = (ME.personal && ME.personal.pix) || {}, foto = ME.personal && ME.personal.foto;
+  const tipos = [["cpf", "CPF"], ["cnpj", "CNPJ"], ["email", "E-mail"], ["telefone", "Telefone"], ["aleatoria", "Aleatória"]];
+  return `<details class="alert ok noprint" id="pixBox" style="font-size:.85rem"><summary><b>Minha chave Pix</b></summary>
+  <p style="margin:8px 0 4px">O aluno paga você direto. O app gera o código e avisa quando ele diz que pagou. Você confirma o recebimento.</p>
+  <label>Tipo da chave<select id="pixTipo">${tipos.map(([k, l]) => `<option value="${k}" ${px.tipo === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+  <input id="pixChave" placeholder="Sua chave Pix" value="${esc(px.chave || "")}" style="margin-bottom:6px">
+  <input id="pixNome" placeholder="Nome de quem recebe" value="${esc(px.nome || ME.personal.nome || "")}" style="margin-bottom:6px">
+  <input id="pixCidade" placeholder="Cidade" value="${esc(px.cidade || "")}" style="margin-bottom:6px">
+  <p style="margin:8px 0 4px"><b>Valor da mensalidade</b> (aparece no link público e vale para os alunos sem valor próprio)</p>
+  <input id="pixValor" inputmode="decimal" placeholder="150,00" value="${esc(reais(px.fee_cents))}" style="margin-bottom:6px">
+  <label>Dia do vencimento <input id="pixDia" type="number" min="1" max="31" placeholder="10" value="${px.fee_day || ""}" style="max-width:90px"></label>
+  <p style="margin:8px 0 4px"><b>Bio curta</b> do link público</p>
+  <textarea id="pixBio" maxlength="280" placeholder="Uma frase sobre você" style="margin-bottom:6px">${esc(px.bio || "")}</textarea>
+  <p style="margin:8px 0 4px"><b>Foto</b> (opcional)</p>
+  <img id="pixPrev" alt="" src="${foto ? esc(foto) : ""}" style="width:72px;height:72px;object-fit:cover;border-radius:50%;display:${foto ? "block" : "none"};margin-bottom:6px">
+  <input id="pixFoto" type="file" accept="image/*" style="margin-bottom:6px">
+  <button class="btn sm" id="pixGo" type="button">Salvar</button><div id="pixMsg"></div></details>`;
+}
+let pixFotoNova = null, pixFotoWait = null;
+function bindPix() {
+  const go = $("#pixGo"); if (!go) return;
+  pixFotoNova = null; pixFotoWait = null;
+  const file = $("#pixFoto");
+  if (file) file.onchange = () => {
+    const f = file.files && file.files[0];
+    pixFotoNova = null;
+    if (!f) { pixFotoWait = null; return; }
+    pixFotoWait = new Promise(res => {
+      const img = new Image(), url = URL.createObjectURL(f);
+      img.onload = () => {
+        const max = 320, sc = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.width * sc)); c.height = Math.max(1, Math.round(img.height * sc));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        pixFotoNova = c.toDataURL("image/jpeg", 0.72);
+        const prev = $("#pixPrev"); if (prev) { prev.src = pixFotoNova; prev.style.display = "block"; }
+        URL.revokeObjectURL(url); res();
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); res(); };
+      img.src = url;
+    });
+  };
+  go.onclick = async () => {
+    const msg = (m, ok) => ($("#pixMsg").innerHTML = `<div class="alert ${ok ? "ok" : "bad"}">${esc(m)}</div>`);
+    if (pixFotoWait) await pixFotoWait;
+    try {
+      const r = await api("/api/personal/pix", { tipo: $("#pixTipo").value, chave: $("#pixChave").value, nome: $("#pixNome").value, cidade: $("#pixCidade").value, valor: $("#pixValor").value, dia: $("#pixDia").value, bio: $("#pixBio").value, foto: pixFotoNova });
+      ME.personal.pix = r.pix; ME.personal.has_foto = r.has_foto;
+      if (pixFotoNova) ME.personal.foto = pixFotoNova;
+      pixFotoNova = null; pixFotoWait = null;
+      msg("Salvo. O link público já mostra esses dados.", 1);
+    } catch (e) { msg(e.message); }
+  };
+}
+function paintFeeDots() {
+  if (!ME || ME.role !== "personal" || !ME.students) return;
+  const det = $("#stuDet"); if (!det) return;
+  const by = {}; ME.students.forEach(s => { by[s.u] = s.fee || {}; });
+  det.querySelectorAll(".stu").forEach(el => {
+    const fee = by[el.dataset.u] || {}, b = el.querySelector("b"), small = el.querySelector("small"), badge = el.querySelector(".badge");
+    if (b && fee.tone && fee.tone !== "none" && !b.querySelector(".feeDot")) b.insertAdjacentHTML("beforeend", `<i class="feeDot ${esc(fee.tone)}" title="${esc(fee.label || "")}"></i>`);
+    if (small && fee.informed && !small.querySelector(".feeChip")) small.insertAdjacentHTML("beforeend", `<span class="feeChip">Pagamento informado</span>`);
+    if (badge && fee.origin === "publico" && fee.gate !== "recusado") {
+      const t = badge.textContent.trim();
+      if (t === "Sem treino" || t === "Pendente") { badge.textContent = "Pendente de aprovação"; badge.classList.add("pend"); }
+    }
+    if (badge && fee.gate === "recusado") { badge.textContent = "Recusado"; badge.classList.remove("pend", "apr"); badge.classList.add("blk"); }
+  });
+  if (!$("#feeLegend")) det.insertAdjacentHTML("beforeend", `<p class="feeLegend" id="feeLegend"><i class="feeDot ok"></i> pago <i class="feeDot soon"></i> vence em até 3 dias <i class="feeDot bad"></i> atrasado <i class="feeDot open"></i> em aberto <i class="feeDot none"></i> sem mensalidade</p>`);
+}
+function pixAntesDaAnamnese() {
+  const f = ME && ME.fee;
+  return !!(ME && ME.role === "student" && ME.active !== false && ME.origin === "publico" && ME.gate !== "recusado" && f && f.amount_cents > 0 && !f.informed && f.tone !== "ok");
+}
+function mountFeeStudent() {
+  if (!ME || ME.role !== "student" || !ME.fee || !(ME.fee.amount_cents > 0) || $("#feeCard")) return;
+  const html = `<div class="card feeCard" id="feeCard"><h2>Mensalidade</h2><div id="feeCardBody">Carregando…</div></div>`;
+  const wa = $("#waTop"), who = document.querySelector("#t-aluno .whoami");
+  if (wa) wa.insertAdjacentHTML("afterend", html);
+  else if (who) who.insertAdjacentHTML("afterend", html);
+  loadFeeCard();
+}
+async function loadFeeCard() {
+  const body = $("#feeCardBody"); if (!body) return;
+  try {
+    const d = await api("/api/student/tuition");
+    ME.fee = d.fee;
+    if (!$("#feeCardBody")) return;
+    const f = d.fee || {}, pago = f.tone === "ok" || f.informed;
+    body.innerHTML = `<p><b>${brl(f.amount_cents || 0)}</b>${f.due_br ? " · vence " + esc(f.due_br) : ""}<br>${esc(f.label || "")}${f.informed ? " · Pagamento informado" : ""}</p>` +
+      (d.pix_ok && d.payload ? `<p>Chave Pix: <b id="feeChave">${esc(d.chave)}</b> <button class="btn sm sec" type="button" id="feeCopyKey">Copiar</button></p><textarea id="feePayload" readonly>${esc(d.payload)}</textarea><button class="btn sm sec" type="button" id="feeCopyPix">Copiar código</button>${d.qr ? `<img alt="QR Code Pix" src="${d.qr}">` : ""}` : `<p>Seu personal ainda não concluiu a chave Pix. Fale com ele.</p>`) +
+      (pago ? "" : `<button class="btn" type="button" id="feeJa" style="width:100%;margin-top:8px">Já paguei</button>`) + `<div id="feeCardMsg"></div>`;
+    const copy = (id, text) => { const b = $(id); if (b) b.onclick = () => { navigator.clipboard && navigator.clipboard.writeText(text); __toast("Copiado!"); }; };
+    copy("#feeCopyKey", d.chave || ""); copy("#feeCopyPix", d.payload || "");
+    const ja = $("#feeJa");
+    if (ja) ja.onclick = async () => {
+      ja.disabled = true;
+      try {
+        const r = await api("/api/student/tuition/inform", {});
+        ME.fee = r.fee;
+        if ($("#anamCard") && $("#anamCard").classList.contains("hide") && ME.origin === "publico") { location.href = "/"; return; }
+        const card = $("#feeCard"); if (card) card.remove();
+        mountFeeStudent();
+      } catch (e) { ja.disabled = false; const el = $("#feeCardMsg"); if (el) el.innerHTML = `<div class="alert bad">${esc(e.message)}</div>`; }
+    };
+  } catch (e) { body.innerHTML = `<div class="alert bad">${esc(e.message)}</div>`; }
+}
+function mountFeeEditor() {
+  if (!ME || ME.role !== "personal" || typeof viewing === "undefined" || !viewing) return;
+  const pc = $("#persCard"); if (!pc || $("#feeEdit")) return;
+  pc.insertAdjacentHTML("afterbegin", `<details class="alert ok noprint" id="feeEdit"><summary><b>Mensalidade</b></summary><div id="feeEditBody">Carregando…</div></details>`);
+  loadFeeEdit(viewing);
+}
+async function loadFeeEdit(u) {
+  const body = $("#feeEditBody"); if (!body) return;
+  try {
+    const d = await api("/api/personal/tuition/" + encodeURIComponent(u));
+    if (viewing !== u || !$("#feeEditBody")) return;
+    const fee = d.fee || {}, valor = d.custom && !d.exempt && fee.amount_cents ? reais(fee.amount_cents) : "", dia = d.custom && !d.exempt && fee.due_day ? fee.due_day : "";
+    const hist = (d.history || []).map(h => `<li>${esc(h.due_br)} · ${brl(h.amount_cents)}${h.undone ? " (desfeito)" : ""}</li>`).join("");
+    const canPay = fee.tone !== "ok" && fee.amount_cents > 0;
+    body.innerHTML = `<p style="margin:8px 0">${esc(fee.label || "Sem mensalidade")}${fee.due_br ? " · vence " + esc(fee.due_br) : ""}${fee.amount_cents ? " · " + brl(fee.amount_cents) : ""}</p>` +
+      (fee.informed ? `<div class="alert warn">Pagamento informado</div><button class="btn sm" id="feeOk" type="button">Confirmar recebimento</button> ` : (canPay ? `<button class="btn sm sec" id="feeOk" type="button">Marcar como pago</button> ` : "")) +
+      ((d.history || []).some(h => !h.undone) ? `<button class="btn sm sec" id="feeUndo" type="button">Desfazer</button> ` : "") +
+      (d.origin === "publico" && d.gate !== "recusado" ? `<button class="btn sm bad" id="feeNo" type="button">Recusar</button> ` : "") +
+      (d.gate === "recusado" ? `<button class="btn sm" id="feeRe" type="button">Reabrir</button> ` : "") +
+      `<p style="margin:10px 0 4px">Valor deste aluno (em branco usa o valor público)</p><input id="feeValor" inputmode="decimal" placeholder="valor público" value="${esc(valor)}" style="margin-bottom:6px"><label>Dia <input id="feeDia" type="number" min="1" max="31" value="${esc(String(dia))}" style="max-width:90px"></label><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="feeIsento" style="width:auto" ${d.exempt ? "checked" : ""}> não cobrar</label><button class="btn sm" id="feeSave" type="button">Salvar</button>${hist ? `<ul id="feeHist">${hist}</ul>` : ""}<div id="feeEditMsg"></div>`;
+    const box = $("#feeEdit"); if (box && (fee.informed || (d.history || []).length || fee.tone === "bad" || fee.tone === "soon")) box.open = true;
+    const apply = st => { const i = (ME.students || []).findIndex(s => s.u === u); if (i >= 0) ME.students[i].fee = { ...st.fee, origin: d.origin, gate: st.gate != null ? st.gate : d.gate }; render(); };
+    const msg = (m, ok) => { const el = $("#feeEditMsg"); if (el) el.innerHTML = `<div class="alert ${ok ? "ok" : "bad"}">${esc(m)}</div>`; };
+    const post = async (path, body) => apply(await api("/api/personal/tuition/" + encodeURIComponent(u) + path, body || {}));
+    const okb = $("#feeOk"); if (okb) okb.onclick = async () => { try { await post("/confirm"); } catch (e) { msg(e.message); } };
+    const un = $("#feeUndo"); if (un) un.onclick = async () => { try { await post("/undo"); } catch (e) { msg(e.message); } };
+    const gate = async acao => { const r = await api("/api/personal/tuition/" + encodeURIComponent(u) + "/gate", { acao }); const i = (ME.students || []).findIndex(s => s.u === u); if (i >= 0) ME.students[i].fee = { ...(ME.students[i].fee || {}), origin: d.origin, gate: r.gate }; render(); };
+    const no = $("#feeNo"); if (no) no.onclick = async () => { try { await gate("recusar"); } catch (e) { msg(e.message); } };
+    const re = $("#feeRe"); if (re) re.onclick = async () => { try { await gate("reabrir"); } catch (e) { msg(e.message); } };
+    $("#feeSave").onclick = async () => { try { await post("", { valor: $("#feeValor").value, dia: $("#feeDia").value, nao_cobrar: $("#feeIsento").checked }); } catch (e) { msg(e.message); } };
+  } catch (e) { body.innerHTML = `<div class="alert bad">${esc(e.message)}</div>`; }
+}
 const _renderPanel2 = renderPanel;
-renderPanel = function () { _renderPanel2(); if (!unlocked || ME.role !== "personal" || !$("#planBox")) return;
-  const o = $("#pwdBox") && $("#pwdBox").open, zo = $("#zapBox") && $("#zapBox").open;
-  $("#planBox").insertAdjacentHTML("afterend", zapBox() + senhaBox()); if (o) $("#pwdBox").open = true; if (zo) $("#zapBox").open = true;
+renderPanel = function () { _renderPanel2(); paintFeeDots(); if (!unlocked || ME.role !== "personal" || !$("#planBox")) return;
+  const o = $("#pwdBox") && $("#pwdBox").open, zo = $("#zapBox") && $("#zapBox").open, po = $("#pixBox") && $("#pixBox").open;
+  $("#planBox").insertAdjacentHTML("afterend", zapBox() + pixBox() + senhaBox()); if (o) $("#pwdBox").open = true; if (zo) $("#zapBox").open = true; if (po) $("#pixBox").open = true;
+  bindPix();
   const zmsg = (m, ok) => ($("#zapMsg").innerHTML = `<div class="alert ${ok ? "ok" : "bad"}">${esc(m)}</div>`);
   $("#zapGo").onclick = async () => { try { const r = await api("/api/personal/whatsapp", { numero: $("#zapNum").value }); ME.personal.whatsapp = r.whatsapp; $("#zapNum").value = r.whatsapp; zmsg(r.whatsapp ? "WhatsApp salvo. Seus alunos já podem falar com você." : "Número apagado.", 1); } catch (e) { zmsg(e.message); } };
   const msg = (m, ok) => ($("#pwdMsg").innerHTML = `<div class="alert ${ok ? "ok" : "bad"}">${esc(m)}</div>`);
