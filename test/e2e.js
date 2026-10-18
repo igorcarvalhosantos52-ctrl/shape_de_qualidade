@@ -31,6 +31,11 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   const medidas = require('../src/medidas');
   ok(medidas.altura('1,75') === 175 && medidas.altura('175') === 175 && medidas.altura('1.70') === 170 && medidas.altura('175 cm') === 175 && medidas.peso('70,5') === 70.5 && medidas.peso('80') === 80, 'altura aceita cm ou metros com vírgula e peso aceita vírgula');
   ok(medidas.altura('') === null && medidas.altura('abc') === null && medidas.altura('0,4') === null && medidas.peso('10') === null, 'altura e peso fora da faixa não passam');
+  const voz = require('../public/voz');
+  ok(voz.altura('um e setenta e cinco') === 175 && voz.altura('1 e 75') === 175 && voz.altura('um metro e setenta e cinco') === 175 && voz.altura('um e meio') === 150 && voz.altura('cento e setenta e cinco') === 175, 'altura falada vira centímetros');
+  ok(voz.peso('setenta quilos') === 70 && voz.peso('setenta e meio') === 70.5 && voz.peso('setenta quilos e meio') === 70.5, 'peso falado entende quilos e meio');
+  ok(JSON.stringify(voz.dias('segunda e quarta')) === '["segunda","quarta"]' && JSON.stringify(voz.dias('de segunda a sexta')) === '["segunda","terca","quarta","quinta","sexta"]' && JSON.stringify(voz.dias('fim de semana')) === '["sabado","domingo"]' && JSON.stringify(voz.dias('terça e sábado')) === '["terca","sabado"]', 'dias falados viram a lista da semana');
+  ok(voz.msgDias(6, 3) === 'Você disse 6 dias, mas citou 3. Qual vale?' && voz.escolherDias(6, ['segunda', 'quarta', 'sexta'], 'os dias').acao === 'dias' && voz.escolherDias(6, ['segunda', 'quarta', 'sexta'], '6').acao === 'numero' && voz.escolherDias(6, ['segunda', 'quarta', 'sexta'], 'sei la').acao === 'incerto', 'a confirmação separa os dias citados da quantidade');
   const aluno = require('../src/aluno');
   ok(aluno.emailNorm('  Pamela.Souza@Teste.com ') === 'pamela.souza@teste.com' && aluno.emailOk('pamela.souza@teste.com') && !aluno.emailOk('pamela souza') && !aluno.emailOk('a@b'), 'e-mail do aluno fica minúsculo, sem espaços, e o formato é validado');
   ok(aluno.primeiroNome('Pamela Souza') === 'Pamela' && aluno.primeiroNome('ana') === 'ana', 'o primeiro nome sai do nome completo');
@@ -94,9 +99,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v24/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v25/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v24');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v25');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -241,18 +246,19 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await a.goto(URL + '/convite/' + code, { waitUntil: 'networkidle0' });
     await a.waitForFunction(() => /convidado por/.test(document.querySelector('#lgInfo').textContent));
     ok((await a.$eval('#baixarApp', e => e.textContent)) === '📲 Baixar app' && !(await a.$eval('#baixarBar', e => e.classList.contains('hide'))), 'o link /convite/CÓDIGO mostra Baixar app');
-    ok(!(await a.$('#lgUser')) && !(await a.$('#lgAltura')) && !(await a.$('#lgPeso')) && !!(await a.$('#lgEmail')) && !(await a.$eval('#lgEmail', e => e.classList.contains('hide'))), 'cadastro do aluno pede e-mail e não pede usuário, altura nem peso');
+    ok(!(await a.$('#lgUser')) && !(await a.$('#lgAltura')) && !(await a.$('#lgPeso')) && !!(await a.$('#lgEmail')) && !(await a.$eval('#lgEmail', e => e.classList.contains('hide'))) && (await a.$eval('#lgZapHint', e => e.textContent)) === 'Para o seu personal falar com você se precisar.' && !(await a.$eval('#lgZap', e => e.classList.contains('hide'))), 'cadastro do aluno pede e-mail e WhatsApp, e não pede usuário, altura nem peso');
     await a.type('#lgNome', 'Pamela Souza'); await a.type('#lgEmail', 'pamela souza'); await a.type('#lgPw', 'aluna123'); await a.type('#lgPw2', 'aluna123');
     await a.click('#lgGo');
     await a.waitForFunction(() => /e-mail válido/.test((document.querySelector('#lgErr') || {}).textContent || ''));
     ok(true, 'e-mail sem formato é recusado antes de criar a conta');
     await a.$eval('#lgEmail', e => { e.value = ''; }); await a.type('#lgEmail', 'pamela.souza@teste.com');
+    await a.evaluate(() => { const e = document.querySelector('#lgZap'); e.value = '11987654321'; e.dispatchEvent(new Event('input', { bubbles: true })); });
     await a.screenshot({ path: SHOTS + '/05-cadastro-aluno-convite.png' });
     await Promise.all([a.waitForNavigation(), a.click('#lgGo')]);
     await a.waitForSelector('#t-aluno:not(.hide)');
     const pamRow = await sql.prepare("SELECT id, username FROM students WHERE email=?").get('pamela.souza@teste.com');
     const pamU = pamRow.username, pamId = pamRow.id;
-    const dupMail = await a.evaluate(async (code) => { const r = await fetch('/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Pamela Outra', email: '  Pamela.Souza@teste.com ', senha: 'aluna123', convite: code }) }); const me = await (await fetch('/api/me')).json(); return { st: r.status, j: await r.json(), role: me.role, nome: me.nome }; }, code);
+    const dupMail = await a.evaluate(async (code) => { const r = await fetch('/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Pamela Outra', email: '  Pamela.Souza@teste.com ', senha: 'aluna123', convite: code, whatsapp: '11987650000' }) }); const me = await (await fetch('/api/me')).json(); return { st: r.status, j: await r.json(), role: me.role, nome: me.nome }; }, code);
     ok(dupMail.st === 409 && /e-mail/.test(dupMail.j.error) && dupMail.role === 'student' && dupMail.nome === 'Pamela Souza', 'e-mail repetido avisa e não troca a conta');
     ok((await a.$eval('#baixarApp', e => e.textContent)) === '📲 Baixar app' && !(await a.$eval('#baixarBar', e => e.classList.contains('hide'))), 'a área do aluno mostra Baixar app');
     ok(!(await a.$('#autoL')), 'não existe mais a opção de ouvir automaticamente');
@@ -274,16 +280,17 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(!micIdle.live && micIdle.listening === false, 'o microfone não liga sozinho depois que o coach fala');
     ok(/Seu personal ainda não cadastrou o WhatsApp/.test(await a.$eval('#waTop', e => e.innerText)) && !(await a.$('#waTop .waPers')), 'sem número, o aluno vê que o personal ainda não cadastrou o WhatsApp');
     ok((await a.evaluate(async () => (await fetch('/api/personal/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status)) === 401, 'aluno não cadastra o WhatsApp do personal');
+    ok((await a.evaluate(async (u) => (await fetch('/api/personal/students/' + u, { method: 'DELETE' })).status, pamU)) === 401, 'aluno não apaga a própria ficha');
     ok((await a.evaluate(async () => (await fetch('/api/cards')).status)) === 403 && (await a.evaluate(async () => (await fetch('/api/cards/1/img')).status)) === 403, 'aluno não lista nem baixa os cards');
     ok((await a.evaluate(async () => (await fetch('/api/ebook')).status)) === 403 && !(await a.$('#ebookSec')), 'aluno não baixa o ebook nem vê o card');
     await a.type('#anAltura', '1,75'); await a.type('#anPeso', '70,5'); await a.click('#anMedGo');
     await a.waitForFunction(() => /salvos/i.test((document.querySelector('#anMedMsg') || {}).textContent || ''));
-    const answers = ['19 anos', 'ganho de massa muscular', 'glúteos', 'errei, a prioridade é o peito', 'em 3 meses', 'treino há 1 ano', '2 dias', 'errei, posso treinar quatro vezes por semana', '1 hora', 'não', 'não tenho'];
+    const answers = ['19 anos', 'ganho de massa muscular', 'glúteos', 'errei, a prioridade é o peito', 'em 3 meses', 'treino há 1 ano', '2 dias', 'segunda e quarta', 'errei, posso treinar quatro vezes por semana', '1 hora', 'não', 'não tenho', 'setenta quilos e meio', 'um e setenta e cinco'];
     for (const t of answers) { const n = await a.$$eval('#chat .msg', x => x.length); await a.type('#txt', t); await a.keyboard.press('Enter');
       await a.waitForFunction(n => document.querySelectorAll('#chat .msg').length > n + 1 || !document.querySelector('#anamCard') || document.querySelector('#anamCard').classList.contains('hide'), { timeout: 15000 }, n); await sleep(300); }
     const chatObj = await a.$eval('#chat', e => e.textContent);
     const spokenAll = await a.evaluate(() => (window.__played || []).map(s => s.text).concat((window.__spoken || []).map(s => s.text)).join('\n'));
-    ok(/Quantos anos você tem/.test(spokenAll) && /Qual o seu principal objetivo/.test(spokenAll) && /Hipertrofia/.test(spokenAll) && /Emagrecimento/.test(spokenAll) && /Saúde e qualidade de vida/.test(spokenAll) && !/Parte 2/i.test(spokenAll) && !/OBJETIVOS E EXPECTATIVAS/.test(spokenAll) && !/Quais resultados você deseja alcançar/.test(spokenAll) && /priorizar/.test(spokenAll) && /Em quanto tempo você espera perceber resultados/.test(spokenAll) && /Você já treina/.test(spokenAll) && /Quantos dias por semana/.test(spokenAll) && /Quanto tempo você tem por treino/.test(spokenAll) && /dor ou tem alguma lesão/.test(spokenAll) && /Você tem alguma orientação médica/.test(spokenAll) && !/Qual orientação/.test(spokenAll) && !/\bQual\?/.test(spokenAll) && !/Como vamos saber que você está progredindo/.test(spokenAll), 'cada pergunta da anamnese sai em áudio, inclusive a orientação, sem o "qual" depois do não');
+    ok(/Quantos anos você tem/.test(spokenAll) && /Qual o seu principal objetivo/.test(spokenAll) && /Hipertrofia/.test(spokenAll) && /Emagrecimento/.test(spokenAll) && /Saúde e qualidade de vida/.test(spokenAll) && !/Parte 2/i.test(spokenAll) && !/OBJETIVOS E EXPECTATIVAS/.test(spokenAll) && !/Quais resultados você deseja alcançar/.test(spokenAll) && /priorizar/.test(spokenAll) && /Em quanto tempo você espera perceber resultados/.test(spokenAll) && /Você já treina/.test(spokenAll) && /Quantos dias por semana/.test(spokenAll) && /Quais dias da semana você pode treinar/.test(spokenAll) && /Quanto tempo você tem por treino/.test(spokenAll) && /dor ou tem alguma lesão/.test(spokenAll) && /Você tem alguma orientação médica/.test(spokenAll) && /Qual o seu peso/.test(spokenAll) && /Qual a sua altura/.test(spokenAll) && !/Qual orientação/.test(spokenAll) && !/\bQual\?/.test(spokenAll) && !/Como vamos saber que você está progredindo/.test(spokenAll), 'cada pergunta da anamnese sai em áudio, inclusive dias, peso, altura e a orientação, sem o "qual" depois do não');
     await a.evaluate(() => { document.querySelector('#tts').checked = false; });
     ok(/Qual o seu principal objetivo/.test(chatObj) && /Hipertrofia/.test(chatObj) && /Emagrecimento/.test(chatObj) && /Saúde e qualidade de vida/.test(chatObj) && !/Parte 2/i.test(chatObj) && !/OBJETIVOS E EXPECTATIVAS/.test(chatObj) && !/Quais resultados você deseja alcançar/.test(chatObj) && /Em quanto tempo você espera perceber resultados/.test(chatObj) && !/Como vamos saber que você está progredindo/.test(chatObj) && /Você tem alguma orientação médica/.test(chatObj) && !/Qual orientação/.test(chatObj) && !/\bQual\?/.test(chatObj), 'coach pergunta o objetivo e a orientação, e não insiste quando a resposta é não');
     const medFlow = await a.evaluate(() => ({
@@ -309,6 +316,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await p.click('.stu[data-u="' + pamU + '"]'); await sleep(500);
     const ficha = await p.evaluate(() => ({ txt: document.querySelector('#persCard').textContent + document.querySelector('#repCard').textContent, a: S.a, blocos: S.plan.treinos[0].blocos.map(b => ({ g: b.g, n: b.ex.length, s: b.ex[0].s })), exp: dayExp(S.plan.treinos[0]) }));
     ok(/Pamela Souza/.test(ficha.txt) && /2\. OBJETIVOS E EXPECTATIVAS/.test(ficha.txt) && /Ganho de massa muscular/.test(ficha.txt) && !/Resultados que deseja alcançar/.test(ficha.txt) && !ficha.a.resultados && /peito/i.test(ficha.txt) && /3 meses/.test(ficha.txt) && /Como vamos medir o progresso/.test(ficha.txt) && /realista/.test(ficha.txt) && ficha.a.med === 'não tenho' && /Orientação médica/.test(ficha.txt) && /não tenho/.test(ficha.txt), 'ficha mostra o nome completo, objetivo, prioridade, prazo e a orientação médica');
+    ok(/Dias disponíveis: Segunda, Quarta/.test(ficha.txt) && ficha.a.dias === 4 && JSON.stringify(ficha.a.diasSemana) === '["segunda","quarta"]', 'ficha mostra os dias disponíveis e mantém 4 treinos na semana');
+    const waAluno = await p.$eval('#waAluno', e => e.getAttribute('href') || '');
+    ok(waAluno.startsWith('https://wa.me/5511987654321?text=') && decodeURIComponent(waAluno.split('text=')[1]) === 'Oi Pamela Souza, aqui é o seu personal do Shape de Qualidade.', 'botão verde abre o WhatsApp do aluno com o nome completo');
     const pamMed = await sql.prepare('SELECT altura_cm a, peso_kg p FROM students WHERE username=?').get(pamU);
     ok(Number(pamMed.a) === 175 && Number(pamMed.p) === 70.5 && /Altura 1,75 m/.test(ficha.txt) && /Peso 70,5 kg/.test(ficha.txt) && /IMC 23,0/.test(ficha.txt), 'ficha do convite mostra altura, peso e o IMC');
     await sql.prepare('UPDATE students SET altura_cm=NULL, peso_kg=NULL WHERE username=?').run(pamU);
@@ -534,12 +544,33 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     // ---- limite de 15 alunos no Básico
     const signup = async (i) => { const c = await browser.createBrowserContext(), pg = await c.newPage(); await pg.goto(URL + '/convite/' + code, { waitUntil: 'networkidle0' });
       await pg.waitForSelector('#lgEmail');
-      const r = await pg.evaluate(async (code, i) => { const r = await fetch('/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'aluno' + i + '@teste.com', nome: 'Aluno ' + i, senha: 'aluno123', convite: code }) }); return { st: r.status, j: await r.json() }; }, code, i);
+      const r = await pg.evaluate(async (code, i) => { const r = await fetch('/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'aluno' + i + '@teste.com', nome: 'Aluno ' + i, senha: 'aluno123', convite: code, whatsapp: '11' + String(900000000 + i).padStart(9, '0') }) }); return { st: r.status, j: await r.json() }; }, code, i);
       await c.close(); return r; };
     for (let i = 2; i <= 15; i++) { const r = await signup(i); if (r.st !== 200) throw new Error('cadastro ' + i + ': ' + r.j.error); }
     const r16 = await signup(16); ok(r16.st === 403 && /limite de 15 alunos do plano Básico.*upgrade/.test(r16.j.error), 'Básico trava no 15º aluno com aviso de upgrade');
     await p.reload({ waitUntil: 'networkidle0' }); await p.waitForSelector('#planBox');
     ok(/15 \/ 15/.test(await p.$eval('#planBox', e => e.innerText)) && /Limite atingido/.test(await p.$eval('#planBox', e => e.innerText)), 'painel mostra 15/15 e pede upgrade');
+    const aluno2row = await sql.prepare("SELECT id, username FROM students WHERE email=?").get('aluno2@teste.com');
+    const aluno2 = aluno2row.username, aluno2id = aluno2row.id;
+    await p.click('.stu[data-u="' + aluno2 + '"]');
+    await p.waitForSelector('#apagarAluno');
+    await p.click('#apagarAluno');
+    await p.waitForSelector('#apagarBox:not(.hide)');
+    ok(/Apagar a ficha de Aluno 2\? Isso não pode ser desfeito\./.test(await p.$eval('#apagarBox', e => e.textContent)), 'apagar pede confirmação com o nome');
+    await p.type('#apagarTxt', 'APAGAR');
+    await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle0' }), p.click('#apagarGo')]);
+    ok(!(await sql.prepare('SELECT id FROM students WHERE email=?').get('aluno2@teste.com')) && !(await sql.prepare('SELECT student_id FROM tuition WHERE student_id=?').get(aluno2id)) && !(await sql.prepare('SELECT student_id FROM tuition_payments WHERE student_id=?').get(aluno2id)), 'apagar tira o aluno, a ficha e a mensalidade');
+    const ctxGone = await browser.createBrowserContext(), gone = await ctxGone.newPage();
+    await gone.goto(URL, { waitUntil: 'networkidle0' });
+    const goneLogin = await gone.evaluate(async () => (await fetch('/api/student/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'aluno2@teste.com', senha: 'aluno123' }) })).status);
+    ok(goneLogin === 401, 'aluno apagado não entra mais com esse personal');
+    await ctxGone.close();
+    const ctxVaga = await browser.createBrowserContext(), pgVaga = await ctxVaga.newPage();
+    await pgVaga.goto(URL + '/convite/' + code, { waitUntil: 'networkidle0' });
+    const vaga = await pgVaga.evaluate(async (code) => { const r = await fetch('/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'aluno-vaga@teste.com', nome: 'Aluno Vaga', senha: 'aluno123', convite: code, whatsapp: '11900000999' }) }); return { st: r.status, j: await r.json() }; }, code);
+    await ctxVaga.close();
+    ok(vaga.st === 200, 'com a vaga livre, o Básico aceita outro aluno');
+    await p.waitForSelector('#planBox');
     // upgrade para Pro (assinatura paga -> paga o novo plano no modo teste)
     await p.evaluate(() => { document.querySelector('#chgPlan').open = true; }); await p.click('#chgPlan label[data-plan="pro"]'); await sleep(200);
     await p.evaluate(() => { document.querySelector('#chgPlan').open = true; }); await p.click('#planGo'); await p.waitForSelector('#paywall');
@@ -550,13 +581,25 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok((await signup(16)).st === 200, 'depois do upgrade o 16º aluno entra');
     const dg = await p.evaluate(async () => { const r = await fetch('/api/billing/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plano: 'basico' }) }); return { st: r.status, j: await r.json() }; });
     ok(dg.st === 409 && /16 alunos/.test(dg.j.error), 'downgrade para Básico bloqueado com 16 alunos');
+    ok((await signup(2)).st === 200, 'o e-mail apagado pode se cadastrar de novo por um convite');
     const bcrypt = require('bcrypt');
     await sql.prepare('INSERT INTO students(personal_id,username,nome,hash,created_at,origin) VALUES(?,?,?,?,?,?)').run(pid, 'legado', 'Aluno Legado', await bcrypt.hash('legado123', 4), Date.now(), 'convite');
     const ctxLeg = await browser.createBrowserContext(), leg = await ctxLeg.newPage();
     await leg.goto(URL, { waitUntil: 'networkidle0' });
     const legadoLogin = await leg.evaluate(async () => { const ruim = await fetch('/api/student/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: 'legado', senha: 'errada' }) }); const bom = await fetch('/api/student/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'legado', senha: 'legado123' }) }); return { ruim: ruim.status, bom: bom.status }; });
     ok(legadoLogin.ruim === 401 && legadoLogin.bom === 200, 'aluno antigo sem e-mail entra pelo usuário');
+    await leg.goto(URL, { waitUntil: 'networkidle0' });
+    await leg.waitForSelector('#zapPedido');
+    ok(/Qual é o seu WhatsApp com DDD/.test(await leg.$eval('#zapPedido', e => e.textContent)) && /Para o seu personal falar com você se precisar/.test(await leg.$eval('#zapPedido', e => e.textContent)), 'aluno antigo sem número é perguntado uma vez');
+    await leg.click('#zapPedidoSkip');
+    await leg.reload({ waitUntil: 'networkidle0' });
+    ok(!(await leg.$('#zapPedido')), 'Agora não não pergunta de novo');
     await ctxLeg.close();
+    await p.reload({ waitUntil: 'networkidle0' });
+    await p.waitForSelector('.stu[data-u="legado"]');
+    await p.click('.stu[data-u="legado"]');
+    await p.waitForSelector('#waAluno');
+    ok(await p.$eval('#waAluno', e => e.disabled) && /WhatsApp não informado/.test(await p.$eval('#fichaTopo', e => e.textContent)), 'sem número o botão de WhatsApp fica desligado');
     const ug = await p.evaluate(async () => (await fetch('/api/billing/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plano: 'ilimitado' }) })).json());
     ok(ug.needCheckout === true, 'upgrade de plano pago exige pagar o novo plano');
     // isolamento entre personais
@@ -567,8 +610,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       const me = await (await fetch('/api/me')).json(); const put = await fetch('/api/ficha/' + encodeURIComponent(u), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{}' });
       const ex = await (await fetch('/api/personal/exercises')).json();
       const del = await fetch('/api/personal/exercises/1', { method: 'DELETE' });
-      return { n: me.students.length, put: put.status, ex: (ex.exercises || []).length, del: del.status }; }, pamU);
-    ok(iso.n === 0 && iso.put === 403 && iso.ex === 0 && iso.del === 404, 'outro personal não vê alunos, fichas nem a lista de exercícios alheia');
+      const delStu = await fetch('/api/personal/students/' + encodeURIComponent(u), { method: 'DELETE' });
+      return { n: me.students.length, put: put.status, ex: (ex.exercises || []).length, del: del.status, delStu: delStu.status }; }, pamU);
+    ok(iso.n === 0 && iso.put === 403 && iso.ex === 0 && iso.del === 404 && iso.delStu === 404, 'outro personal não vê alunos, fichas nem a lista de exercícios alheia, e não apaga aluno dos outros');
     await p.screenshot({ path: SHOTS + '/04-painel-personal-convite.png' });
 
     // ---- senhas
@@ -828,7 +872,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(avisou.informed && avisou.tone === 'soon', 'pagamento informado não pinta de verde');
     const pagina = pubPage.page({ nome: 'Lia', bio: 'Força', foto: '', fee_cents: 15000, active: true, full: false, code: 'ABC12345' });
     ok(/Lia/.test(pagina) && /Força/.test(pagina) && /Quero ser aluno/.test(pagina) && /Mensalidade/.test(pagina) && /150/.test(pagina), 'página pública mostra nome, bio, preço e o botão');
-    ok(/id="email"/.test(pagina) && !/id="user"/.test(pagina) && !/id="altura"/.test(pagina) && !/Usuário/.test(pagina), 'a página pública pede e-mail e não pede usuário nem altura');
+    ok(/id="email"/.test(pagina) && /id="zap"/.test(pagina) && /Para o seu personal falar com você se precisar/.test(pagina) && !/id="user"/.test(pagina) && !/id="altura"/.test(pagina) && !/Usuário/.test(pagina), 'a página pública pede e-mail e WhatsApp, e não pede usuário nem altura');
     ok(pagina.indexOf('__pwaPrompt') > 0 && pagina.indexOf('__pwaPrompt') < pagina.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(pagina), 'a página /p registra o prompt e o service worker no começo do head');
     const cheia = pubPage.page({ nome: 'Lia', bio: '', foto: '', fee_cents: 0, active: true, full: true, code: 'ABC12345' });
     ok(/limite/.test(cheia) && !/Quero ser aluno/.test(cheia), 'página pública some com o botão quando o plano está cheio');
@@ -877,6 +921,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await pub.click('#quero');
     await pub.waitForSelector('#form:not(.hide)');
     await pub.type('#nome', 'Caio Aluno'); await pub.type('#email', 'caio@teste.com'); await pub.type('#pw', 'aluno123'); await pub.type('#pw2', 'aluno123');
+    await pub.evaluate(() => { const e = document.querySelector('#zap'); e.value = '11988887777'; e.dispatchEvent(new Event('input', { bubbles: true })); });
     await Promise.all([pub.waitForNavigation({ waitUntil: 'networkidle0' }), pub.click('#form button[type=submit]')]);
     await pub.waitForSelector('#feeJa');
     const pixAntes = await pub.evaluate(() => ({ anam: document.querySelector('#anamCard').classList.contains('hide'), wa: document.querySelector('#waTop').innerText, card: document.querySelector('#feeCard').innerText, payload: document.querySelector('#feePayload').value, qr: !!document.querySelector('#feeCard img') }));
@@ -910,7 +955,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await f.click('#feeUndo');
     await f.waitForFunction(() => /Pagamento informado/.test((document.querySelector('#feeEditBody') || {}).innerText || '') && /desfeito/.test((document.querySelector('#feeHist') || {}).innerText || ''));
     ok(!!(await f.$('.stu[data-u="' + caioU + '"] .feeDot.soon')), 'desfazer devolve o aviso de pagamento e a cor amarela');
-    const davi = await fetch(URL + '/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'davi@teste.com', nome: 'Davi Direto', senha: 'aluno123', convite: codeLia }) });
+    const davi = await fetch(URL + '/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'davi@teste.com', nome: 'Davi Direto', senha: 'aluno123', convite: codeLia, whatsapp: '11911112222' }) });
     const daviJ = await davi.json();
     ok(davi.status === 200 && daviJ.pix === false, 'convite direto não manda o aluno para o Pix antes da anamnese');
     let atrasado = null;
@@ -951,7 +996,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await sql.prepare('UPDATE settings SET value=? WHERE key=?').run(JSON.stringify(pj), 'plans');
     const htmlCheio = await (await fetch(URL + '/p/' + codeLia)).text();
     ok(/limite/.test(htmlCheio) && !/Quero ser aluno/.test(htmlCheio), 'no ar, o link público respeita o limite de alunos');
-    const extra = await fetch(URL + '/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'extra1@teste.com', nome: 'Extra Um', senha: 'aluno123', convite: codeLia, origem: 'publico' }) });
+    const extra = await fetch(URL + '/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'extra1@teste.com', nome: 'Extra Um', senha: 'aluno123', convite: codeLia, origem: 'publico', whatsapp: '11911113333' }) });
     const extraJ = await extra.json();
     ok(extra.status === 403 && /limite/.test(extraJ.error), 'cadastro pelo link público também trava no limite do plano');
     pj.pro.limit = limiteAntes;

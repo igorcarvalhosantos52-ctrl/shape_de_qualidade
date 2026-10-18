@@ -33,6 +33,8 @@ ${bloqueio ? `<div class="erro">${esc(bloqueio)}</div>` : `<button id="quero" ty
 <form id="form" class="hide">
 <input id="nome" placeholder="Seu nome completo" autocomplete="name">
 <input id="email" placeholder="Seu e-mail" inputmode="email" autocomplete="email">
+<input id="zap" placeholder="WhatsApp (com DDD)" inputmode="tel" autocomplete="tel">
+<p id="zapHint" style="font-size:.8rem;color:#5f5a4e;margin:-2px 0 8px">Para o seu personal falar com você se precisar.</p>
 <input id="pw" type="password" placeholder="Senha (mínimo 6)" autocomplete="new-password">
 <input id="pw2" type="password" placeholder="Confirme a senha" autocomplete="new-password">
 <div id="erro"></div>
@@ -44,9 +46,12 @@ ${bloqueio ? `<div class="erro">${esc(bloqueio)}</div>` : `<button id="quero" ty
 const code=${JSON.stringify(p.code)};
 const quero=document.getElementById('quero'), form=document.getElementById('form');
 if(quero){quero.onclick=()=>{quero.classList.add('hide');form.classList.remove('hide')};document.getElementById('voltar').onclick=()=>{form.classList.add('hide');quero.classList.remove('hide')};
+const zapEl=document.getElementById('zap');
+if(zapEl)zapEl.addEventListener('input',()=>{let d=zapEl.value.replace(/\\D/g,'');if(d.startsWith('55')&&d.length>11)d=d.slice(2);d=d.slice(0,11);let out='';if(!d)out='';else if(d.length<=2)out='('+d;else if(d.length<=6)out='('+d.slice(0,2)+') '+d.slice(2);else if(d.length<=10)out='('+d.slice(0,2)+') '+d.slice(2,6)+'-'+d.slice(6);else out='('+d.slice(0,2)+') '+d.slice(2,7)+'-'+d.slice(7);if(zapEl.value!==out)zapEl.value=out});
 form.onsubmit=async ev=>{ev.preventDefault();const er=document.getElementById('erro');er.innerHTML='';
 if(document.getElementById('pw').value!==document.getElementById('pw2').value){er.innerHTML='<div class="erro">As senhas não conferem.</div>';return}
-try{const r=await fetch('/api/student/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:document.getElementById('nome').value.trim(),email:document.getElementById('email').value.trim(),senha:document.getElementById('pw').value,convite:code,origem:'publico'})});
+let zap=(document.getElementById('zap').value||'').replace(/\\D/g,'');if(zap.startsWith('55')&&zap.length>11)zap=zap.slice(2);if(!/^\\d{10,11}$/.test(zap)){er.innerHTML='<div class="erro">Informe o WhatsApp com DDD, com 10 ou 11 dígitos.</div>';return}
+try{const r=await fetch('/api/student/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:document.getElementById('nome').value.trim(),email:document.getElementById('email').value.trim(),senha:document.getElementById('pw').value,whatsapp:zap,convite:code,origem:'publico'})});
 const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Não foi possível criar a conta.');location.href=j.pix?'/?pos=pix':'/'}catch(e){er.innerHTML='<div class="erro">'+e.message.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</div>'}};}
 </script><script src="/baixar.js"></script></body></html>`;
 }

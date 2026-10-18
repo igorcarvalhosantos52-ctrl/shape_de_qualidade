@@ -41,6 +41,25 @@ function waNorm(raw) {
   if (!/^\d{10,11}$/.test(d)) { const err = new Error("Informe o DDD e o número, com 10 ou 11 dígitos."); err.status = 400; throw err; }
   return d;
 }
+function studentWa(raw) {
+  let d = String(raw || "").replace(/\D/g, "");
+  if (d.startsWith("55") && d.length > 11) d = d.slice(2);
+  if (!/^\d{10,11}$/.test(d)) { const err = new Error("Informe o WhatsApp com DDD, com 10 ou 11 dígitos."); err.status = 400; throw err; }
+  return "55" + d;
+}
+const DIAS_OK = ["segunda", "terca", "quarta", "quinta", "sexta", "sabado", "domingo"];
+function diasLista(raw) {
+  const p = parse(raw);
+  return Array.isArray(p) ? DIAS_OK.filter(d => p.includes(d)) : [];
+}
+function withDias(ficha, dias) {
+  if (!dias.length) return ficha;
+  const f = ficha && typeof ficha === "object" ? Object.assign({}, ficha) : {};
+  const a = f.a && typeof f.a === "object" ? Object.assign({}, f.a) : {};
+  if (!Array.isArray(a.diasSemana) || !a.diasSemana.length) a.diasSemana = dias;
+  f.a = a;
+  return f;
+}
 
 // ---------- personal ----------
 app.post('/api/personal/signup', limit, async (req, res) => {
@@ -191,11 +210,13 @@ app.post('/api/student/signup', limit, async (req, res) => {
   if (nome.length < 2) return res.status(400).json({ error: 'Informe seu nome.' });
   if (!emailOk(email)) return res.status(400).json({ error: 'Informe um e-mail válido.' });
   if (pw.length < 6) return res.status(400).json({ error: 'A senha precisa ter pelo menos 6 caracteres.' });
+  let zap;
+  try { zap = studentWa(req.body.whatsapp); } catch (e) { return res.status(e.status || 400).json({ error: e.message }); }
   if (await db.prepare('SELECT 1 FROM students WHERE email=?').get(email)) return res.status(409).json({ error: 'Esse e-mail já tem conta. Entre com ele ou use outro.' });
   const origin = req.body.origem === 'publico' ? 'publico' : 'convite';
   let r;
   try {
-    r = await db.prepare('INSERT INTO students(personal_id,username,nome,email,hash,created_at,origin) VALUES(?,?,?,?,?,?,?)').run(p.id, await novoUsuario(), nome, email, await bcrypt.hash(pw, 11), Date.now(), origin);
+    r = await db.prepare('INSERT INTO students(personal_id,username,nome,email,hash,created_at,origin,whatsapp) VALUES(?,?,?,?,?,?,?,?)').run(p.id, await novoUsuario(), nome, email, await bcrypt.hash(pw, 11), Date.now(), origin, zap);
   } catch (e) {
     if (/unique/i.test(String(e && e.message))) return res.status(409).json({ error: 'Esse e-mail já tem conta. Entre com ele ou use outro.' });
     throw e;
@@ -219,11 +240,47 @@ app.post('/api/student/forgot', limit, async (req, res) => {
   res.json({ ok: true, msg: 'Pedido registrado. O suporte do Shape de Qualidade vai te enviar um link para criar uma nova senha' + (process.env.ADMIN_EMAIL ? ` (contato: ${process.env.ADMIN_EMAIL})` : '') + '. O link vale por 1 hora.' });
 });
 app.post('/api/student/medidas', need('student'), async (req, res) => {
-  const alturaCm = medidas.altura(req.body.altura), pesoKg = medidas.peso(req.body.peso);
-  if (alturaCm == null) return res.status(400).json({ error: 'Informe a altura em centímetros ou em metros. Ex.: 175 ou 1,75.' });
-  if (pesoKg == null) return res.status(400).json({ error: 'Informe o peso em quilos. Ex.: 70,5.' });
+  const body = req.body || {};
+  const hasA = body.altura != null && String(body.altura).trim() !== '';
+  const hasP = body.peso != null && String(body.peso).trim() !== '';
+  if (!hasA && !hasP) return res.status(400).json({ error: 'Informe a altura ou o peso.' });
+  const cur = await db.prepare('SELECT altura_cm, peso_kg FROM students WHERE id=?').get(req.sess.user_id);
+  let alturaCm = cur && cur.altura_cm != null ? Number(cur.altura_cm) : null;
+  let pesoKg = cur && cur.peso_kg != null ? Number(cur.peso_kg) : null;
+  if (hasA) {
+    alturaCm = medidas.altura(body.altura);
+    if (alturaCm == null) return res.status(400).json({ error: 'Informe a altura em centímetros ou em metros. Ex.: 175 ou 1,75.' });
+  }
+  if (hasP) {
+    pesoKg = medidas.peso(body.peso);
+    if (pesoKg == null) return res.status(400).json({ error: 'Informe o peso em quilos. Ex.: 70,5.' });
+  }
   await db.prepare('UPDATE students SET altura_cm=?, peso_kg=? WHERE id=?').run(alturaCm, pesoKg, req.sess.user_id);
   res.json({ ok: true, altura_cm: alturaCm, peso_kg: pesoKg });
+});
+app.post('/api/student/dias', need('student'), async (req, res) => {
+  const raw = Array.isArray(req.body && req.body.dias) ? req.body.dias : [];
+  const dias = DIAS_OK.filter(d => raw.includes(d));
+  if (!dias.length) return res.status(400).json({ error: 'Informe pelo menos um dia da semana.' });
+  await db.prepare('UPDATE students SET dias_semana=? WHERE id=?').run(JSON.stringify(dias), req.sess.user_id);
+  res.json({ ok: true, dias });
+});
+app.post('/api/student/whatsapp', need('student'), async (req, res) => {
+  try {
+    const w = studentWa((req.body || {}).numero || (req.body || {}).whatsapp);
+    await db.prepare('UPDATE students SET whatsapp=? WHERE id=?').run(w, req.sess.user_id);
+    res.json({ ok: true, whatsapp: w });
+  } catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+});
+app.delete('/api/personal/students/:u', need('personal'), async (req, res) => {
+  const s = await db.prepare('SELECT * FROM students WHERE username=? AND personal_id=?').get(String(req.params.u || '').toLowerCase(), req.sess.user_id);
+  if (!s) return res.status(404).json({ error: 'Aluno não encontrado.' });
+  await db.prepare('DELETE FROM tuition_payments WHERE student_id=?').run(s.id);
+  await db.prepare('DELETE FROM tuition WHERE student_id=?').run(s.id);
+  await db.prepare("DELETE FROM sessions WHERE role='student' AND user_id=?").run(s.id);
+  await db.prepare("DELETE FROM password_resets WHERE role='student' AND user_id=?").run(s.id);
+  await db.prepare('DELETE FROM students WHERE id=? AND personal_id=?').run(s.id, req.sess.user_id);
+  res.json({ ok: true });
 });
 
 // ---------- estado (bootstrap do app) ----------
@@ -237,7 +294,7 @@ app.get('/api/me', async (req, res) => {
     const paid = await pay.hasPaidAccess(p.id);
     const owner_test = await ownerTest.isOwner(p.id);
     const fees = sub.active ? await tuition.summaryForPersonal(p.id) : {};
-    const students = sub.active ? (await db.prepare('SELECT username,nome,email,ficha,altura_cm,peso_kg FROM students WHERE personal_id=? ORDER BY nome').all(p.id)).map(s => ({ u: s.username, nome: s.nome, email: s.email || '', ficha: parse(s.ficha), altura_cm: s.altura_cm == null ? null : Number(s.altura_cm), peso_kg: s.peso_kg == null ? null : Number(s.peso_kg), fee: fees[s.username] || { tone: 'none', label: 'Sem mensalidade', origin: 'convite', gate: '' } })) : [];
+    const students = sub.active ? (await db.prepare('SELECT username,nome,email,ficha,altura_cm,peso_kg,whatsapp,dias_semana FROM students WHERE personal_id=? ORDER BY nome').all(p.id)).map(s => { const dias = diasLista(s.dias_semana); return { u: s.username, nome: s.nome, email: s.email || '', ficha: withDias(parse(s.ficha), dias), altura_cm: s.altura_cm == null ? null : Number(s.altura_cm), peso_kg: s.peso_kg == null ? null : Number(s.peso_kg), whatsapp: s.whatsapp || '', dias_semana: dias, fee: fees[s.username] || { tone: 'none', label: 'Sem mensalidade', origin: 'convite', gate: '' } }; }) : [];
     const count = (await db.prepare('SELECT COUNT(*) n FROM students WHERE personal_id=?').get(p.id)).n;
     return res.json({ role: 'personal', personal: { ...pubP(p), foto: p.foto || '' }, sub, paid, owner_test, students, count, ...P });
   }
@@ -245,7 +302,8 @@ app.get('/api/me', async (req, res) => {
     const s = await db.prepare('SELECT s.*,p.nome pnome,p.cref pcref,p.whatsapp pzap FROM students s JOIN personals p ON p.id=s.personal_id WHERE s.id=?').get(req.sess.user_id);
     if (!s) return res.json({ role: null, ...P });
     const extra = await tuition.attachStudent(s);
-    return res.json({ role: 'student', u: s.username, nome: s.nome, email: s.email || '', altura_cm: s.altura_cm == null ? null : Number(s.altura_cm), peso_kg: s.peso_kg == null ? null : Number(s.peso_kg), personal: { nome: s.pnome, cref: s.pcref, whatsapp: s.pzap || "" }, active: (await pay.subscriptionOf(s.personal_id)).active, ficha: parse(s.ficha), ...extra, ...P });
+    const dias = diasLista(s.dias_semana);
+    return res.json({ role: 'student', u: s.username, nome: s.nome, email: s.email || '', whatsapp: s.whatsapp || '', dias_semana: dias, altura_cm: s.altura_cm == null ? null : Number(s.altura_cm), peso_kg: s.peso_kg == null ? null : Number(s.peso_kg), personal: { nome: s.pnome, cref: s.pcref, whatsapp: s.pzap || "" }, active: (await pay.subscriptionOf(s.personal_id)).active, ficha: withDias(parse(s.ficha), dias), ...extra, ...P });
   }
   res.json({ role: null, ...P });
 });

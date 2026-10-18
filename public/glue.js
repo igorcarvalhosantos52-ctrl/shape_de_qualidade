@@ -10,7 +10,25 @@ async function logoutAll() { try { speechSynthesis.cancel(); } catch (e) {} awai
 const inviteFromUrl = (location.pathname.match(/^\/convite\/([A-Za-z0-9]+)/) || [])[1] || new URLSearchParams(location.search).get("convite");
 
 /* ---------- Login / cadastro do aluno (servidor) ---------- */
-lgUI = function () { ["#lgNome", "#lgPw2", "#lgCode"].forEach(i => { const el = $(i); if (el) el.classList.toggle("hide", !lgNew); }); $("#lgGo").textContent = lgNew ? "Criar conta" : "Entrar";
+function maskZap(el) {
+  if (!el || el.dataset.mask) return;
+  el.dataset.mask = "1";
+  el.addEventListener("input", () => {
+    let d = el.value.replace(/\D/g, "");
+    if (d.startsWith("55") && d.length > 11) d = d.slice(2);
+    d = d.slice(0, 11);
+    let out = "";
+    if (!d) out = "";
+    else if (d.length <= 2) out = "(" + d;
+    else if (d.length <= 6) out = "(" + d.slice(0, 2) + ") " + d.slice(2);
+    else if (d.length <= 10) out = "(" + d.slice(0, 2) + ") " + d.slice(2, 6) + "-" + d.slice(6);
+    else out = "(" + d.slice(0, 2) + ") " + d.slice(2, 7) + "-" + d.slice(7);
+    if (el.value !== out) el.value = out;
+  });
+}
+function zapDigits(raw) { let d = String(raw || "").replace(/\D/g, ""); if (d.startsWith("55") && d.length > 11) d = d.slice(2); return d; }
+maskZap($("#lgZap"));
+lgUI = function () { ["#lgNome", "#lgPw2", "#lgCode", "#lgZap", "#lgZapHint"].forEach(i => { const el = $(i); if (el) el.classList.toggle("hide", !lgNew); }); $("#lgGo").textContent = lgNew ? "Criar conta" : "Entrar";
   const mail = $("#lgEmail"); if (mail) mail.placeholder = lgNew ? "Seu e-mail" : "Seu e-mail ou usuário";
   $("#lgMode").textContent = lgNew ? "Já tenho conta, entrar" : "Não tenho conta, criar agora"; $("#lgErr").innerHTML = ""; };
 $("#lgMode").onclick = e => { e.preventDefault(); lgNew = !lgNew; lgUI(); };
@@ -24,7 +42,9 @@ $("#lgGo").onclick = async () => {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err("Informe um e-mail válido.");
       if (senha.length < 6) return err("A senha precisa ter pelo menos 6 caracteres.");
       if (senha !== $("#lgPw2").value) return err("As senhas não conferem.");
-      await api("/api/student/signup", { email, senha, nome, convite: $("#lgCode").value.trim() });
+      const zap = zapDigits($("#lgZap").value);
+      if (!/^\d{10,11}$/.test(zap)) return err("Informe o WhatsApp com DDD, com 10 ou 11 dígitos.");
+      await api("/api/student/signup", { email, senha, nome, whatsapp: zap, convite: $("#lgCode").value.trim() });
     } else {
       if (!email) return err("Informe seu e-mail.");
       await api("/api/student/login", { email, senha });
@@ -36,7 +56,12 @@ window.salvarMedidas = async function () {
   const box = $("#anMedMsg"), show = (t, bom) => { if (box) box.innerHTML = `<div class="alert ${bom ? "ok" : "bad"}">${esc(t)}</div>`; };
   try {
     const r = await api("/api/student/medidas", { altura: $("#anAltura").value.trim(), peso: $("#anPeso").value.trim() });
-    window.__medidasOk = true;
+    const checks = [...document.querySelectorAll("#anDias input:checked")].map(x => x.value);
+    if (checks.length) {
+      const d = await api("/api/student/dias", { dias: checks });
+      if (typeof S !== "undefined" && S.a) { S.a.diasSemana = d.dias; if (typeof save === "function") save(); }
+    }
+    window.__medidasOk = !!(r.altura_cm && r.peso_kg);
     if (window.__ME) { window.__ME.altura_cm = r.altura_cm; window.__ME.peso_kg = r.peso_kg; }
     show("Altura e peso salvos.", true);
     if (typeof S !== "undefined" && S.queue && S.queue[S.step] && S.queue[S.step].id === "fim" && S.status === "none") finishAnam();
@@ -143,6 +168,25 @@ function mountWa() {
   });
 }
 const _render = render;
+function pedirZapUmaVez() {
+  if (!ME || ME.role !== "student" || ME.whatsapp) return;
+  const k = "sq_zap_pedido_" + (ME.u || "");
+  try { if (window.localStorage.getItem(k)) return; } catch (e) { return; }
+  if ($("#zapPedido")) return;
+  const host = $("#whoName") && $("#whoName").parentElement;
+  if (!host) return;
+  host.insertAdjacentHTML("afterend", `<div class="card" id="zapPedido"><p>Qual é o seu WhatsApp com DDD? Para o seu personal falar com você se precisar.</p><input id="zapPedidoNum" placeholder="WhatsApp (com DDD)" inputmode="tel" autocomplete="tel"><div id="zapPedidoMsg"></div><button class="btn sm" id="zapPedidoGo" type="button">Salvar</button> <button class="btn sm sec" id="zapPedidoSkip" type="button">Agora não</button></div>`);
+  const num = $("#zapPedidoNum"); maskZap(num);
+  $("#zapPedidoSkip").onclick = () => { try { window.localStorage.setItem(k, "1"); } catch (e) {} const n = $("#zapPedido"); if (n) n.remove(); };
+  $("#zapPedidoGo").onclick = async () => {
+    try {
+      const r = await api("/api/student/whatsapp", { numero: num.value });
+      ME.whatsapp = r.whatsapp; if (window.__ME) window.__ME.whatsapp = r.whatsapp;
+      try { window.localStorage.setItem(k, "1"); } catch (e) {}
+      const n = $("#zapPedido"); if (n) n.remove();
+    } catch (e) { $("#zapPedidoMsg").innerHTML = `<div class="alert bad">${esc(e.message)}</div>`; }
+  };
+}
 render = function () {
   _render();
   document.querySelectorAll("#lockNow").forEach(b => (b.onclick = logoutAll));
@@ -150,6 +194,7 @@ render = function () {
   mountWa();
   mountFeeStudent();
   mountFeeEditor();
+  pedirZapUmaVez();
 };
 const _renderChat = renderChat;
 renderChat = function () { _renderChat(); mountWa(); };

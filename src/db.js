@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS students(
   id INTEGER PRIMARY KEY, personal_id INTEGER NOT NULL REFERENCES personals(id) ON DELETE CASCADE,
   username TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, hash TEXT NOT NULL, ficha TEXT, updated_at INTEGER, created_at INTEGER NOT NULL,
   origin TEXT DEFAULT 'convite', gate TEXT DEFAULT '', altura_cm REAL, peso_kg REAL,
-  email TEXT, reset_requested_at INTEGER);
+  email TEXT, reset_requested_at INTEGER, whatsapp TEXT DEFAULT '', dias_semana TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS tuition(
   student_id INTEGER PRIMARY KEY, amount_cents INTEGER, due_day INTEGER, exempt INTEGER DEFAULT 0,
   paid_through TEXT, informed_for TEXT, informed_at INTEGER);
@@ -62,6 +62,8 @@ const ALTERS = [
   "ALTER TABLE students ADD COLUMN peso_kg REAL",
   "ALTER TABLE students ADD COLUMN email TEXT",
   "ALTER TABLE students ADD COLUMN reset_requested_at INTEGER",
+  "ALTER TABLE students ADD COLUMN whatsapp TEXT DEFAULT ''",
+  "ALTER TABLE students ADD COLUMN dias_semana TEXT DEFAULT ''",
 ];
 
 const num = v => (typeof v === 'bigint' ? Number(v) : v);

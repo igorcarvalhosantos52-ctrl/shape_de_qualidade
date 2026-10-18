@@ -27,12 +27,12 @@ const num=t=>{const m=norm(t).match(/\d+/);return m?parseInt(m[0]):null};
 const BODY=["joelho","ombro","lombar","punho","cotovelo","quadril","tornozelo","pescoco"];
 const bodyIn=t=>BODY.filter(b=>norm(t).includes(b));
 
-function fresh(){return{step:0,queue:null,chat:[],a:{nome:"",idade:null,objetivo:"",objetivos:[],objTxt:"",objOutro:"",resultados:"",prioridade:"",prioGs:[],prazo:"",progresso:"",nivel:"",dias:3,tempo:60,dores:{},med:"",medInfo:null,cond:{},meds:"",obs:[]},equip:EQUIP.slice(),plan:null,status:"none",aprov:null,adj:[]}}
+function fresh(){return{step:0,queue:null,chat:[],a:{nome:"",idade:null,objetivo:"",objetivos:[],objTxt:"",objOutro:"",resultados:"",prioridade:"",prioGs:[],prazo:"",progresso:"",nivel:"",dias:3,diasSemana:[],tempo:60,dores:{},med:"",medInfo:null,cond:{},meds:"",obs:[]},equip:EQUIP.slice(),plan:null,status:"none",aprov:null,adj:[]}}
 const fkey=u=>KEY+"_"+u;
 let S=fresh();
 function accounts(){try{const a=JSON.parse(localStorage.getItem(AKEY));return a&&typeof a==="object"&&!Array.isArray(a)?a:{}}catch(e){return{}}}
 function fixF(F){const D=fresh();if(!F||typeof F!=="object"||Array.isArray(F))return D;const o=Object.assign({},D,F);o.a=Object.assign({},D.a,F.a&&typeof F.a==="object"?F.a:{});
- ["dores","cond"].forEach(k=>{if(!o.a[k]||typeof o.a[k]!=="object")o.a[k]={}});if(!Array.isArray(o.a.obs))o.a.obs=[];if(!Array.isArray(o.a.objetivos))o.a.objetivos=[];if(!Array.isArray(o.a.prioGs))o.a.prioGs=[];if(!Array.isArray(o.chat))o.chat=[];if(!Array.isArray(o.equip))o.equip=D.equip;if(!Array.isArray(o.adj))o.adj=[];
+ ["dores","cond"].forEach(k=>{if(!o.a[k]||typeof o.a[k]!=="object")o.a[k]={}});if(!Array.isArray(o.a.obs))o.a.obs=[];if(!Array.isArray(o.a.objetivos))o.a.objetivos=[];if(!Array.isArray(o.a.prioGs))o.a.prioGs=[];if(!Array.isArray(o.a.diasSemana))o.a.diasSemana=[];if(!Array.isArray(o.chat))o.chat=[];if(!Array.isArray(o.equip))o.equip=D.equip;if(!Array.isArray(o.adj))o.adj=[];
  const okPlan=o.plan&&Array.isArray(o.plan.treinos)&&o.plan.treinos.length&&o.plan.treinos.every(t=>t&&Array.isArray(t.blocos)&&t.blocos.every(b=>b&&Array.isArray(b.ex)));
  if(o.plan&&!okPlan){o.plan=null;o.aprov=null;o.adj=[];o.status=o.queue?"none":"none";o.queue=null;o.step=0;o.chat=[]}
  if(o.queue&&(!Array.isArray(o.queue)||o.queue.some(q=>!q||typeof q.id!=="string"))){o.queue=null;o.step=0;o.chat=[];o.status=o.plan?o.status:"none"}
@@ -50,9 +50,12 @@ function baseQueue(){
  {id:"prazo",q:"Em quanto tempo você espera perceber resultados?"},
  {id:"nivel",q:"Você já treina? Se sim, há quanto tempo?"},
  {id:"dias",q:"Quantos dias por semana você consegue treinar?"},
+ {id:"diasSem",q:"Quais dias da semana você pode treinar?"},
  {id:"tempo",q:"Quanto tempo você tem por treino?"},
  {id:"dor",q:"Sente alguma dor ou tem alguma lesão?"},
- {id:"med",q:"Você tem alguma orientação médica?"});
+ {id:"med",q:"Você tem alguma orientação médica?"},
+ {id:"peso",q:"Qual o seu peso?"},
+ {id:"altura",q:"Qual a sua altura?"});
  q.push({id:"fim",q:""});return q}
 function ask(){const it=S.queue[S.step];if(!it)return;if(it.id==="fim"){finishAnam();return}say(it.q)}
 function insertNext(items){S.queue.splice(S.step+1,0,...items)}
@@ -87,7 +90,7 @@ function prazoNote(t){const n=norm(t||"");let months=null;const m=n.match(/(\d+)
  return "Esse prazo está alinhado com um resultado consistente. A força aparece antes da mudança visível, e o progresso segue enquanto o treino continuar."}
 const WHERE_Q="Sem problema! Em qual pergunta você errou?";
 const WHERE_RETRY="Não entendi. Foi no nome, idade, objetivo, prioridade, prazo, progresso, tempo de treino, dias por semana, tempo por treino, dor ou lesão, ou orientação médica?";
-const STEP_NAMES={nome:"nome",idade:"idade",objetivo:"objetivo",resultados:"resultados",prioridade:"prioridade",prazo:"prazo",progresso:"como medir o progresso",nivel:"tempo de treino",dias:"dias por semana",tempo:"tempo por treino",dor:"dor ou lesão",med:"orientação médica"};
+const STEP_NAMES={nome:"nome",idade:"idade",objetivo:"objetivo",resultados:"resultados",prioridade:"prioridade",prazo:"prazo",progresso:"como medir o progresso",nivel:"tempo de treino",dias:"dias por semana",diasSem:"dias da semana",tempo:"tempo por treino",dor:"dor ou lesão",med:"orientação médica",peso:"peso",altura:"altura"};
 function placeOf(n){
  if(/\b(comeco|inicio|tudo|do zero|primeira pergunta)\b/.test(n))return"nome";
  if(/\bnome\b|me chamo|chamar/.test(n))return"nome";
@@ -98,6 +101,9 @@ function placeOf(n){
  if(/objetivo|meta|foco|\bquero\b(?!.*(refazer|corrigir))/.test(n))return"objetivo";
  if(/orientacao|medic|doenca|saude|remedio/.test(n))return"med";
  if(/\bdor(es)?\b|lesao|lesoes|machucad/.test(n))return"dor";
+ if(/\bpeso\b|\bquilos?\b/.test(n))return"peso";
+ if(/\baltura\b|\bmetros?\b/.test(n))return"altura";
+ if(/quais dias|dias da semana|dia da semana/.test(n))return"diasSem";
  if(/dias|vezes|frequencia|semana/.test(n))return"dias";
  if(/ja treino|ja treina|quanto tempo (eu )?(treino|treina)|tempo de treino|tempo que treino|experiencia|nivel|treina ha|treino ha|se ja treino/.test(n))return"nivel";
  if(/tempo (por|de cada|do|disponivel)|minutos|duracao|quanto tempo (tenho|eu tenho|por)|horas?/.test(n))return"tempo";
@@ -109,7 +115,7 @@ function primeiroNome(nome){return String(nome||"").trim().split(/\s+/)[0]||""}
 function greet(){const full=S.a.nome||(curUser&&accounts()[curUser]?accounts()[curUser].nome:"");const nm=primeiroNome(full);return nm?"Olá, "+nm+"! Eu sou o coach do Shape de Qualidade.":""}
 function rewind(id){const q=baseQueue();let idx=q.findIndex(x=>x.id===id);if(idx<0&&id==="nome"){q.unshift({id:"nome",q:"Qual é o seu nome?"});idx=0}if(idx<0)return;
  const A=S.a,F=fresh().a,wasApr=S.status==="aprovado",hadPlan=!!S.plan;
- q.slice(idx).forEach(x=>{if(x.id==="nome")A.nome="";else if(x.id==="idade")A.idade=null;else if(x.id==="objetivo"){A.objetivo="";A.objetivos=[];A.objTxt="";A.objOutro="";S.objTry=0}else if(x.id==="resultados")A.resultados="";else if(x.id==="prioridade"){A.prioridade="";A.prioGs=[]}else if(x.id==="prazo")A.prazo="";else if(x.id==="progresso")A.progresso="";else if(x.id==="nivel"){A.nivel="";delete A.retorno}else if(x.id==="dias")A.dias=F.dias;else if(x.id==="tempo")A.tempo=F.tempo;else if(x.id==="dor"){A.dores={};A.obs=[]}else if(x.id==="med"){A.med="";A.medInfo=null;A.cond={};A.meds=""}});
+ q.slice(idx).forEach(x=>{if(x.id==="nome")A.nome="";else if(x.id==="idade")A.idade=null;else if(x.id==="objetivo"){A.objetivo="";A.objetivos=[];A.objTxt="";A.objOutro="";S.objTry=0}else if(x.id==="resultados")A.resultados="";else if(x.id==="prioridade"){A.prioridade="";A.prioGs=[]}else if(x.id==="prazo")A.prazo="";else if(x.id==="progresso")A.progresso="";else if(x.id==="nivel"){A.nivel="";delete A.retorno}else if(x.id==="dias"){A.dias=F.dias;A.diasSemana=[]}else if(x.id==="diasSem")A.diasSemana=[];else if(x.id==="tempo")A.tempo=F.tempo;else if(x.id==="dor"){A.dores={};A.obs=[]}else if(x.id==="med"){A.med="";A.medInfo=null;A.cond={};A.meds=""}else if(x.id==="peso")delete A.peso;else if(x.id==="altura")delete A.altura});
  S.askWhere=false;S.queue=q;S.step=idx;
  if(hadPlan&&S.status!=="none"){S.mudancas=(S.mudancas||[]).concat(["aluno refez a anamnese a partir de: "+STEP_NAMES[id]+(wasApr?" — treino aprovado voltou para pendente":"")+" ("+new Date().toLocaleString("pt-BR")+")"]);S.aprov=null;S.adj=[];S.plan=null;}
  S.status="none";target="anam";hdr();save();render();
@@ -136,6 +142,12 @@ function correction(t){const n=norm(t);
  hdr();save();
  if(S.status==="none"&&S.queue){const cur=S.queue[S.step];if(cur&&cur.id===field){S.step++;save();say(msg);setTimeout(ask,10);return true}say(msg+(cur&&cur.q?" "+cur.q:""));return true}
  render();say(msg);return true}
+function avancar(){S.step++;save();ask()}
+function syncDiasChecks(){const ids=(S.a&&S.a.diasSemana)||[];document.querySelectorAll("#anDias input").forEach(el=>{el.checked=ids.includes(el.value)})}
+function campoMedida(cm,kg){const alt=$("#anAltura"),pes=$("#anPeso");if(alt&&cm!=null){const m=cm/100;alt.value=(cm>=100&&Math.abs(cm-Math.round(cm))<1e-6)?m.toFixed(2).replace(".",","):String(cm).replace(".",",")}if(pes&&kg!=null)pes.value=String(Math.round(kg*10)/10).replace(".",",")}
+function gravarMedida(campo,valor,ok){const body={};body[campo]=valor;fetch("/api/student/medidas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"erro");return j}).then(j=>{if(window.__ME){if(j.altura_cm!=null)window.__ME.altura_cm=j.altura_cm;if(j.peso_kg!=null)window.__ME.peso_kg=j.peso_kg}if(j.altura_cm&&j.peso_kg)window.__medidasOk=true;campoMedida(campo==="altura"?j.altura_cm:null,campo==="peso"?j.peso_kg:null);if(ok)ok()}).catch(()=>{say(campo==="peso"?"Não entendi o peso. Pode repetir em quilos?":"Não entendi a altura. Pode dizer 1,75 ou 175?")})}
+function aplicarDias(ids,done){S.a.diasSemana=ids.slice();syncDiasChecks();fetch("/api/student/dias",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({dias:ids})}).then(async r=>{if(!r.ok)throw new Error();if(window.__ME)window.__ME.dias_semana=ids;if(done)done()}).catch(()=>{say("Não entendi os dias. Pode dizer, por exemplo, segunda, quarta e sexta?")})}
+function pedirDiasDeNovo(){S.queue[S.step]={id:"diasSem",q:"Quais dias da semana você pode treinar?"};save();say("O treino fica entre 2 e 6 dias. Quais dias você escolhe?")}
 function handle(ans){
  if(!S.queue||S.status!=="none")return;
  const it=S.queue[S.step];if(!it)return;
@@ -159,6 +171,10 @@ function handle(ans){
    if(/sim|treino|intermedi/.test(n)&&it.id==="nivel"){insertNext([{id:"nivel2",q:"Há quanto tempo?"}]);A.nivel="intermediario";break}
    A.nivel=A.nivel||"iniciante";break}
   case it.id==="dias":{let d=num(ans);if(d===null){say("Quantos dias? Diga um número de 2 a 6.");return}A.dias=Math.min(6,Math.max(2,d));break}
+  case it.id==="diasSem":{const ids=(window.Voz&&window.Voz.dias(ans))||[];if(!ids.length){say("Não entendi os dias. Pode dizer, por exemplo, segunda, quarta e sexta?");return}if(ids.length!==A.dias){if(ids.length<2||ids.length>6){say("O treino fica entre 2 e 6 dias. Quais dias você escolhe?");return}S.diasPend=ids;insertNext([{id:"diasConf",q:window.Voz.msgDias(A.dias,ids.length)}]);break}aplicarDias(ids,avancar);return}
+  case it.id==="diasConf":{const escolha=window.Voz.escolherDias(A.dias,S.diasPend||[],ans);if(escolha.acao==="incerto"){say(it.q);return}if(escolha.acao==="numero"){S.queue[S.step]={id:"diasSem",q:"Quais dias da semana você pode treinar?"};save();ask();return}const ids=escolha.dias||[];if(ids.length<2||ids.length>6){pedirDiasDeNovo();return}A.dias=ids.length;aplicarDias(ids,avancar);return}
+  case it.id==="peso":{const kg=window.Voz&&window.Voz.peso(ans);if(kg==null){say("Não entendi o peso. Pode repetir em quilos?");return}A.peso=kg;gravarMedida("peso",ans,avancar);return}
+  case it.id==="altura":{const cm=window.Voz&&window.Voz.altura(ans);if(cm==null){say("Não entendi a altura. Pode dizer 1,75 ou 175?");return}A.altura=cm;gravarMedida("altura",ans,avancar);return}
   case it.id==="tempo":{let t=num(ans);if(/meia hora/.test(n)&&!/e meia/.test(n))t=30;else if(/hora/.test(n))t=(t||1)*60+(/e meia/.test(n)?30:0);A.tempo=t||60;break}
   case it.id==="dor":{const parts=bodyIn(ans);if(parts.length){const f=[];parts.forEach(p=>{A.dores[p]={};f.push({id:"int:"+p,q:"Entendi, dor no "+p+". De 0 a 10, quanto dói?"},{id:"qdo:"+p,q:"Em que momento o "+p+" dói?"},{id:"dx:"+p,q:"Já tem diagnóstico médico pro "+p+"?"})});insertNext(f)}else if(yes(ans)){insertNext([{id:"dor",q:"Em qual parte do corpo?"}])}break}
   case it.id.startsWith("int:"):{const p=it.id.slice(4);A.dores[p].int=num(ans)??5;if(A.dores[p].int>=7)A.obs.push("Dor intensa ("+A.dores[p].int+"/10) no "+p);break}
@@ -708,7 +724,11 @@ function fmtPeso(kg){const k=Math.round(kg*10)/10;return (Math.abs(k-Math.round(
 function medidasDe(){const me=window.__ME||{};const src=viewing?(me.students||[]).find(s=>s.u===viewing):null;if(!src)return{cm:null,kg:null};return{cm:numMed(src.altura_cm),kg:numMed(src.peso_kg)}}
 function corpoTexto(){const m=medidasDe();const alt=m.cm==null?"não informado":fmtAltura(m.cm);const peso=m.kg==null?"não informado":fmtPeso(m.kg);let imc="";if(m.cm!=null&&m.kg!=null){const v=Math.round(m.kg/((m.cm/100)*(m.cm/100))*10)/10;imc=' <span style="font-size:.85em">IMC '+brDec(v,1)+"</span>"}return "Altura "+alt+" · Peso "+peso+imc}
 function corpoHTML(){if(!viewing)return "";return `<p id="corpoAluno" style="color:var(--mut);font-size:.9rem;margin:.2em 0 .6em">${corpoTexto()}</p>`}
-function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.status,r=risk();
+function diasDisponiveisTexto(){const nomes={segunda:"Segunda",terca:"Terça",quarta:"Quarta",quinta:"Quinta",sexta:"Sexta",sabado:"Sábado",domingo:"Domingo"};let ids=(S.a&&S.a.diasSemana)||[];if(!ids.length&&viewing&&window.__ME){const st=(window.__ME.students||[]).find(s=>s.u===viewing);if(st&&Array.isArray(st.dias_semana))ids=st.dias_semana}if(!ids.length)return "";return "Dias disponíveis: "+ids.map(id=>nomes[id]||id).join(", ")}
+function diasHTML(){if(!viewing)return "";const t=diasDisponiveisTexto();if(!t)return "";return `<p id="diasAluno" style="color:var(--mut);font-size:.9rem;margin:.2em 0 .6em">${esc(t)}</p>`}
+function zapAlunoHTML(){if(!viewing)return "";const st=window.__ME&&(window.__ME.students||[]).find(s=>s.u===viewing);const nome=(accounts()[viewing]||{}).nome||(st&&st.nome)||"";const num=st&&st.whatsapp?String(st.whatsapp).replace(/\D/g,""):"";if(!/^55\d{10,11}$/.test(num))return `<span class="waAlunoLinha"><button type="button" class="btn sm waAluno" id="waAluno" disabled>💬 WhatsApp</button> <span class="waAlunoOff">WhatsApp não informado</span></span>`;const href="https://wa.me/"+num+"?text="+encodeURIComponent("Oi "+nome+", aqui é o seu personal do Shape de Qualidade.");return `<a class="btn sm waAluno" id="waAluno" href="${esc(href)}" target="_blank" rel="noopener">💬 WhatsApp</a>`}
+function bindApagar(){const open=$("#apagarAluno"),box=$("#apagarBox"),go=$("#apagarGo"),txt=$("#apagarTxt"),dica=$("#apagarDica");if(!open||!box||!go)return;open.onclick=()=>{box.classList.remove("hide");if(txt)txt.focus()};go.onclick=()=>{const typed=(txt&&txt.value||"").trim().toUpperCase()==="APAGAR";if(!typed&&go.dataset.arm!=="1"){go.dataset.arm="1";if(dica)dica.classList.remove("hide");return}go.disabled=true;fetch("/api/personal/students/"+encodeURIComponent(viewing),{method:"DELETE"}).then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Não foi possível apagar.");location.href="/?area=personal&apagado=1"}).catch(e=>{go.disabled=false;if(dica){dica.textContent=e.message;dica.classList.remove("hide")}})}}
+function render(){DETMAP={};DETN=0;closeDet();syncDiasChecks();renderChat();hdr();const st=S.status,r=risk();
  $("#anamCard").classList.toggle("hide",st!=="none");
  $("#equipCard").classList.toggle("hide",st!=="equip");
  $("#equipList").innerHTML=EQUIP.map(e=>`<label><input type="checkbox" value="${e}" ${S.equip.includes(e)?"checked":""}>${e}</label>`).join("");
@@ -722,9 +742,10 @@ function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.stat
  {const A=todayAdj();$("#adjOut").innerHTML=A?`<div class="alert ok"><b>“${esc(A.t)}”</b> <small>(${esc(A.quando)})</small><br>${A.exp.map(esc).join("<br>")}</div>`:""}const un=$("#adjUndo");if(un)un.onclick=()=>{const dk=dayKey(NOW());S.adj=(S.adj||[]).filter(a=>a.dk!==dk);S.adjLog=(S.adjLog||[]).concat([NOW().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})+" voltou ao treino original"]);save();render();say("Pronto, voltei para o treino original de hoje.")};
  // Personal
  const pc=$("#persCard");
- if(!S.plan){pc.innerHTML='<h2>Painel do Personal</h2><div class="alert warn">ℹ️ O CREF é opcional. Quando informado, é verificado só pelo formato; confira o registro na consulta pública do sistema CONFEF/CREF.</div><p style="color:var(--mut)">Nenhum treino aguardando aprovação. O aluno precisa concluir a anamnese primeiro.</p>'+corpoHTML()}
+ if(!S.plan){pc.innerHTML='<h2>Painel do Personal</h2><div class="alert warn">ℹ️ O CREF é opcional. Quando informado, é verificado só pelo formato; confira o registro na consulta pública do sistema CONFEF/CREF.</div><p style="color:var(--mut)">Nenhum treino aguardando aprovação. O aluno precisa concluir a anamnese primeiro.</p>'+corpoHTML()+diasHTML()}
  else pc.innerHTML=`<h2>Painel do Personal ${badge()}</h2>${S.mudancas&&S.mudancas.length?`<div class="alert warn">✏️ O aluno corrigiu respostas e o treino foi recalculado: ${S.mudancas.slice(-5).map(esc).join(" · ")}</div>`:""}<div class="alert warn">ℹ️ O CREF é opcional. Quando informado, é verificado só pelo formato; confira o registro na consulta pública do sistema CONFEF/CREF.</div>${S.adjLog&&S.adjLog.length?`<div class="alert warn">🩹 <b>Ajustes do aluno:</b> ${S.adjLog.slice(-8).map(esc).join(" · ")}</div>`:""}<p><b>Aluno:</b> ${esc(S.a.nome)} · ${esc(S.a.idade)} anos · ${esc(objShow())}${S.a.objetivo?` <small style="color:var(--mut)">(${esc(goalLabels().join(", ")||S.a.objetivo)})</small>`:""} · ${esc(S.a.nivel)} · ${S.a.dias}x/semana</p>
  ${corpoHTML()}
+ ${diasHTML()}
  ${objSectionHTML()}
  ${progEditorHTML()}
  ${r.length?`<div class="alert bad">⚠️ ${r.length} ponto(s) de risco. Confirme a <b>liberação médica</b> antes de aprovar.<ul>${r.map(x=>"<li>"+esc(x)+"</li>").join("")}</ul><label style="display:flex;gap:6px"><input type="checkbox" id="libmed" style="width:auto"> Recebi e conferi a liberação médica</label></div>`:'<div class="alert ok">Sem pontos de risco na anamnese.</div>'}${S.a.med?`<p><b>Orientação médica:</b> “${esc(S.a.med)}”</p>`:""}${attn().length?`<div class="alert warn">Atenção: ${attn().map(esc).join(" · ")}</div>`:""}
@@ -735,7 +756,7 @@ function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.stat
  // Relatório
  const A=S.a,rp=$("#repCard");
  rp.innerHTML=!A.nome?'<h2>Relatório de Anamnese</h2><p style="color:var(--mut)">Conclua a anamnese para gerar o relatório.</p>':`<h2>Relatório de Anamnese – Shape de Qualidade</h2><p style="color:var(--mut)">Gerado em ${new Date().toLocaleString("pt-BR")}</p>
- <h3>Resumo</h3><table><tr><th>Nome</th><td>${esc(A.nome)}</td></tr><tr><th>Idade</th><td>${esc(A.idade)}</td></tr><tr><th>Altura e peso</th><td>${corpoTexto()}</td></tr><tr><th>Objetivo</th><td>${esc(objShow(A))}</td></tr><tr><th>Nível</th><td>${esc(A.nivel)}${A.retorno?" (retorno após pausa)":""}</td></tr><tr><th>Dias/semana</th><td>${A.dias}</td></tr><tr><th>Tempo por treino</th><td>${A.tempo} min</td></tr><tr><th>Medicamentos</th><td>${esc(A.meds||"Não informado")}</td></tr><tr><th>Status do treino</th><td>${badge()||"Não gerado"}</td></tr></table>
+ <h3>Resumo</h3><table><tr><th>Nome</th><td>${esc(A.nome)}</td></tr><tr><th>Idade</th><td>${esc(A.idade)}</td></tr><tr><th>Altura e peso</th><td>${corpoTexto()}</td></tr><tr><th>Objetivo</th><td>${esc(objShow(A))}</td></tr><tr><th>Nível</th><td>${esc(A.nivel)}${A.retorno?" (retorno após pausa)":""}</td></tr><tr><th>Dias/semana</th><td>${A.dias}</td></tr>${diasDisponiveisTexto()?`<tr><th>Dias disponíveis</th><td>${esc(diasDisponiveisTexto().replace(/^Dias disponíveis: /,""))}</td></tr>`:""}<tr><th>Tempo por treino</th><td>${A.tempo} min</td></tr><tr><th>Medicamentos</th><td>${esc(A.meds||"Não informado")}</td></tr><tr><th>Status do treino</th><td>${badge()||"Não gerado"}</td></tr></table>
  ${objSectionHTML(A)}
  <h3>Dores e lesões</h3>${Object.keys(A.dores).length?`<table><tr><th>Local</th><th>Intensidade</th><th>Quando</th><th>Diagnóstico</th></tr>${Object.entries(A.dores).map(([k,v])=>`<tr class="${v.int>=7?"risk":""}"><td>${k}</td><td>${v.int??"-"}/10</td><td>${esc(v.quando||"-")}</td><td>${esc(v.dx||"-")}</td></tr>`).join("")}</table>`:"<p>Nenhuma relatada.</p>"}
  <h3>Orientação médica</h3><p class="quote">“${esc(A.med||"Não informada")}”</p>${A.medInfo&&A.medInfo.conds.length?`<p><b>Condições detectadas:</b> ${A.medInfo.conds.map(esc).join(", ")}</p>`:""}${A.medInfo&&A.medInfo.tags.length?`<p><b>Restrições aplicadas no treino:</b> ${A.medInfo.tags.map(esc).join(", ")}</p>`:""}${attn().length?`<div class="alert warn">Pontos de atenção: ${attn().map(esc).join(" · ")}</div>`:""}
@@ -744,10 +765,10 @@ function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.stat
  <h3>Transcrição</h3><div style="font-size:.85rem">${S.chat.map(([w,t])=>`<p><b>${w==="c"?"Coach":"Aluno"}:</b> ${esc(t)}</p>`).join("")}</div>
  <p class="disc">Este relatório não substitui avaliação médica.</p><button class="btn noprint" onclick="document.body.classList.add('printrep');window.print();setTimeout(()=>document.body.classList.remove('printrep'),500)">🖨️ Imprimir / salvar PDF</button>`;
  if(unlocked&&!viewing){pc.innerHTML='<h2>Painel do Personal</h2><p style="color:var(--mut)">👈 Selecione um aluno na lista (ou use a 🔍 busca) para abrir a ficha, editar o treino e aprovar.</p>';rp.innerHTML=""}
- if(unlocked&&viewing){const acc=accounts()[viewing]||{};const quem=acc.email||acc.nome||viewing;pc.insertAdjacentHTML("afterbegin",`<div class="alert ok noprint">📂 Ficha de <b>${esc(acc.nome||viewing)}</b> (${esc(quem)}) <button class="btn sm sec" id="closeStu">Fechar ficha</button></div>`)}
+ if(unlocked&&viewing){const acc=accounts()[viewing]||{};const quem=acc.email||acc.nome||viewing;const nome=acc.nome||viewing;pc.insertAdjacentHTML("afterbegin",`<div class="alert ok noprint" id="fichaTopo">📂 Ficha de <b>${esc(nome)}</b> (${esc(quem)}) <button class="btn sm sec" id="closeStu">Fechar ficha</button> ${zapAlunoHTML()}<div id="apagarWrap"><button type="button" class="btn sm" id="apagarAluno">🗑️ Apagar aluno</button><div id="apagarBox" class="hide"><p>Apagar a ficha de ${esc(nome)}? Isso não pode ser desfeito.</p><input id="apagarTxt" placeholder="Digite APAGAR" autocomplete="off"><button type="button" class="btn sm bad" id="apagarGo">Apagar</button><p id="apagarDica" class="hide">Toque de novo para apagar.</p></div></div></div>`)}
  if(!unlocked){pc.innerHTML=lockHTML();rp.innerHTML="";rp.classList.add("hide");bindLock()}
  else{rp.classList.remove("hide");pc.insertAdjacentHTML("afterbegin",lockBtn());document.querySelectorAll("#lockNow").forEach(b=>b.onclick=()=>{unlocked=false;sessionStorage.removeItem(PSESS);if(viewing)closeStu();else render()})}
- renderPanel();bindRev();const cs=$("#closeStu");if(cs)cs.onclick=closeStu;if(unlocked&&!viewing)rp.classList.add("hide");
+ renderPanel();bindRev();bindApagar();const cs=$("#closeStu");if(cs)cs.onclick=closeStu;if(unlocked&&!viewing)rp.classList.add("hide");
  if(unlocked&&viewing&&S.plan){const slot=$("#splitSlot");if(slot)slot.outerHTML=splitHTML()+swapHTML();bindSplit()}
  if(unlocked&&viewing)ensureCustom();
  const planEdit=ev=>{const t=ev.target.closest?ev.target.closest("[data-act]"):ev.target;if(!t||!t.dataset||!t.dataset.act)return;if(!unlocked||!viewing)return;if(t.dataset.act==="add"&&!t.value)return;editPlan(t.dataset.act,+t.dataset.d,+t.dataset.b,+t.dataset.e,t.value)};
