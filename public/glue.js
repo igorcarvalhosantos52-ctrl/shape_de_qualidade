@@ -52,24 +52,6 @@ $("#lgGo").onclick = async () => {
     location.href = "/";
   } catch (e) { err(e.message); }
 };
-window.salvarMedidas = async function () {
-  const box = $("#anMedMsg"), show = (t, bom) => { if (box) box.innerHTML = `<div class="alert ${bom ? "ok" : "bad"}">${esc(t)}</div>`; };
-  try {
-    const r = await api("/api/student/medidas", { altura: $("#anAltura").value.trim(), peso: $("#anPeso").value.trim() });
-    const checks = [...document.querySelectorAll("#anDias input:checked")].map(x => x.value);
-    if (checks.length) {
-      const d = await api("/api/student/dias", { dias: checks });
-      if (typeof S !== "undefined" && S.a) { S.a.diasSemana = d.dias; if (typeof save === "function") save(); }
-    }
-    window.__medidasOk = !!(r.altura_cm && r.peso_kg);
-    if (window.__ME) { window.__ME.altura_cm = r.altura_cm; window.__ME.peso_kg = r.peso_kg; }
-    show("Altura e peso salvos.", true);
-    if (typeof S !== "undefined" && S.queue && S.queue[S.step] && S.queue[S.step].id === "fim" && S.status === "none") finishAnam();
-    return true;
-  } catch (e) { show(e.message, false); return false; }
-};
-const anMed = $("#anMedGo"); if (anMed) anMed.onclick = () => window.salvarMedidas();
-if (ME.role === "student" && ME.altura_cm && ME.peso_kg) { window.__medidasOk = true; const box = $("#anMedMsg"); if (box) box.innerHTML = `<div class="alert ok">Altura e peso salvos.</div>`; }
 $("#logout").onclick = logoutAll;
 // link para o personal na tela de login
 $("#t-login .lockbox").insertAdjacentHTML("beforeend", `<p style="font-size:.85rem;color:var(--mut)">É personal trainer? <a href="#" id="goPers">Entre ou assine aqui</a></p>`);

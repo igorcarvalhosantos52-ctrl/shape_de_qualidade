@@ -143,15 +143,13 @@ function correction(t){const n=norm(t);
  if(S.status==="none"&&S.queue){const cur=S.queue[S.step];if(cur&&cur.id===field){S.step++;save();say(msg);setTimeout(ask,10);return true}say(msg+(cur&&cur.q?" "+cur.q:""));return true}
  render();say(msg);return true}
 function avancar(){S.step++;save();ask()}
-function syncDiasChecks(){const ids=(S.a&&S.a.diasSemana)||[];document.querySelectorAll("#anDias input").forEach(el=>{el.checked=ids.includes(el.value)})}
-function campoMedida(cm,kg){const alt=$("#anAltura"),pes=$("#anPeso");if(alt&&cm!=null){const m=cm/100;alt.value=(cm>=100&&Math.abs(cm-Math.round(cm))<1e-6)?m.toFixed(2).replace(".",","):String(cm).replace(".",",")}if(pes&&kg!=null)pes.value=String(Math.round(kg*10)/10).replace(".",",")}
-function gravarMedida(campo,valor,ok){const body={};body[campo]=valor;fetch("/api/student/medidas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"erro");return j}).then(j=>{if(window.__ME){if(j.altura_cm!=null)window.__ME.altura_cm=j.altura_cm;if(j.peso_kg!=null)window.__ME.peso_kg=j.peso_kg}if(j.altura_cm&&j.peso_kg)window.__medidasOk=true;campoMedida(campo==="altura"?j.altura_cm:null,campo==="peso"?j.peso_kg:null);if(ok)ok()}).catch(()=>{say(campo==="peso"?"Não entendi o peso. Pode repetir em quilos?":"Não entendi a altura. Pode dizer 1,75 ou 175?")})}
-function aplicarDias(ids,done){S.a.diasSemana=ids.slice();syncDiasChecks();fetch("/api/student/dias",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({dias:ids})}).then(async r=>{if(!r.ok)throw new Error();if(window.__ME)window.__ME.dias_semana=ids;if(done)done()}).catch(()=>{say("Não entendi os dias. Pode dizer, por exemplo, segunda, quarta e sexta?")})}
+function gravarMedida(campo,valor,ok){const body={};body[campo]=valor;fetch("/api/student/medidas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"erro");return j}).then(j=>{if(window.__ME){if(j.altura_cm!=null)window.__ME.altura_cm=j.altura_cm;if(j.peso_kg!=null)window.__ME.peso_kg=j.peso_kg}if(ok)ok()}).catch(()=>{say(campo==="peso"?"Não entendi o peso. Pode repetir em quilos?":"Não entendi a altura. Pode dizer 1,75 ou 175?")})}
+function aplicarDias(ids,done){S.a.diasSemana=ids.slice();fetch("/api/student/dias",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({dias:ids})}).then(async r=>{if(!r.ok)throw new Error();if(window.__ME)window.__ME.dias_semana=ids;if(done)done()}).catch(()=>{say("Não entendi os dias. Pode dizer, por exemplo, segunda, quarta e sexta?")})}
 function pedirDiasDeNovo(){S.queue[S.step]={id:"diasSem",q:"Quais dias da semana você pode treinar?"};save();say("O treino fica entre 2 e 6 dias. Quais dias você escolhe?")}
 function handle(ans){
  if(!S.queue||S.status!=="none")return;
  const it=S.queue[S.step];if(!it)return;
- if(it.id==="fim"){if(!medidasProntas()){say("Para concluir a ficha, informe sua altura e seu peso e toque em Salvar.");const box=$("#medidasBox");if(box&&box.scrollIntoView)box.scrollIntoView({block:"nearest"});}else finishAnam();return}
+ if(it.id==="fim"){finishAnam();return}
  addMsg("a",ans);if(correction(ans))return;const n=norm(ans),A=S.a;
  switch(true){
   case it.id==="nome":{const nm=parseName(ans);if(!nm){say("Não peguei seu nome. Pode repetir?");return}A.nome=nm;hdr();break}
@@ -231,14 +229,22 @@ function medFollow(t){return medNo(t)||!medBareYes(t)?"":"Qual?"}
 function risk(){const A=S.a;return((A.medInfo&&A.medInfo.graves)||[]).map(x=>"Orientação médica: "+x).concat(A.obs)}
 function attn(){const m=S.a.medInfo;return m?m.atencao.concat(m.conds.filter(c=>!m.graves.some(g=>g.startsWith(c))&&!m.atencao.some(a=>a.startsWith(c)))):[]}
 function medNoteHTML(){const m=S.a.medInfo;if(!m||m.nenhuma)return"";return `<div class="alert warn">🩺 Treino ajustado conforme a orientação médica informada: “${esc(S.a.med)}”.${m.low?" Intensidade reduzida (menos séries, mais repetições leves e descanso maior).":""}${m.tags.length?" Restrições aplicadas: "+esc(m.tags.join(", "))+".":""}</div>`}
-function medidasProntas(){return !!(window.__medidasOk||(window.__ME&&window.__ME.altura_cm&&window.__ME.peso_kg))}
-function finishAnam(){const r=risk();
- if(!medidasProntas()){
-  const alt=$("#anAltura"),pes=$("#anPeso");
-  if(alt&&pes&&alt.value.trim()&&pes.value.trim()&&typeof window.salvarMedidas==="function"&&!window.__medidasSalvando){window.__medidasSalvando=true;window.salvarMedidas().finally(()=>{window.__medidasSalvando=false});return}
-  say("Para concluir a ficha, informe sua altura e seu peso e toque em Salvar.");
-  const box=$("#medidasBox");if(box&&box.scrollIntoView)box.scrollIntoView({block:"nearest"});
-  return}
+function diasInformados(){const A=S.a||{};return Array.isArray(A.diasSemana)&&A.diasSemana.length>=2&&A.diasSemana.length<=6}
+function pesoInformado(){const A=S.a||{};return A.peso!=null||!!(window.__ME&&window.__ME.peso_kg)}
+function alturaInformada(){const A=S.a||{};return A.altura!=null||!!(window.__ME&&window.__ME.altura_cm)}
+function corpoOk(){return diasInformados()&&pesoInformado()&&alturaInformada()}
+function finishAnam(){
+ if(!corpoOk()){
+  if(!Array.isArray(S.queue))S.queue=[];
+  const faltam=[];
+  if(!diasInformados()){faltam.push({id:"dias",q:"Quantos dias por semana você consegue treinar?"},{id:"diasSem",q:"Quais dias da semana você pode treinar?"})}
+  if(!pesoInformado())faltam.push({id:"peso",q:"Qual o seu peso?"});
+  if(!alturaInformada())faltam.push({id:"altura",q:"Qual a sua altura?"});
+  const fim=S.queue.findIndex(x=>x&&x.id==="fim");
+  const at=fim<0?S.queue.length:fim;
+  S.queue.splice(at,0,...faltam);
+  S.step=at;save();ask();return}
+ const r=risk();
  say("Obrigado, "+(primeiroNome(S.a.nome)||"")+"! Anamnese concluída."+(r.length?" Atenção: identifiquei pontos de risco. Você vai precisar de liberação médica antes de treinar.":" Agora marque os equipamentos da sua academia."));
  S.status="equip";save();render()}
 
@@ -728,7 +734,7 @@ function diasDisponiveisTexto(){const nomes={segunda:"Segunda",terca:"Terça",qu
 function diasHTML(){if(!viewing)return "";const t=diasDisponiveisTexto();if(!t)return "";return `<p id="diasAluno" style="color:var(--mut);font-size:.9rem;margin:.2em 0 .6em">${esc(t)}</p>`}
 function zapAlunoHTML(){if(!viewing)return "";const st=window.__ME&&(window.__ME.students||[]).find(s=>s.u===viewing);const nome=(accounts()[viewing]||{}).nome||(st&&st.nome)||"";const num=st&&st.whatsapp?String(st.whatsapp).replace(/\D/g,""):"";if(!/^55\d{10,11}$/.test(num))return `<span class="waAlunoLinha"><button type="button" class="btn sm waAluno" id="waAluno" disabled>💬 WhatsApp</button> <span class="waAlunoOff">WhatsApp não informado</span></span>`;const href="https://wa.me/"+num+"?text="+encodeURIComponent("Oi "+nome+", aqui é o seu personal do Shape de Qualidade.");return `<a class="btn sm waAluno" id="waAluno" href="${esc(href)}" target="_blank" rel="noopener">💬 WhatsApp</a>`}
 function bindApagar(){const open=$("#apagarAluno"),box=$("#apagarBox"),go=$("#apagarGo"),txt=$("#apagarTxt"),dica=$("#apagarDica");if(!open||!box||!go)return;open.onclick=()=>{box.classList.remove("hide");if(txt)txt.focus()};go.onclick=()=>{const typed=(txt&&txt.value||"").trim().toUpperCase()==="APAGAR";if(!typed&&go.dataset.arm!=="1"){go.dataset.arm="1";if(dica)dica.classList.remove("hide");return}go.disabled=true;fetch("/api/personal/students/"+encodeURIComponent(viewing),{method:"DELETE"}).then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Não foi possível apagar.");location.href="/?area=personal&apagado=1"}).catch(e=>{go.disabled=false;if(dica){dica.textContent=e.message;dica.classList.remove("hide")}})}}
-function render(){DETMAP={};DETN=0;closeDet();syncDiasChecks();renderChat();hdr();const st=S.status,r=risk();
+function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.status,r=risk();
  $("#anamCard").classList.toggle("hide",st!=="none");
  $("#equipCard").classList.toggle("hide",st!=="equip");
  $("#equipList").innerHTML=EQUIP.map(e=>`<label><input type="checkbox" value="${e}" ${S.equip.includes(e)?"checked":""}>${e}</label>`).join("");

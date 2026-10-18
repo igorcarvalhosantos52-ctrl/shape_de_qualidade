@@ -46,8 +46,6 @@ input,select,textarea{width:100%;padding:11px;border:1px solid #d9d4ea;border-ra
 table{width:100%;border-collapse:collapse;font-size:.9rem}td,th{border-bottom:1px solid #eee;padding:6px;text-align:left}
 .risk{color:var(--bad);font-weight:700}
 .cfg{margin-top:10px;font-size:.9rem;color:var(--tx)}.cfg summary{cursor:pointer;color:var(--p);font-weight:600}.lockbox{max-width:360px;margin:auto;text-align:center}.lockbox input{margin:6px 0}
-#medidasBox{margin:0 0 12px}#medidasBox p{margin:0 0 8px;color:var(--mut);font-size:.9rem}#medidasBox input{margin:0 0 8px}
-#anDias{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}#anDias p{flex:1 1 100%}#anDias label{display:flex;gap:4px;align-items:center;font-size:.85rem;border:1px solid var(--line);border-radius:999px;padding:6px 8px}#anDias input{width:auto;min-width:1rem;min-height:1rem}
 #lgZapHint{font-size:.8rem;color:var(--mut);margin:-2px 0 8px}
 .waAluno{background:#128C7E!important;color:#fff!important;text-decoration:none;display:inline-block}
 .waAluno:disabled{opacity:.55;background:#94a3b8!important}
@@ -198,23 +196,6 @@ header h1 .logo{font-family:'Anton','Bebas Neue',Impact,'Arial Black','Helvetica
 <section id="t-aluno" class="hide"><div class="whoami"><span id="whoName"></span><button class="btn sm sec" id="logout">Sair</button></div>
   <div class="card" id="anamCard">
     <h2>Anamnese por voz</h2>
-    <div id="medidasBox">
-      <p>Sua altura e seu peso entram na ficha. Os dois são obrigatórios.</p>
-      <input id="anAltura" placeholder="Altura (cm ou metros, ex.: 175 ou 1,75)" inputmode="decimal" autocomplete="off">
-      <input id="anPeso" placeholder="Peso (kg, ex.: 70,5)" inputmode="decimal" autocomplete="off">
-      <div id="anDias">
-        <p>Quais dias da semana você pode treinar?</p>
-        <label><input type="checkbox" value="segunda"> Segunda</label>
-        <label><input type="checkbox" value="terca"> Terça</label>
-        <label><input type="checkbox" value="quarta"> Quarta</label>
-        <label><input type="checkbox" value="quinta"> Quinta</label>
-        <label><input type="checkbox" value="sexta"> Sexta</label>
-        <label><input type="checkbox" value="sabado"> Sábado</label>
-        <label><input type="checkbox" value="domingo"> Domingo</label>
-      </div>
-      <button type="button" class="btn sm" id="anMedGo">Salvar altura e peso</button>
-      <div id="anMedMsg"></div>
-    </div>
     <div id="ttsBar"><button type="button" id="ttsToggle" class="btn sec sm" aria-pressed="true">🔊 ligado</button><small id="volHint">Se não ouvir, aumente o volume de mídia do celular.</small></div>
     <div class="chat" id="chat"></div>
     <div class="micwrap">

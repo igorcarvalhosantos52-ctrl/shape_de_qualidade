@@ -7,6 +7,15 @@ delete process.env.TURSO_AUTH_TOKEN;
 const sql = require('../src/db'), pay = require('../src/payments');
 const PORT = 3456, URL = `http://localhost:${PORT}`, SHOTS = path.join(__dirname, '..', 'screens');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function dizer(page, textos) {
+  for (const t of textos) {
+    const n = await page.$$eval('#chat .msg', x => x.length);
+    await page.type('#txt', t);
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(n => document.querySelectorAll('#chat .msg').length > n + 1 || !document.querySelector('#anamCard') || document.querySelector('#anamCard').classList.contains('hide'), { timeout: 15000 }, n);
+    await sleep(300);
+  }
+}
 const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔ ' + m); };
 (async () => {
   fs.mkdirSync(SHOTS, { recursive: true });
@@ -99,9 +108,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v25/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v26/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v25');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v26');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -283,11 +292,12 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok((await a.evaluate(async (u) => (await fetch('/api/personal/students/' + u, { method: 'DELETE' })).status, pamU)) === 401, 'aluno não apaga a própria ficha');
     ok((await a.evaluate(async () => (await fetch('/api/cards')).status)) === 403 && (await a.evaluate(async () => (await fetch('/api/cards/1/img')).status)) === 403, 'aluno não lista nem baixa os cards');
     ok((await a.evaluate(async () => (await fetch('/api/ebook')).status)) === 403 && !(await a.$('#ebookSec')), 'aluno não baixa o ebook nem vê o card');
-    await a.type('#anAltura', '1,75'); await a.type('#anPeso', '70,5'); await a.click('#anMedGo');
-    await a.waitForFunction(() => /salvos/i.test((document.querySelector('#anMedMsg') || {}).textContent || ''));
-    const answers = ['19 anos', 'ganho de massa muscular', 'glúteos', 'errei, a prioridade é o peito', 'em 3 meses', 'treino há 1 ano', '2 dias', 'segunda e quarta', 'errei, posso treinar quatro vezes por semana', '1 hora', 'não', 'não tenho', 'setenta quilos e meio', 'um e setenta e cinco'];
-    for (const t of answers) { const n = await a.$$eval('#chat .msg', x => x.length); await a.type('#txt', t); await a.keyboard.press('Enter');
-      await a.waitForFunction(n => document.querySelectorAll('#chat .msg').length > n + 1 || !document.querySelector('#anamCard') || document.querySelector('#anamCard').classList.contains('hide'), { timeout: 15000 }, n); await sleep(300); }
+    const anamLimpa = await a.evaluate(() => ({ box: !!document.querySelector('#medidasBox'), altura: !!document.querySelector('#anAltura'), peso: !!document.querySelector('#anPeso'), dias: !!document.querySelector('#anDias'), salvar: !!document.querySelector('#anMedGo'), txt: (document.querySelector('#anamCard') || {}).textContent || '' }));
+    ok(!anamLimpa.box && !anamLimpa.altura && !anamLimpa.peso && !anamLimpa.dias && !anamLimpa.salvar && !/Salvar altura e peso/.test(anamLimpa.txt) && !/Altura e peso salvos/.test(anamLimpa.txt) && !/Quais dias da semana você pode treinar\?/.test(anamLimpa.txt), 'a tela de anamnese não mostra altura, peso, dias nem o botão de salvar');
+    const ateMed = ['19 anos', 'ganho de massa muscular', 'glúteos', 'errei, a prioridade é o peito', 'em 3 meses', 'treino há 1 ano', '2 dias', 'segunda e quarta', 'errei, posso treinar quatro vezes por semana', '1 hora', 'não', 'não tenho'];
+    await dizer(a, ateMed);
+    ok(await a.$eval('#anamCard', e => !e.classList.contains('hide')) && await a.$eval('#equipCard', e => e.classList.contains('hide')), 'a anamnese não conclui antes do peso e da altura');
+    await dizer(a, ['setenta quilos e meio', 'um e setenta e cinco']);
     const chatObj = await a.$eval('#chat', e => e.textContent);
     const spokenAll = await a.evaluate(() => (window.__played || []).map(s => s.text).concat((window.__spoken || []).map(s => s.text)).join('\n'));
     ok(/Quantos anos você tem/.test(spokenAll) && /Qual o seu principal objetivo/.test(spokenAll) && /Hipertrofia/.test(spokenAll) && /Emagrecimento/.test(spokenAll) && /Saúde e qualidade de vida/.test(spokenAll) && !/Parte 2/i.test(spokenAll) && !/OBJETIVOS E EXPECTATIVAS/.test(spokenAll) && !/Quais resultados você deseja alcançar/.test(spokenAll) && /priorizar/.test(spokenAll) && /Em quanto tempo você espera perceber resultados/.test(spokenAll) && /Você já treina/.test(spokenAll) && /Quantos dias por semana/.test(spokenAll) && /Quais dias da semana você pode treinar/.test(spokenAll) && /Quanto tempo você tem por treino/.test(spokenAll) && /dor ou tem alguma lesão/.test(spokenAll) && /Você tem alguma orientação médica/.test(spokenAll) && /Qual o seu peso/.test(spokenAll) && /Qual a sua altura/.test(spokenAll) && !/Qual orientação/.test(spokenAll) && !/\bQual\?/.test(spokenAll) && !/Como vamos saber que você está progredindo/.test(spokenAll), 'cada pergunta da anamnese sai em áudio, inclusive dias, peso, altura e a orientação, sem o "qual" depois do não');
@@ -930,8 +940,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await Promise.all([pub.waitForNavigation({ waitUntil: 'networkidle0' }), pub.click('#feeJa')]);
     await pub.waitForSelector('#anamCard:not(.hide)');
     await pub.waitForFunction(() => /Olá, Caio/.test((document.querySelector('#chat') || {}).textContent || '') && /Pagamento informado/.test((document.querySelector('#feeCard') || {}).innerText || '') && !document.querySelector('#feeJa'), { timeout: 15000 });
-    await pub.type('#anAltura', '170'); await pub.type('#anPeso', '80,5'); await pub.click('#anMedGo');
-    await pub.waitForFunction(() => /salvos/i.test((document.querySelector('#anMedMsg') || {}).textContent || ''));
+    ok(!(await pub.$('#anAltura')) && !(await pub.$('#anPeso')) && !(await pub.$('#anDias')) && !(await pub.$('#anMedGo')), 'no link público a anamnese também não tem campos de altura, peso nem dias');
+    await dizer(pub, ['22 anos', 'hipertrofia', 'não', 'em 3 meses', 'não', '3 dias', 'segunda, quarta e sexta', '40 minutos', 'não', 'não', '80,5 quilos', '1,70']);
+    await pub.waitForFunction(async () => { const me = await (await fetch('/api/me')).json(); return Number(me.altura_cm) === 170 && Number(me.peso_kg) === 80.5 && Array.isArray(me.dias_semana) && me.dias_semana.join(',') === 'segunda,quarta,sexta'; });
     const caioU = (await sql.prepare("SELECT username FROM students WHERE email=?").get('caio@teste.com')).username;
     const pixDepois = await pub.evaluate(() => ({ card: document.querySelector('#feeCard').innerText, ja: !!document.querySelector('#feeJa'), wa: !!document.querySelector('#waTop .waPers'), treino: document.querySelector('#statusCard').classList.contains('hide') }));
     ok(/Pagamento informado/.test(pixDepois.card) && !pixDepois.ja && pixDepois.wa && pixDepois.treino, 'Já paguei libera a anamnese, mantém o WhatsApp e não mostra treino');
