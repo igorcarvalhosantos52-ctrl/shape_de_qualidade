@@ -105,7 +105,8 @@ function placeOf(n){
  return"";}
 function isBare(n){return/\b(errei|erro meu|me enganei|falei errado|quero refazer|refazer|quero corrigir|corrigir|corrige|voltar|volta|ops|opa)\b/.test(n)}
 function firstId(){return baseQueue()[0].id}
-function greet(){const nm=S.a.nome||(curUser&&accounts()[curUser]?accounts()[curUser].nome:"");return nm?"Olá, "+nm+"! Eu sou o coach do Shape de Qualidade.":""}
+function primeiroNome(nome){return String(nome||"").trim().split(/\s+/)[0]||""}
+function greet(){const full=S.a.nome||(curUser&&accounts()[curUser]?accounts()[curUser].nome:"");const nm=primeiroNome(full);return nm?"Olá, "+nm+"! Eu sou o coach do Shape de Qualidade.":""}
 function rewind(id){const q=baseQueue();let idx=q.findIndex(x=>x.id===id);if(idx<0&&id==="nome"){q.unshift({id:"nome",q:"Qual é o seu nome?"});idx=0}if(idx<0)return;
  const A=S.a,F=fresh().a,wasApr=S.status==="aprovado",hadPlan=!!S.plan;
  q.slice(idx).forEach(x=>{if(x.id==="nome")A.nome="";else if(x.id==="idade")A.idade=null;else if(x.id==="objetivo"){A.objetivo="";A.objetivos=[];A.objTxt="";A.objOutro="";S.objTry=0}else if(x.id==="resultados")A.resultados="";else if(x.id==="prioridade"){A.prioridade="";A.prioGs=[]}else if(x.id==="prazo")A.prazo="";else if(x.id==="progresso")A.progresso="";else if(x.id==="nivel"){A.nivel="";delete A.retorno}else if(x.id==="dias")A.dias=F.dias;else if(x.id==="tempo")A.tempo=F.tempo;else if(x.id==="dor"){A.dores={};A.obs=[]}else if(x.id==="med"){A.med="";A.medInfo=null;A.cond={};A.meds=""}});
@@ -138,6 +139,7 @@ function correction(t){const n=norm(t);
 function handle(ans){
  if(!S.queue||S.status!=="none")return;
  const it=S.queue[S.step];if(!it)return;
+ if(it.id==="fim"){if(!medidasProntas()){say("Para concluir a ficha, informe sua altura e seu peso e toque em Salvar.");const box=$("#medidasBox");if(box&&box.scrollIntoView)box.scrollIntoView({block:"nearest"});}else finishAnam();return}
  addMsg("a",ans);if(correction(ans))return;const n=norm(ans),A=S.a;
  switch(true){
   case it.id==="nome":{const nm=parseName(ans);if(!nm){say("Não peguei seu nome. Pode repetir?");return}A.nome=nm;hdr();break}
@@ -213,8 +215,15 @@ function medFollow(t){return medNo(t)||!medBareYes(t)?"":"Qual?"}
 function risk(){const A=S.a;return((A.medInfo&&A.medInfo.graves)||[]).map(x=>"Orientação médica: "+x).concat(A.obs)}
 function attn(){const m=S.a.medInfo;return m?m.atencao.concat(m.conds.filter(c=>!m.graves.some(g=>g.startsWith(c))&&!m.atencao.some(a=>a.startsWith(c)))):[]}
 function medNoteHTML(){const m=S.a.medInfo;if(!m||m.nenhuma)return"";return `<div class="alert warn">🩺 Treino ajustado conforme a orientação médica informada: “${esc(S.a.med)}”.${m.low?" Intensidade reduzida (menos séries, mais repetições leves e descanso maior).":""}${m.tags.length?" Restrições aplicadas: "+esc(m.tags.join(", "))+".":""}</div>`}
+function medidasProntas(){return !!(window.__medidasOk||(window.__ME&&window.__ME.altura_cm&&window.__ME.peso_kg))}
 function finishAnam(){const r=risk();
- say("Obrigado, "+(S.a.nome||"")+"! Anamnese concluída."+(r.length?" Atenção: identifiquei pontos de risco. Você vai precisar de liberação médica antes de treinar.":" Agora marque os equipamentos da sua academia."));
+ if(!medidasProntas()){
+  const alt=$("#anAltura"),pes=$("#anPeso");
+  if(alt&&pes&&alt.value.trim()&&pes.value.trim()&&typeof window.salvarMedidas==="function"&&!window.__medidasSalvando){window.__medidasSalvando=true;window.salvarMedidas().finally(()=>{window.__medidasSalvando=false});return}
+  say("Para concluir a ficha, informe sua altura e seu peso e toque em Salvar.");
+  const box=$("#medidasBox");if(box&&box.scrollIntoView)box.scrollIntoView({block:"nearest"});
+  return}
+ say("Obrigado, "+(primeiroNome(S.a.nome)||"")+"! Anamnese concluída."+(r.length?" Atenção: identifiquei pontos de risco. Você vai precisar de liberação médica antes de treinar.":" Agora marque os equipamentos da sua academia."));
  S.status="equip";save();render()}
 
 function cleanObj(t){let x=String(t||"").trim().replace(/[.!?;]+$/,"").replace(/^(ah|eh|bom|entao|então|olha|tipo|é|e)[,\s]+/i,"").replace(/^(o )?meu objetivo (é|e|eh)\s+/i,"").replace(/^(eu )?(quero|queria|gostaria de|pretendo|busco)\s+/i,"").replace(/^(é|e)\s+/i,"").trim();return x?x.charAt(0).toUpperCase()+x.slice(1):""}
@@ -226,7 +235,7 @@ function parseName(t){let x=" "+t.toLowerCase().replace(/[.,!?;:"]/g," ")+" ";
  const lw=["da","de","do","das","dos","e"];const w=x.trim().split(/\s+/).filter(w=>/^[a-zà-ÿ'-]+$/i.test(w)).slice(0,4);
  if(!w.length)return "";return w.map((p,i)=>i&&lw.includes(p)?p:p.charAt(0).toUpperCase()+p.slice(1)).join(" ")}
 function hdrLine(id,t){const h=$(id);h.textContent=t||"";h.classList.toggle("hide",!t)}
-function hdr(){hdrLine("#hdrAluno",S.a.nome?"Aluno: "+S.a.nome:"");
+function hdr(){const nm=primeiroNome(S.a.nome);hdrLine("#hdrAluno",nm?"Aluno: "+nm:"");
  hdrLine("#hdrProf",S.status==="aprovado"&&S.aprov?"Professor: "+S.aprov.nome+(S.aprov.cref?" — CREF "+S.aprov.cref:""):S.plan?"Professor: aguardando aprovação":"");
  let dia="";if(S.plan&&S.plan.treinos){const td=todayTreino(),sw=activeSwap();if(sw&&sw.rest)dia="Hoje é descanso";else if(td.hoje){const T=sw||S.plan.treinos[td.idx];dia=T?"Dia: "+td.dia+" — "+T.nome:"Hoje é descanso"}else dia="Hoje é descanso"}hdrLine("#hdrDia",dia)}
 /* ---------- Gerador de treino ---------- */
@@ -735,7 +744,7 @@ function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.stat
  <h3>Transcrição</h3><div style="font-size:.85rem">${S.chat.map(([w,t])=>`<p><b>${w==="c"?"Coach":"Aluno"}:</b> ${esc(t)}</p>`).join("")}</div>
  <p class="disc">Este relatório não substitui avaliação médica.</p><button class="btn noprint" onclick="document.body.classList.add('printrep');window.print();setTimeout(()=>document.body.classList.remove('printrep'),500)">🖨️ Imprimir / salvar PDF</button>`;
  if(unlocked&&!viewing){pc.innerHTML='<h2>Painel do Personal</h2><p style="color:var(--mut)">👈 Selecione um aluno na lista (ou use a 🔍 busca) para abrir a ficha, editar o treino e aprovar.</p>';rp.innerHTML=""}
- if(unlocked&&viewing)pc.insertAdjacentHTML("afterbegin",`<div class="alert ok noprint">📂 Ficha de <b>${esc((accounts()[viewing]||{}).nome||viewing)}</b> (@${esc(viewing)}) <button class="btn sm sec" id="closeStu">Fechar ficha</button></div>`);
+ if(unlocked&&viewing){const acc=accounts()[viewing]||{};const quem=acc.email||acc.nome||viewing;pc.insertAdjacentHTML("afterbegin",`<div class="alert ok noprint">📂 Ficha de <b>${esc(acc.nome||viewing)}</b> (${esc(quem)}) <button class="btn sm sec" id="closeStu">Fechar ficha</button></div>`)}
  if(!unlocked){pc.innerHTML=lockHTML();rp.innerHTML="";rp.classList.add("hide");bindLock()}
  else{rp.classList.remove("hide");pc.insertAdjacentHTML("afterbegin",lockBtn());document.querySelectorAll("#lockNow").forEach(b=>b.onclick=()=>{unlocked=false;sessionStorage.removeItem(PSESS);if(viewing)closeStu();else render()})}
  renderPanel();bindRev();const cs=$("#closeStu");if(cs)cs.onclick=closeStu;if(unlocked&&!viewing)rp.classList.add("hide");
@@ -782,7 +791,7 @@ function showCard(){const c=cardList[cardIdx],v=$("#cardView");if(!c||!v)return;
  $("#cardStage").innerHTML=c.locked?`<div class="cvlock"><span>🔒</span><p>${esc(up)}</p></div>`:`<img alt="${esc(c.titulo)}" src="/api/cards/${c.id}/img">`;
  $("#cardCap").textContent=c.titulo+" · "+c.regiao+" ("+(cardIdx+1)+"/"+cardList.length+")";
  $("#cardPrev").disabled=cardIdx===0;$("#cardNext").disabled=cardIdx===cardList.length-1}
-function stuList(){const A=accounts();return Object.keys(A).map(u=>{const F=loadF(u);const st=F.status==="aprovado"?"apr":F.plan?"pend":"none";return{u,nome:A[u].nome,st,F}})}
+function stuList(){const A=accounts();return Object.keys(A).map(u=>{const F=loadF(u);const st=F.status==="aprovado"?"apr":F.plan?"pend":"none";return{u,nome:A[u].nome,email:A[u].email||"",st,F}})}
 function ebookView(){const sub=ME.sub||{},paid=!!ME.paid;if(ME.owner_test||(paid&&sub.plan==="ilimitado"))return{open:true,msg:""};if(sub.trial||!paid)return{open:false,msg:"Liberado após a assinatura"};return{open:false,msg:"Exclusivo do plano Ilimitado"}}
 function ebookCard(){const v=ebookView();const body=v.open?'<button type="button" class="btn sm" id="ebookGo">Abrir ebook</button>':'<p class="ebooklock">🔒 '+esc(v.msg)+'</p>';return '<section id="ebookSec" class="ebookcard noprint"><h3>📘 Ebook: Guia Prático dos Exercícios</h3><div class="ebookcover"><b>Guia Prático dos Exercícios de Musculação</b><span>abordagem anatômica</span></div>'+body+'</section>'}
 function renderPanel(){const p=$("#stuPanel");const cardStudyOpen=!!($("#cardStudySec")&&$("#cardStudySec").open);p.classList.toggle("hide",!unlocked);if(!unlocked){p.innerHTML="";return}
@@ -791,7 +800,7 @@ function renderPanel(){const p=$("#stuPanel");const cardStudyOpen=!!($("#cardStu
  const np=L.filter(x=>x.st!=="apr").length,na=L.length-np;
  p.innerHTML=`<details id="stuDet" ${panelOpen?"open":""}><summary>👥 Alunos (${L.length})</summary><div class="srch"><span>🔍</span><input id="stuQ" placeholder="Buscar aluno pelo nome" value="${esc(pq)}"></div>
  <div class="flt">${[["todos","Todos ("+L.length+")"],["pend","Pendentes ("+np+")"],["apr","Aprovados ("+na+")"]].map(([k,l])=>`<button data-f="${k}" class="${pf===k?"on":""}">${l}</button>`).join("")}</div>
- ${v.map(x=>`<div class="stu ${x.st} ${viewing===x.u?"sel":""}" data-u="${esc(x.u)}"><div><b>${esc(x.nome)}</b><small>@${esc(x.u)}${revNext(x.F)?" · rev. "+revNext(x.F).toLocaleDateString("pt-BR"):""}</small></div>${x.st==="apr"?'<span class="badge apr">Aprovado</span>':x.st==="pend"?(x.F.status==="bloqueado"?'<span class="badge blk">Bloqueado</span>':'<span class="badge pend">Pendente</span>'):'<span class="badge">Sem treino</span>'}</div>`).join("")||'<p style="color:var(--mut)">Nenhum aluno encontrado.</p>'}</details>
+ ${v.map(x=>{const sub=x.email||x.u;return `<div class="stu ${x.st} ${viewing===x.u?"sel":""}" data-u="${esc(x.u)}"><div><b>${esc(x.nome)}</b><small>${esc(sub)}${revNext(x.F)?" · rev. "+revNext(x.F).toLocaleDateString("pt-BR"):""}</small></div>${x.st==="apr"?'<span class="badge apr">Aprovado</span>':x.st==="pend"?(x.F.status==="bloqueado"?'<span class="badge blk">Bloqueado</span>':'<span class="badge pend">Pendente</span>'):'<span class="badge">Sem treino</span>'}</div>`}).join("")||'<p style="color:var(--mut)">Nenhum aluno encontrado.</p>'}</details>
  <details id="cardStudySec" class="cardstudy noprint" ${cardStudyOpen?"open":""}><summary>📚 Cards de memorização para estudo</summary><div id="cardStudyBody"></div></details>
  ${ebookCard()}`;
  $("#stuDet").ontoggle=e=>{panelOpen=e.target.open};const qi=$("#stuQ");qi.oninput=()=>{pq=qi.value;const pos=qi.selectionStart;renderPanel();const n=$("#stuQ");n.focus();n.setSelectionRange(pos,pos)};
@@ -804,16 +813,13 @@ function closeStu(){viewing=null;S=load();render()}
 function showTab(t){if(t==="aluno"&&viewing)closeStu();["login","aluno","personal"].forEach(x=>$("#t-"+x).classList.toggle("hide",x!==t));render()}
 /* ---------- Login do aluno ---------- */
 let lgNew=false;
-function lgUI(){["#lgNome","#lgAltura","#lgPeso","#lgPw2"].forEach(i=>$(i).classList.toggle("hide",!lgNew));$("#lgGo").textContent=lgNew?"Criar conta":"Entrar";$("#lgMode").textContent=lgNew?"Já tenho conta – entrar":"Não tenho conta – criar agora";$("#lgErr").innerHTML=""}
+function lgUI(){["#lgNome","#lgPw2"].forEach(i=>{const el=$(i);if(el)el.classList.toggle("hide",!lgNew)});$("#lgGo").textContent=lgNew?"Criar conta":"Entrar";$("#lgMode").textContent=lgNew?"Já tenho conta, entrar":"Não tenho conta, criar agora";$("#lgErr").innerHTML=""}
 $("#lgMode").onclick=e=>{e.preventDefault();lgNew=!lgNew;lgUI()};
-$("#lgGo").onclick=async()=>{const err=m=>$("#lgErr").innerHTML=`<div class="alert bad">${m}</div>`;const u=$("#lgUser").value.trim().toLowerCase(),pw=$("#lgPw").value,A=accounts();
- if(!/^[a-z0-9._-]{3,30}$/.test(u))return err("Usuário inválido (mín. 3 letras/números, sem espaços).");
- if(lgNew){const nome=$("#lgNome").value.trim();if(nome.length<2)return err("Informe seu nome.");if(A[u])return err("Esse usuário já existe.");if(pw.length<4)return err("A senha precisa ter pelo menos 4 caracteres.");if(pw!==$("#lgPw2").value)return err("As senhas não conferem.");
-  const salt=hex(crypto.getRandomValues(new Uint8Array(16)));A[u]={nome,salt,hash:await hashPw(pw,salt),criado:Date.now()};localStorage.setItem(AKEY,JSON.stringify(A))}
- else{if(!A[u]||await hashPw(pw,A[u].salt)!==A[u].hash)return err("Usuário ou senha incorretos.")}
- curUser=u;localStorage.setItem(SESS,u);$("#lgPw").value=$("#lgPw2").value="";S=load();showTab("aluno");start()};
+$("#lgGo").onclick=async()=>{const err=m=>$("#lgErr").innerHTML=`<div class="alert bad">${m}</div>`;const email=($("#lgEmail").value||"").replace(/\s+/g,"").toLowerCase(),pw=$("#lgPw").value;
+ if(lgNew){const nome=$("#lgNome").value.trim();if(nome.length<2)return err("Informe seu nome.");if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return err("Informe um e-mail válido.");if(pw.length<6)return err("A senha precisa ter pelo menos 6 caracteres.");if(pw!==$("#lgPw2").value)return err("As senhas não conferem.");return err("Abra o convite do seu personal para criar a conta.")}
+ if(!email)return err("Informe seu e-mail.");return err("Entre pela página do app.")};
 $("#lgPw").onkeydown=e=>{if(e.key==="Enter"&&!lgNew)$("#lgGo").click()};
-$("#logout").onclick=()=>{try{speechSynthesis.cancel()}catch(e){}curUser=null;CK=null;localStorage.removeItem(SESS);S=fresh();lgNew=false;$("#lgUser").value=$("#lgNome").value="";lgUI();showTab("login")};
+$("#logout").onclick=()=>{try{speechSynthesis.cancel()}catch(e){}curUser=null;CK=null;localStorage.removeItem(SESS);S=fresh();lgNew=false;if($("#lgEmail"))$("#lgEmail").value="";if($("#lgNome"))$("#lgNome").value="";lgUI();showTab("login")};
 $("#persLink").onclick=()=>showTab("personal");$("#backAluno").onclick=()=>showTab(curUser?"aluno":"login");
 /* ---------- Eventos ---------- */
 document.addEventListener("click",ev=>{const b=ev.target.closest&&ev.target.closest(".detBtn");if(b){const e=DETMAP[b.dataset.k];if(e)openDet(b.dataset.k,e);return}if(ev.target.id==="detOv")closeDet()});document.addEventListener("keydown",ev=>{if(ev.key==="Escape")closeDet()});
@@ -822,7 +828,7 @@ const sendTxt=()=>{const v=$("#txt").value.trim();if(v){target="anam";$("#txt").
 const sendAdj=()=>{const v=$("#adjTxt").value.trim();if(v){target="adj";$("#adjTxt").value="";adjust(v)}};$("#adjSend").onclick=sendAdj;$("#adjTxt").onkeydown=e=>{if(e.key==="Enter")sendAdj()};
 $("#genBtn").onclick=()=>{S.equip=[...document.querySelectorAll("#equipList input:checked")].map(i=>i.value);generate()};
 $("#reset").onclick=()=>{if(!curUser||viewing)return alert("Entre como aluno para reiniciar a anamnese.");if(confirm("Apagar a sua anamnese e o seu treino e recomeçar?")){localStorage.removeItem(CK);S=fresh();S.a.nome=accounts()[curUser].nome;start()}};
-function start(){if(!curUser){showTab("login");return}$("#whoName").textContent="👤 "+accounts()[curUser].nome+" (@"+curUser+")";if(!SR)$("#nosup").classList.remove("hide");if(!S.a.nome&&accounts()[curUser])S.a.nome=accounts()[curUser].nome;if(!S.queue){S.queue=baseQueue();save();render();target="anam";const g=greet(),it=S.queue[0];if(g&&it.id!=="nome")say(g+" "+it.q);else ask()}else render()}
+function start(){if(!curUser){showTab("login");return}$("#whoName").textContent="👤 "+primeiroNome(accounts()[curUser].nome);if(!SR)$("#nosup").classList.remove("hide");if(!S.a.nome&&accounts()[curUser])S.a.nome=accounts()[curUser].nome;if(!S.queue){S.queue=baseQueue();save();render();target="anam";const g=greet(),it=S.queue[0];if(g&&it.id!=="nome")say(g+" "+it.q);else ask()}else render()}
 if("speechSynthesis"in window){speechSynthesis.onvoiceschanged=loadVoices;loadVoices();setTimeout(loadVoices,800)}
 $("#rate").value=vpref.rate;$("#rateV").textContent=(+vpref.rate).toFixed(2);
 $("#rate").oninput=e=>{vpref.rate=+e.target.value;$("#rateV").textContent=vpref.rate.toFixed(2);localStorage.setItem(VKEY,JSON.stringify(vpref))};

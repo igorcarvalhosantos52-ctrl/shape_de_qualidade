@@ -32,10 +32,10 @@ function __load(src) { return new Promise((ok, err) => { const s = document.crea
   window.__ME = me;
   if (me.role === "student") {
     localStorage._set("sq_sessao", me.u);
-    localStorage._set("sq_alunos", JSON.stringify({ [me.u]: { nome: me.nome } }));
+    localStorage._set("sq_alunos", JSON.stringify({ [me.u]: { nome: me.nome, email: me.email || "" } }));
     if (me.ficha) localStorage._set(FKEY + me.u, JSON.stringify(me.ficha));
   } else if (me.role === "personal" && me.sub && me.sub.active) {
-    const A = {}; me.students.forEach(s => { A[s.u] = { nome: s.nome }; if (s.ficha) localStorage._set(FKEY + s.u, JSON.stringify(s.ficha)); });
+    const A = {}; me.students.forEach(s => { A[s.u] = { nome: s.nome, email: s.email || "" }; if (s.ficha) localStorage._set(FKEY + s.u, JSON.stringify(s.ficha)); });
     localStorage._set("sq_alunos", JSON.stringify(A));
     localStorage._set("sq_personal", JSON.stringify({ ...me.personal, hash: "server" }));
     sessionStorage._set("sq_personal_sessao", me.personal.email);

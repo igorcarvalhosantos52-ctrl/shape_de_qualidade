@@ -31,6 +31,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   const medidas = require('../src/medidas');
   ok(medidas.altura('1,75') === 175 && medidas.altura('175') === 175 && medidas.altura('1.70') === 170 && medidas.altura('175 cm') === 175 && medidas.peso('70,5') === 70.5 && medidas.peso('80') === 80, 'altura aceita cm ou metros com vírgula e peso aceita vírgula');
   ok(medidas.altura('') === null && medidas.altura('abc') === null && medidas.altura('0,4') === null && medidas.peso('10') === null, 'altura e peso fora da faixa não passam');
+  const aluno = require('../src/aluno');
+  ok(aluno.emailNorm('  Pamela.Souza@Teste.com ') === 'pamela.souza@teste.com' && aluno.emailOk('pamela.souza@teste.com') && !aluno.emailOk('pamela souza') && !aluno.emailOk('a@b'), 'e-mail do aluno fica minúsculo, sem espaços, e o formato é validado');
+  ok(aluno.primeiroNome('Pamela Souza') === 'Pamela' && aluno.primeiroNome('ana') === 'ana', 'o primeiro nome sai do nome completo');
   const ownerTest = require('../src/owner-test');
   const savedOwner = process.env.OWNER_TEST_EMAILS, savedAdmin = process.env.ADMIN_EMAIL;
   delete process.env.OWNER_TEST_EMAILS; process.env.ADMIN_EMAIL = 'dono@teste.com';
@@ -91,9 +94,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v23/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v24/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v23');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v24');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -238,13 +241,23 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await a.goto(URL + '/convite/' + code, { waitUntil: 'networkidle0' });
     await a.waitForFunction(() => /convidado por/.test(document.querySelector('#lgInfo').textContent));
     ok((await a.$eval('#baixarApp', e => e.textContent)) === '📲 Baixar app' && !(await a.$eval('#baixarBar', e => e.classList.contains('hide'))), 'o link /convite/CÓDIGO mostra Baixar app');
-    await a.type('#lgNome', 'Pamela'); await a.type('#lgAltura', '1,75'); await a.type('#lgPeso', '70,5'); await a.type('#lgUser', 'pamela'); await a.type('#lgPw', 'aluna123'); await a.type('#lgPw2', 'aluna123');
+    ok(!(await a.$('#lgUser')) && !(await a.$('#lgAltura')) && !(await a.$('#lgPeso')) && !!(await a.$('#lgEmail')) && !(await a.$eval('#lgEmail', e => e.classList.contains('hide'))), 'cadastro do aluno pede e-mail e não pede usuário, altura nem peso');
+    await a.type('#lgNome', 'Pamela Souza'); await a.type('#lgEmail', 'pamela souza'); await a.type('#lgPw', 'aluna123'); await a.type('#lgPw2', 'aluna123');
+    await a.click('#lgGo');
+    await a.waitForFunction(() => /e-mail válido/.test((document.querySelector('#lgErr') || {}).textContent || ''));
+    ok(true, 'e-mail sem formato é recusado antes de criar a conta');
+    await a.$eval('#lgEmail', e => { e.value = ''; }); await a.type('#lgEmail', 'pamela.souza@teste.com');
     await a.screenshot({ path: SHOTS + '/05-cadastro-aluno-convite.png' });
     await Promise.all([a.waitForNavigation(), a.click('#lgGo')]);
     await a.waitForSelector('#t-aluno:not(.hide)');
+    const pamRow = await sql.prepare("SELECT id, username FROM students WHERE email=?").get('pamela.souza@teste.com');
+    const pamU = pamRow.username, pamId = pamRow.id;
+    const dupMail = await a.evaluate(async (code) => { const r = await fetch('/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Pamela Outra', email: '  Pamela.Souza@teste.com ', senha: 'aluna123', convite: code }) }); const me = await (await fetch('/api/me')).json(); return { st: r.status, j: await r.json(), role: me.role, nome: me.nome }; }, code);
+    ok(dupMail.st === 409 && /e-mail/.test(dupMail.j.error) && dupMail.role === 'student' && dupMail.nome === 'Pamela Souza', 'e-mail repetido avisa e não troca a conta');
     ok((await a.$eval('#baixarApp', e => e.textContent)) === '📲 Baixar app' && !(await a.$eval('#baixarBar', e => e.classList.contains('hide'))), 'a área do aluno mostra Baixar app');
     ok(!(await a.$('#autoL')), 'não existe mais a opção de ouvir automaticamente');
-    await a.waitForFunction(() => /Olá, Pamela/.test(document.querySelector('#chat').textContent), { timeout: 15000 }); ok(true, 'coach cumprimenta "Olá, Pamela" sem perguntar o nome');
+    await a.waitForFunction(() => /Olá, Pamela!/.test(document.querySelector('#chat').textContent) && !/Olá, Pamela Souza/.test(document.querySelector('#chat').textContent), { timeout: 15000 }); ok(true, 'coach cumprimenta "Olá, Pamela" sem perguntar o nome');
+    ok((await a.$eval('#whoName', e => e.textContent)) === '👤 Pamela' && (await a.$eval('#hdrAluno', e => e.textContent)) === 'Aluno: Pamela', 'perfil e cabeçalho mostram só o primeiro nome');
     await a.waitForFunction(() => (window.__played || []).some(s => /Quantos anos você tem/.test(s.text)), { timeout: 8000 });
     ok(await a.evaluate(() => !(window.__spoken || []).some(s => /Quantos anos você tem/.test(s.text))), 'depois do login a primeira pergunta toca em mp3, sem a voz do navegador');
     ok(/ligado/.test(await a.$eval('#ttsToggle', e => e.textContent)) && (await a.$eval('#tts', e => e.checked)) && /volume de mídia/.test(await a.$eval('#volHint', e => e.textContent)), 'alto-falante começa ligado e avisa para checar o volume de mídia');
@@ -263,6 +276,8 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok((await a.evaluate(async () => (await fetch('/api/personal/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status)) === 401, 'aluno não cadastra o WhatsApp do personal');
     ok((await a.evaluate(async () => (await fetch('/api/cards')).status)) === 403 && (await a.evaluate(async () => (await fetch('/api/cards/1/img')).status)) === 403, 'aluno não lista nem baixa os cards');
     ok((await a.evaluate(async () => (await fetch('/api/ebook')).status)) === 403 && !(await a.$('#ebookSec')), 'aluno não baixa o ebook nem vê o card');
+    await a.type('#anAltura', '1,75'); await a.type('#anPeso', '70,5'); await a.click('#anMedGo');
+    await a.waitForFunction(() => /salvos/i.test((document.querySelector('#anMedMsg') || {}).textContent || ''));
     const answers = ['19 anos', 'ganho de massa muscular', 'glúteos', 'errei, a prioridade é o peito', 'em 3 meses', 'treino há 1 ano', '2 dias', 'errei, posso treinar quatro vezes por semana', '1 hora', 'não', 'não tenho'];
     for (const t of answers) { const n = await a.$$eval('#chat .msg', x => x.length); await a.type('#txt', t); await a.keyboard.press('Enter');
       await a.waitForFunction(n => document.querySelectorAll('#chat .msg').length > n + 1 || !document.querySelector('#anamCard') || document.querySelector('#anamCard').classList.contains('hide'), { timeout: 15000 }, n); await sleep(300); }
@@ -284,20 +299,23 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const txt = await a.$eval('#statusCard', e => e.innerText); ok(/aguard|pendente/i.test(txt), 'treino gerado e aguardando aprovação');
     await a.screenshot({ path: SHOTS + '/07-aluno-aguardando.png' });
     // aluno não pode se autoaprovar via API
-    const self = await a.evaluate(async () => { const F = JSON.parse(localStorage.getItem('coachvoz_v1_pamela')); F.status = 'aprovado'; F.aprov = { nome: 'hacker' };
-      await fetch('/api/ficha/pamela', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(F) }); return (await (await fetch('/api/me')).json()).ficha.status; });
+    const self = await a.evaluate(async (u) => { const F = JSON.parse(localStorage.getItem('coachvoz_v1_' + u)); F.status = 'aprovado'; F.aprov = { nome: 'hacker' };
+      await fetch('/api/ficha/' + u, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(F) }); return (await (await fetch('/api/me')).json()).ficha.status; }, pamU);
     ok(self !== 'aprovado', 'servidor bloqueia autoaprovação do aluno');
     // ---- personal aprova
-    await p.reload({ waitUntil: 'networkidle0' }); await p.waitForSelector('.stu'); await p.click('.stu[data-u="pamela"]'); await sleep(500);
+    await p.reload({ waitUntil: 'networkidle0' }); await p.waitForSelector('.stu[data-u="' + pamU + '"]');
+    const listaPam = await p.$eval('.stu[data-u="' + pamU + '"]', e => e.innerText);
+    ok(/Pamela Souza/.test(listaPam) && /pamela\.souza@teste\.com/.test(listaPam), 'lista do personal mostra o nome completo e o e-mail');
+    await p.click('.stu[data-u="' + pamU + '"]'); await sleep(500);
     const ficha = await p.evaluate(() => ({ txt: document.querySelector('#persCard').textContent + document.querySelector('#repCard').textContent, a: S.a, blocos: S.plan.treinos[0].blocos.map(b => ({ g: b.g, n: b.ex.length, s: b.ex[0].s })), exp: dayExp(S.plan.treinos[0]) }));
-    ok(/2\. OBJETIVOS E EXPECTATIVAS/.test(ficha.txt) && /Ganho de massa muscular/.test(ficha.txt) && !/Resultados que deseja alcançar/.test(ficha.txt) && !ficha.a.resultados && /peito/i.test(ficha.txt) && /3 meses/.test(ficha.txt) && /Como vamos medir o progresso/.test(ficha.txt) && /realista/.test(ficha.txt) && ficha.a.med === 'não tenho' && /Orientação médica/.test(ficha.txt) && /não tenho/.test(ficha.txt), 'ficha mostra objetivo, prioridade, prazo e a orientação médica');
-    const pamMed = await sql.prepare('SELECT altura_cm a, peso_kg p FROM students WHERE username=?').get('pamela');
+    ok(/Pamela Souza/.test(ficha.txt) && /2\. OBJETIVOS E EXPECTATIVAS/.test(ficha.txt) && /Ganho de massa muscular/.test(ficha.txt) && !/Resultados que deseja alcançar/.test(ficha.txt) && !ficha.a.resultados && /peito/i.test(ficha.txt) && /3 meses/.test(ficha.txt) && /Como vamos medir o progresso/.test(ficha.txt) && /realista/.test(ficha.txt) && ficha.a.med === 'não tenho' && /Orientação médica/.test(ficha.txt) && /não tenho/.test(ficha.txt), 'ficha mostra o nome completo, objetivo, prioridade, prazo e a orientação médica');
+    const pamMed = await sql.prepare('SELECT altura_cm a, peso_kg p FROM students WHERE username=?').get(pamU);
     ok(Number(pamMed.a) === 175 && Number(pamMed.p) === 70.5 && /Altura 1,75 m/.test(ficha.txt) && /Peso 70,5 kg/.test(ficha.txt) && /IMC 23,0/.test(ficha.txt), 'ficha do convite mostra altura, peso e o IMC');
-    await sql.prepare('UPDATE students SET altura_cm=NULL, peso_kg=NULL WHERE username=?').run('pamela');
-    await p.reload({ waitUntil: 'networkidle0' }); await p.waitForSelector('.stu[data-u="pamela"]'); await p.click('.stu[data-u="pamela"]');
+    await sql.prepare('UPDATE students SET altura_cm=NULL, peso_kg=NULL WHERE username=?').run(pamU);
+    await p.reload({ waitUntil: 'networkidle0' }); await p.waitForSelector('.stu[data-u="' + pamU + '"]'); await p.click('.stu[data-u="' + pamU + '"]');
     await p.waitForFunction(() => { const el = document.querySelector('#corpoAluno'); return el && /não informado/.test(el.textContent) && !/IMC/.test(el.textContent); });
     ok((await p.$eval('#corpoAluno', e => e.textContent)).includes('Altura não informado') && (await p.$eval('#corpoAluno', e => e.textContent)).includes('Peso não informado'), 'aluno antigo sem altura e peso mostra não informado');
-    await sql.prepare('UPDATE students SET altura_cm=?, peso_kg=? WHERE username=?').run(175, 70.5, 'pamela');
+    await sql.prepare('UPDATE students SET altura_cm=?, peso_kg=? WHERE username=?').run(175, 70.5, pamU);
     ok(!ficha.a.progresso, 'o aluno não responde como medir o progresso');
     await p.waitForSelector('#progIn');
     await p.click('#progBox .progSug[data-s="Fotos"]');
@@ -335,7 +353,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(zap === '11987654321', 'número do WhatsApp fica só com DDD e dígitos');
     await a.reload({ waitUntil: 'networkidle0' }); await a.waitForSelector('#waTop .waPers');
     const wa = await a.$eval('#waTop .waPers', e => e.getAttribute('href'));
-    ok(wa.startsWith('https://wa.me/5511987654321?text=') && decodeURIComponent(wa.split('text=')[1]).startsWith('Olá, sou Pamela do Shape de Qualidade'), 'Falar com o personal abre o WhatsApp com o nome do aluno');
+    ok(wa.startsWith('https://wa.me/5511987654321?text=') && decodeURIComponent(wa.split('text=')[1]).startsWith('Olá, sou Pamela Souza do Shape de Qualidade'), 'Falar com o personal abre o WhatsApp com o nome completo do aluno');
     ok(!!(await a.$('#adjCard .waPers')), 'botão fica perto do ajuste do dia');
 
     const tuto = await p.evaluate(() => {
@@ -394,7 +412,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     if (addSel) await sleep(300);
     const fits = await p.evaluate(() => { const b = document.querySelector('#splitBox'); return b.getBoundingClientRect().width <= document.documentElement.clientWidth + 1; });
     ok(fits, 'editor da divisão cabe na largura do celular');
-    const planOf = async () => p.evaluate(async () => { const me = await (await fetch('/api/me')).json(); return (me.students.find(s => s.u === 'pamela') || {}).ficha.plan; });
+    const planOf = async () => p.evaluate(async (u) => { const me = await (await fetch('/api/me')).json(); return (me.students.find(s => s.u === u) || {}).ficha.plan; }, pamU);
     let saved = null; for (let i = 0; i < 25 && !(saved && saved.split && saved.split.days.some(d => d.label === 'Core de segunda' && d.gs.includes('abdomen') && saved.treinos.some(t => t.nome === 'Core de segunda' && t.blocos.some(b => b.ex.some(e => e.s === 6))))); i++) { await sleep(200); saved = await planOf(); }
     ok(!!saved && saved.split.custom && saved.split.days.some(d => d.w === 6 && d.gs.includes('cardio')) && !saved.split.days.some(d => d.w === 4), 'divisão personalizada grava dias, grupos e séries no aluno');
     const see = async () => { await a.reload({ waitUntil: 'networkidle0' }); await a.waitForFunction(() => typeof S !== 'undefined' && S && S.plan && S.status === 'aprovado'); await a.evaluate(t => { window.__fakeNow = t; render(); }, MON); await a.waitForSelector('#statusCard'); };
@@ -403,7 +421,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await a.click('.detBtn'); await a.waitForSelector('#detDrawer.open');
     ok(/Como fazer/.test(await a.$eval('#detDrawer', e => e.innerText)), 'Detalhes abre no exercício do dia personalizado');
     await a.evaluate(() => document.querySelector('#detOv').click());
-    const hack = await a.evaluate(async () => { const F = await (await fetch('/api/me')).json(); F.ficha.plan.split = { custom: true, days: [{ w: 1, label: 'HACK', gs: ['peito'] }] }; F.ficha.plan.treinos[0].nome = 'HACK'; await fetch('/api/ficha/pamela', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(F.ficha) }); return (await (await fetch('/api/me')).json()).ficha.plan.treinos[0].nome; });
+    const hack = await a.evaluate(async (u) => { const F = await (await fetch('/api/me')).json(); F.ficha.plan.split = { custom: true, days: [{ w: 1, label: 'HACK', gs: ['peito'] }] }; F.ficha.plan.treinos[0].nome = 'HACK'; await fetch('/api/ficha/' + u, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(F.ficha) }); return (await (await fetch('/api/me')).json()).ficha.plan.treinos[0].nome; }, pamU);
     ok(hack === 'Core de segunda', 'aluno não consegue trocar a divisão gravada pelo personal');
     await a.type('#adjTxt', 'estou cansado'); await a.click('#adjSend');
     await a.waitForFunction(() => /Ajustado hoje|cansaço|cansad/.test(document.querySelector('#statusCard').innerText));
@@ -515,8 +533,8 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
 
     // ---- limite de 15 alunos no Básico
     const signup = async (i) => { const c = await browser.createBrowserContext(), pg = await c.newPage(); await pg.goto(URL + '/convite/' + code, { waitUntil: 'networkidle0' });
-      await pg.waitForSelector('#lgUser');
-      const r = await pg.evaluate(async (code, i) => { const r = await fetch('/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: 'aluno' + i, nome: 'Aluno ' + i, senha: 'aluno123', convite: code, altura: '170', peso: '70' }) }); return { st: r.status, j: await r.json() }; }, code, i);
+      await pg.waitForSelector('#lgEmail');
+      const r = await pg.evaluate(async (code, i) => { const r = await fetch('/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'aluno' + i + '@teste.com', nome: 'Aluno ' + i, senha: 'aluno123', convite: code }) }); return { st: r.status, j: await r.json() }; }, code, i);
       await c.close(); return r; };
     for (let i = 2; i <= 15; i++) { const r = await signup(i); if (r.st !== 200) throw new Error('cadastro ' + i + ': ' + r.j.error); }
     const r16 = await signup(16); ok(r16.st === 403 && /limite de 15 alunos do plano Básico.*upgrade/.test(r16.j.error), 'Básico trava no 15º aluno com aviso de upgrade');
@@ -532,17 +550,24 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok((await signup(16)).st === 200, 'depois do upgrade o 16º aluno entra');
     const dg = await p.evaluate(async () => { const r = await fetch('/api/billing/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plano: 'basico' }) }); return { st: r.status, j: await r.json() }; });
     ok(dg.st === 409 && /16 alunos/.test(dg.j.error), 'downgrade para Básico bloqueado com 16 alunos');
+    const bcrypt = require('bcrypt');
+    await sql.prepare('INSERT INTO students(personal_id,username,nome,hash,created_at,origin) VALUES(?,?,?,?,?,?)').run(pid, 'legado', 'Aluno Legado', await bcrypt.hash('legado123', 4), Date.now(), 'convite');
+    const ctxLeg = await browser.createBrowserContext(), leg = await ctxLeg.newPage();
+    await leg.goto(URL, { waitUntil: 'networkidle0' });
+    const legadoLogin = await leg.evaluate(async () => { const ruim = await fetch('/api/student/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: 'legado', senha: 'errada' }) }); const bom = await fetch('/api/student/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'legado', senha: 'legado123' }) }); return { ruim: ruim.status, bom: bom.status }; });
+    ok(legadoLogin.ruim === 401 && legadoLogin.bom === 200, 'aluno antigo sem e-mail entra pelo usuário');
+    await ctxLeg.close();
     const ug = await p.evaluate(async () => (await fetch('/api/billing/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plano: 'ilimitado' }) })).json());
     ok(ug.needCheckout === true, 'upgrade de plano pago exige pagar o novo plano');
     // isolamento entre personais
     const ctxX = await browser.createBrowserContext(), x = await ctxX.newPage();
     await x.goto(URL, { waitUntil: 'networkidle0' });
-    const iso = await x.evaluate(async () => { await fetch('/api/personal/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Outro', email: 'outro@t.com', senha: 'senha1234' }) });
+    const iso = await x.evaluate(async (u) => { await fetch('/api/personal/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Outro', email: 'outro@t.com', senha: 'senha1234' }) });
       await fetch('/api/billing/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: 'demo' }) });
-      const me = await (await fetch('/api/me')).json(); const put = await fetch('/api/ficha/pamela', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const me = await (await fetch('/api/me')).json(); const put = await fetch('/api/ficha/' + encodeURIComponent(u), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{}' });
       const ex = await (await fetch('/api/personal/exercises')).json();
       const del = await fetch('/api/personal/exercises/1', { method: 'DELETE' });
-      return { n: me.students.length, put: put.status, ex: (ex.exercises || []).length, del: del.status }; });
+      return { n: me.students.length, put: put.status, ex: (ex.exercises || []).length, del: del.status }; }, pamU);
     ok(iso.n === 0 && iso.put === 403 && iso.ex === 0 && iso.del === 404, 'outro personal não vê alunos, fichas nem a lista de exercícios alheia');
     await p.screenshot({ path: SHOTS + '/04-painel-personal-convite.png' });
 
@@ -550,10 +575,13 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const post = (pg, u, b) => pg.evaluate(async (u, b) => { const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }); return { st: r.status, j: await r.json() }; }, u, b);
     ok((await post(p, '/api/personal/password', { atual: 'errada', nova: 'nova12345' })).st === 401, 'trocar senha exige a senha atual');
     ok((await post(p, '/api/personal/password', { atual: 'senha1234', nova: 'nova12345' })).st === 200, 'personal troca a própria senha');
-    ok((await post(p, '/api/personal/student-password', { usuario: 'pamela', nova: 'pam456' })).st === 200, 'personal define nova senha do aluno');
+    ok((await post(p, '/api/personal/student-password', { usuario: pamU, nova: 'pam456' })).st === 200, 'personal define nova senha do aluno');
     const an = await (await browser.createBrowserContext()).newPage();
     await an.goto(URL, { waitUntil: 'networkidle0' });
-    ok((await post(an, '/api/student/login', { usuario: 'pamela', senha: 'aluna123' })).st === 401 && (await post(an, '/api/student/login', { usuario: 'pamela', senha: 'pam456' })).st === 200, 'aluno entra com a senha nova (a antiga deixa de valer)');
+    const loginVelho = await post(an, '/api/student/login', { email: 'pamela.souza@teste.com', senha: 'aluna123' });
+    const loginUsuario = await post(an, '/api/student/login', { email: pamU, senha: 'pam456' });
+    const loginEmail = await post(an, '/api/student/login', { email: '  Pamela.Souza@teste.com ', senha: 'pam456' });
+    ok(loginVelho.st === 401 && loginUsuario.st === 200 && loginEmail.st === 200, 'aluno entra com e-mail ou com o usuário interno, e a senha antiga deixa de valer');
     await an.goto(URL, { waitUntil: 'networkidle0' }); await an.waitForSelector('#voiceGo');
     ok(/Toque aqui para conversar por voz/.test(await an.$eval('#voiceGo', e => e.innerText)), 'aluno vê o botão para iniciar a conversa por voz');
     await an.$eval('#voiceGo', e => e.click()); await sleep(300); ok(!(await an.$('#voiceGo')), 'toque inicia a voz (botão some)');
@@ -650,6 +678,19 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok((await rp.evaluate(async () => (await (await fetch('/api/me')).json()).role)) === 'personal', 'link de redefinição cria a senha nova e entra');
     ok((await post(rp, '/api/password/reset', { token: rl.link.split('t=')[1], senha: 'outra12345' })).st === 400, 'link de redefinição só vale uma vez');
     ok((await post(rp, '/api/personal/login', { email: 'igor@teste.com', senha: 'recuperada1' })).st === 200, 'login com a senha redefinida');
+    const fgStu = await a.evaluate(async () => { const r = await fetch('/api/student/forgot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: '  Pamela.Souza@teste.com ' }) }); return { st: r.status, j: await r.json() }; });
+    ok(fgStu.st === 200 && /link/.test(fgStu.j.msg), 'aluno pede nova senha pelo e-mail');
+    await ad.reload({ waitUntil: 'networkidle0' });
+    ok(/pamela\.souza@teste\.com/.test(await ad.content()) && /Pamela Souza/.test(await ad.content()), 'admin vê o pedido de senha do aluno');
+    const rlStu = await ad.evaluate(async id => { const r = await fetch('/api/admin/reset-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: id }) }); return { st: r.status, j: await r.json() }; }, pamId);
+    ok(rlStu.st === 200 && rlStu.j.email === 'pamela.souza@teste.com' && /\/redefinir\?t=[0-9a-f]{64}$/.test(rlStu.j.link), 'admin gera o link de nova senha no e-mail do aluno');
+    const legId = (await sql.prepare("SELECT id FROM students WHERE username='legado'").get()).id;
+    const semEmail = await ad.evaluate(async id => { const r = await fetch('/api/admin/reset-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: id }) }); const j = await r.json(); return { st: r.status, error: j.error || '' }; }, legId);
+    ok(semEmail.st === 400 && /e-mail/.test(semEmail.error), 'aluno antigo sem e-mail não recebe link de redefinição');
+    const rpStu = await (await browser.createBrowserContext()).newPage();
+    await rpStu.goto(rlStu.j.link, { waitUntil: 'networkidle0' });
+    await rpStu.waitForSelector('#rs1');
+    ok(/pamela\.souza@teste\.com/.test(await rpStu.$eval('#rsInfo', e => e.textContent)), 'a página de nova senha mostra o e-mail do aluno');
     await ad.reload({ waitUntil: 'networkidle0' }); await sleep(400); await ad.screenshot({ path: SHOTS + '/12-admin-planos.png', fullPage: true });
     await ad.screenshot({ path: SHOTS + '/10-admin.png' });
     const clips = await a.evaluate(() => { const q = baseQueue().filter(x => x.q); const med = baseQueue().find(x => x.id === 'med'); return { missing: q.filter(x => !(window.COACH_CLIPS || {})[x.q]).map(x => x.q), med: med && med.q, has: !!(med && (window.COACH_CLIPS || {})[med.q] && (window.COACH_CLIPS || {})['Qual?']), n: Object.keys(window.COACH_CLIPS || {}).length }; });
@@ -787,6 +828,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(avisou.informed && avisou.tone === 'soon', 'pagamento informado não pinta de verde');
     const pagina = pubPage.page({ nome: 'Lia', bio: 'Força', foto: '', fee_cents: 15000, active: true, full: false, code: 'ABC12345' });
     ok(/Lia/.test(pagina) && /Força/.test(pagina) && /Quero ser aluno/.test(pagina) && /Mensalidade/.test(pagina) && /150/.test(pagina), 'página pública mostra nome, bio, preço e o botão');
+    ok(/id="email"/.test(pagina) && !/id="user"/.test(pagina) && !/id="altura"/.test(pagina) && !/Usuário/.test(pagina), 'a página pública pede e-mail e não pede usuário nem altura');
     ok(pagina.indexOf('__pwaPrompt') > 0 && pagina.indexOf('__pwaPrompt') < pagina.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(pagina), 'a página /p registra o prompt e o service worker no começo do head');
     const cheia = pubPage.page({ nome: 'Lia', bio: '', foto: '', fee_cents: 0, active: true, full: true, code: 'ABC12345' });
     ok(/limite/.test(cheia) && !/Quero ser aluno/.test(cheia), 'página pública some com o botão quando o plano está cheio');
@@ -834,7 +876,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(capa.baixar === '📲 Baixar app' && capa.w > 200 && capa.h >= 48 && capa.top < 80 && !capa.hide, 'a página pública /p/CÓDIGO mostra Baixar app');
     await pub.click('#quero');
     await pub.waitForSelector('#form:not(.hide)');
-    await pub.type('#nome', 'Caio Aluno'); await pub.type('#altura', '170'); await pub.type('#peso', '80,5'); await pub.type('#user', 'caio'); await pub.type('#pw', 'aluno123'); await pub.type('#pw2', 'aluno123');
+    await pub.type('#nome', 'Caio Aluno'); await pub.type('#email', 'caio@teste.com'); await pub.type('#pw', 'aluno123'); await pub.type('#pw2', 'aluno123');
     await Promise.all([pub.waitForNavigation({ waitUntil: 'networkidle0' }), pub.click('#form button[type=submit]')]);
     await pub.waitForSelector('#feeJa');
     const pixAntes = await pub.evaluate(() => ({ anam: document.querySelector('#anamCard').classList.contains('hide'), wa: document.querySelector('#waTop').innerText, card: document.querySelector('#feeCard').innerText, payload: document.querySelector('#feePayload').value, qr: !!document.querySelector('#feeCard img') }));
@@ -843,29 +885,32 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await Promise.all([pub.waitForNavigation({ waitUntil: 'networkidle0' }), pub.click('#feeJa')]);
     await pub.waitForSelector('#anamCard:not(.hide)');
     await pub.waitForFunction(() => /Olá, Caio/.test((document.querySelector('#chat') || {}).textContent || '') && /Pagamento informado/.test((document.querySelector('#feeCard') || {}).innerText || '') && !document.querySelector('#feeJa'), { timeout: 15000 });
+    await pub.type('#anAltura', '170'); await pub.type('#anPeso', '80,5'); await pub.click('#anMedGo');
+    await pub.waitForFunction(() => /salvos/i.test((document.querySelector('#anMedMsg') || {}).textContent || ''));
+    const caioU = (await sql.prepare("SELECT username FROM students WHERE email=?").get('caio@teste.com')).username;
     const pixDepois = await pub.evaluate(() => ({ card: document.querySelector('#feeCard').innerText, ja: !!document.querySelector('#feeJa'), wa: !!document.querySelector('#waTop .waPers'), treino: document.querySelector('#statusCard').classList.contains('hide') }));
     ok(/Pagamento informado/.test(pixDepois.card) && !pixDepois.ja && pixDepois.wa && pixDepois.treino, 'Já paguei libera a anamnese, mantém o WhatsApp e não mostra treino');
     await f.reload({ waitUntil: 'networkidle0' });
-    await f.waitForSelector('.stu[data-u="caio"]');
-    const linha = await f.$eval('.stu[data-u="caio"]', e => ({ t: e.innerText, soon: !!e.querySelector('.feeDot.soon'), ok: !!e.querySelector('.feeDot.ok') }));
+    await f.waitForSelector('.stu[data-u="' + caioU + '"]');
+    const linha = await f.$eval('.stu[data-u="' + caioU + '"]', e => ({ t: e.innerText, soon: !!e.querySelector('.feeDot.soon'), ok: !!e.querySelector('.feeDot.ok') }));
     ok(/Pendente de aprovação/.test(linha.t) && /Pagamento informado/.test(linha.t) && linha.soon && !linha.ok && /pago/.test(await f.$eval('#feeLegend', e => e.innerText)), 'o aluno do link entra pendente de aprovação, amarelo, com pagamento informado');
-    await f.click('.stu[data-u="caio"]');
+    await f.click('.stu[data-u="' + caioU + '"]');
     await f.waitForSelector('#feeOk');
     ok(/Confirmar recebimento/.test(await f.$eval('#feeEdit', e => e.innerText)) && !(await f.$('#aprovar')), 'a ficha confirma o Pix e ainda não tem treino para aprovar');
     const caioCorpo = await f.$eval('#corpoAluno', e => e.textContent);
-    const caioMed = await sql.prepare('SELECT altura_cm a, peso_kg p FROM students WHERE username=?').get('caio');
+    const caioMed = await sql.prepare('SELECT altura_cm a, peso_kg p FROM students WHERE username=?').get(caioU);
     ok(Number(caioMed.a) === 170 && Number(caioMed.p) === 80.5 && /1,70 m/.test(caioCorpo) && /80,5 kg/.test(caioCorpo) && /IMC 27,9/.test(caioCorpo), 'o link /p grava altura e peso e a ficha mostra o IMC');
     await f.click('#feeOk');
     await f.waitForFunction(() => /Pago/.test((document.querySelector('#feeEditBody') || {}).innerText || '') && document.querySelector('#feeHist'));
-    const pago = await f.evaluate(() => ({ t: document.querySelector('.stu[data-u="caio"]').innerText, dot: !!document.querySelector('.stu[data-u="caio"] .feeDot.ok'), hist: document.querySelector('#feeHist').innerText }));
+    const pago = await f.evaluate((u) => ({ t: document.querySelector('.stu[data-u="' + u + '"]').innerText, dot: !!document.querySelector('.stu[data-u="' + u + '"] .feeDot.ok'), hist: document.querySelector('#feeHist').innerText }), caioU);
     ok(/Pago/.test(pago.t) === false && !/Pagamento informado/.test(pago.t) && pago.dot && /150/.test(pago.hist), 'confirmar recebimento pinta de verde e guarda o histórico');
-    const avancou = await f.evaluate(async () => (await (await fetch('/api/personal/tuition/caio')).json()).fee);
+    const avancou = await f.evaluate(async (u) => (await (await fetch('/api/personal/tuition/' + u)).json()).fee, caioU);
     const esperado = pix.addMonth(pix.cycle({ amount_cents: 15000, due_day: dueDay, paid_through: null }).due, dueDay);
     ok(avancou.tone === 'ok' && avancou.paid_through && avancou.due === esperado, 'confirmar avança o vencimento um mês');
     await f.click('#feeUndo');
     await f.waitForFunction(() => /Pagamento informado/.test((document.querySelector('#feeEditBody') || {}).innerText || '') && /desfeito/.test((document.querySelector('#feeHist') || {}).innerText || ''));
-    ok(!!(await f.$('.stu[data-u="caio"] .feeDot.soon')), 'desfazer devolve o aviso de pagamento e a cor amarela');
-    const davi = await fetch(URL + '/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: 'davi', nome: 'Davi Direto', senha: 'aluno123', convite: codeLia, altura: '1,80', peso: '75' }) });
+    ok(!!(await f.$('.stu[data-u="' + caioU + '"] .feeDot.soon')), 'desfazer devolve o aviso de pagamento e a cor amarela');
+    const davi = await fetch(URL + '/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'davi@teste.com', nome: 'Davi Direto', senha: 'aluno123', convite: codeLia }) });
     const daviJ = await davi.json();
     ok(davi.status === 200 && daviJ.pix === false, 'convite direto não manda o aluno para o Pix antes da anamnese');
     let atrasado = null;
@@ -875,27 +920,28 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       if (pix.cycle({ amount_cents: 15000, due_day: dueDay, paid_through: iso }).tone === 'bad') atrasado = iso;
     }
     ok(!!atrasado, 'há um ciclo vencido para testar o vermelho');
-    const daviId = (await sql.prepare("SELECT id FROM students WHERE username='davi'").get()).id;
+    const daviRow = await sql.prepare("SELECT id, username FROM students WHERE email=?").get('davi@teste.com');
+    const daviId = daviRow.id, daviU = daviRow.username;
     await sql.prepare('INSERT INTO tuition(student_id,paid_through,exempt) VALUES(?,?,0)').run(daviId, atrasado);
     await f.reload({ waitUntil: 'networkidle0' });
-    await f.waitForSelector('.stu[data-u="davi"]');
-    const direto = await f.$eval('.stu[data-u="davi"]', e => ({ t: e.innerText, bad: !!e.querySelector('.feeDot.bad') }));
+    await f.waitForSelector('.stu[data-u="' + daviU + '"]');
+    const direto = await f.$eval('.stu[data-u="' + daviU + '"]', e => ({ t: e.innerText, bad: !!e.querySelector('.feeDot.bad') }));
     ok(/Sem treino/.test(direto.t) && !/Pendente de aprovação/.test(direto.t) && direto.bad, 'aluno do convite direto continua Sem treino e fica vermelho se a mensalidade venceu');
-    await f.click('.stu[data-u="davi"]');
-    await f.waitForFunction(() => viewing === 'davi' && /Marcar como pago/.test((document.querySelector('#feeEdit') || {}).innerText || '') && !document.querySelector('#feeNo'));
+    await f.click('.stu[data-u="' + daviU + '"]');
+    await f.waitForFunction((u) => viewing === u && /Marcar como pago/.test((document.querySelector('#feeEdit') || {}).innerText || '') && !document.querySelector('#feeNo'), {}, daviU);
     ok(true, 'convite direto não tem Recusar; o personal marca como pago se quiser');
-    const recusaDireto = await f.evaluate(async () => { const r = await fetch('/api/personal/tuition/davi/gate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: 'recusar' }) }); return { st: r.status, j: await r.json() }; });
+    const recusaDireto = await f.evaluate(async (u) => { const r = await fetch('/api/personal/tuition/' + u + '/gate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: 'recusar' }) }); return { st: r.status, j: await r.json() }; }, daviU);
     ok(recusaDireto.st === 400 && /ficha/.test(recusaDireto.j.error), 'recusar o convite direto é barrado');
     const ctxD = await browser.createBrowserContext(), dv = await ctxD.newPage(); await dv.setViewport(phone);
     await dv.goto(URL, { waitUntil: 'networkidle0' });
-    await dv.evaluate(async () => { const r = await fetch('/api/student/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: 'davi', senha: 'aluno123' }) }); if (!r.ok) throw new Error(await r.text()); });
+    await dv.evaluate(async () => { const r = await fetch('/api/student/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'davi@teste.com', senha: 'aluno123' }) }); if (!r.ok) throw new Error(await r.text()); });
     await dv.goto(URL, { waitUntil: 'networkidle0' });
     await dv.waitForSelector('#anamCard:not(.hide)');
     ok(await dv.$('#waTop .waPers') && !(await dv.$('#feeHold')), 'aluno do convite direto cai na anamnese e já pode falar com o personal');
-    await f.evaluate(() => openStu('caio'));
+    await f.evaluate((u) => openStu(u), caioU);
     await f.waitForSelector('#feeNo');
     await f.evaluate(() => document.querySelector('#feeNo').click());
-    await f.waitForFunction(() => /Recusado/.test((document.querySelector('.stu[data-u="caio"]') || {}).textContent || ''));
+    await f.waitForFunction((u) => /Recusado/.test((document.querySelector('.stu[data-u="' + u + '"]') || {}).textContent || ''), {}, caioU);
     await pub.reload({ waitUntil: 'networkidle0' });
     await pub.waitForSelector('#feeHold');
     const recusado = await pub.evaluate(() => ({ anam: document.querySelector('#anamCard').classList.contains('hide'), hold: document.querySelector('#feeHold').innerText, wa: document.querySelector('#waTop').innerText, treino: document.querySelector('#statusCard').classList.contains('hide') }));
@@ -905,7 +951,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await sql.prepare('UPDATE settings SET value=? WHERE key=?').run(JSON.stringify(pj), 'plans');
     const htmlCheio = await (await fetch(URL + '/p/' + codeLia)).text();
     ok(/limite/.test(htmlCheio) && !/Quero ser aluno/.test(htmlCheio), 'no ar, o link público respeita o limite de alunos');
-    const extra = await fetch(URL + '/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: 'extra1', nome: 'Extra Um', senha: 'aluno123', convite: codeLia, origem: 'publico', altura: '165', peso: '60,5' }) });
+    const extra = await fetch(URL + '/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'extra1@teste.com', nome: 'Extra Um', senha: 'aluno123', convite: codeLia, origem: 'publico' }) });
     const extraJ = await extra.json();
     ok(extra.status === 403 && /limite/.test(extraJ.error), 'cadastro pelo link público também trava no limite do plano');
     pj.pro.limit = limiteAntes;

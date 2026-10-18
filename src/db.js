@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS payments(
 CREATE TABLE IF NOT EXISTS students(
   id INTEGER PRIMARY KEY, personal_id INTEGER NOT NULL REFERENCES personals(id) ON DELETE CASCADE,
   username TEXT UNIQUE NOT NULL, nome TEXT NOT NULL, hash TEXT NOT NULL, ficha TEXT, updated_at INTEGER, created_at INTEGER NOT NULL,
-  origin TEXT DEFAULT 'convite', gate TEXT DEFAULT '', altura_cm REAL, peso_kg REAL);
+  origin TEXT DEFAULT 'convite', gate TEXT DEFAULT '', altura_cm REAL, peso_kg REAL,
+  email TEXT, reset_requested_at INTEGER);
 CREATE TABLE IF NOT EXISTS tuition(
   student_id INTEGER PRIMARY KEY, amount_cents INTEGER, due_day INTEGER, exempt INTEGER DEFAULT 0,
   paid_through TEXT, informed_for TEXT, informed_at INTEGER);
@@ -59,6 +60,8 @@ const ALTERS = [
   "ALTER TABLE students ADD COLUMN gate TEXT DEFAULT ''",
   "ALTER TABLE students ADD COLUMN altura_cm REAL",
   "ALTER TABLE students ADD COLUMN peso_kg REAL",
+  "ALTER TABLE students ADD COLUMN email TEXT",
+  "ALTER TABLE students ADD COLUMN reset_requested_at INTEGER",
 ];
 
 const num = v => (typeof v === 'bigint' ? Number(v) : v);
@@ -142,6 +145,7 @@ async function migrate() {
   for (const sql of ALTERS) {
     try { await db.exec(sql); } catch (e) { if (!dupCol(e)) throw e; }
   }
+  await db.exec('CREATE UNIQUE INDEX IF NOT EXISTS students_email_uq ON students(email) WHERE email IS NOT NULL');
 }
 
 db.migrate = migrate;

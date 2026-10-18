@@ -10,19 +10,41 @@ async function logoutAll() { try { speechSynthesis.cancel(); } catch (e) {} awai
 const inviteFromUrl = (location.pathname.match(/^\/convite\/([A-Za-z0-9]+)/) || [])[1] || new URLSearchParams(location.search).get("convite");
 
 /* ---------- Login / cadastro do aluno (servidor) ---------- */
-lgUI = function () { ["#lgNome", "#lgAltura", "#lgPeso", "#lgPw2", "#lgCode"].forEach(i => $(i).classList.toggle("hide", !lgNew)); $("#lgGo").textContent = lgNew ? "Criar conta" : "Entrar";
-  $("#lgMode").textContent = lgNew ? "Já tenho conta – entrar" : "Não tenho conta – criar com o convite do personal"; $("#lgErr").innerHTML = ""; };
+lgUI = function () { ["#lgNome", "#lgPw2", "#lgCode"].forEach(i => { const el = $(i); if (el) el.classList.toggle("hide", !lgNew); }); $("#lgGo").textContent = lgNew ? "Criar conta" : "Entrar";
+  const mail = $("#lgEmail"); if (mail) mail.placeholder = lgNew ? "Seu e-mail" : "Seu e-mail ou usuário";
+  $("#lgMode").textContent = lgNew ? "Já tenho conta, entrar" : "Não tenho conta, criar agora"; $("#lgErr").innerHTML = ""; };
 $("#lgMode").onclick = e => { e.preventDefault(); lgNew = !lgNew; lgUI(); };
 $("#lgGo").onclick = async () => {
   const err = m => ($("#lgErr").innerHTML = `<div class="alert bad">${esc(m)}</div>`);
-  const usuario = $("#lgUser").value.trim().toLowerCase(), senha = $("#lgPw").value;
+  const email = ($("#lgEmail").value || "").replace(/\s+/g, "").toLowerCase(), senha = $("#lgPw").value;
   try {
-    if (lgNew) { if (senha !== $("#lgPw2").value) return err("As senhas não conferem.");
-      await api("/api/student/signup", { usuario, senha, nome: $("#lgNome").value.trim(), convite: $("#lgCode").value.trim(), altura: $("#lgAltura").value.trim(), peso: $("#lgPeso").value.trim() }); }
-    else await api("/api/student/login", { usuario, senha });
+    if (lgNew) {
+      const nome = $("#lgNome").value.trim();
+      if (nome.length < 2) return err("Informe seu nome.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err("Informe um e-mail válido.");
+      if (senha.length < 6) return err("A senha precisa ter pelo menos 6 caracteres.");
+      if (senha !== $("#lgPw2").value) return err("As senhas não conferem.");
+      await api("/api/student/signup", { email, senha, nome, convite: $("#lgCode").value.trim() });
+    } else {
+      if (!email) return err("Informe seu e-mail.");
+      await api("/api/student/login", { email, senha });
+    }
     location.href = "/";
   } catch (e) { err(e.message); }
 };
+window.salvarMedidas = async function () {
+  const box = $("#anMedMsg"), show = (t, bom) => { if (box) box.innerHTML = `<div class="alert ${bom ? "ok" : "bad"}">${esc(t)}</div>`; };
+  try {
+    const r = await api("/api/student/medidas", { altura: $("#anAltura").value.trim(), peso: $("#anPeso").value.trim() });
+    window.__medidasOk = true;
+    if (window.__ME) { window.__ME.altura_cm = r.altura_cm; window.__ME.peso_kg = r.peso_kg; }
+    show("Altura e peso salvos.", true);
+    if (typeof S !== "undefined" && S.queue && S.queue[S.step] && S.queue[S.step].id === "fim" && S.status === "none") finishAnam();
+    return true;
+  } catch (e) { show(e.message, false); return false; }
+};
+const anMed = $("#anMedGo"); if (anMed) anMed.onclick = () => window.salvarMedidas();
+if (ME.role === "student" && ME.altura_cm && ME.peso_kg) { window.__medidasOk = true; const box = $("#anMedMsg"); if (box) box.innerHTML = `<div class="alert ok">Altura e peso salvos.</div>`; }
 $("#logout").onclick = logoutAll;
 // link para o personal na tela de login
 $("#t-login .lockbox").insertAdjacentHTML("beforeend", `<p style="font-size:.85rem;color:var(--mut)">É personal trainer? <a href="#" id="goPers">Entre ou assine aqui</a></p>`);
@@ -135,17 +157,17 @@ renderChat = function () { _renderChat(); mountWa(); };
 
 /* ---------- Início ---------- */
 if (ME.role === "student" && !ME.active) {
-  $("#t-login .lockbox").innerHTML = `<h2>⏸️ Acesso pausado</h2><p>Olá, <b>${esc(ME.nome)}</b>. A assinatura do seu personal (<b>${esc(ME.personal.nome)}</b>) está inativa no momento. Fale com ele para reativar.</p><div class="waSlot">${waBlock()}</div><button class="btn" id="out2">Sair</button>`;
+  $("#t-login .lockbox").innerHTML = `<h2>⏸️ Acesso pausado</h2><p>Olá, <b>${esc(primeiroNome(ME.nome))}</b>. A assinatura do seu personal (<b>${esc(ME.personal.nome)}</b>) está inativa no momento. Fale com ele para reativar.</p><div class="waSlot">${waBlock()}</div><button class="btn" id="out2">Sair</button>`;
   ["login", "aluno", "personal"].forEach(x => $("#t-" + x).classList.toggle("hide", x !== "login")); $("#out2").onclick = logoutAll;
 } else if (ME.role === "student" && ME.gate === "recusado") {
   ["login", "aluno", "personal"].forEach(x => $("#t-" + x).classList.toggle("hide", x !== "aluno"));
-  $("#whoName").textContent = "👤 " + (ME.nome || "");
+  $("#whoName").textContent = "👤 " + primeiroNome(ME.nome || "");
   $("#anamCard").classList.add("hide");
   if (!$("#feeHold")) $("#whoName").parentElement.insertAdjacentHTML("afterend", `<div class="card" id="feeHold"><h2>Aguardando o personal</h2><p>Seu personal ainda não aprovou seu acesso. Fale com ele por aqui.</p></div>`);
   mountWa();
 } else if (pixAntesDaAnamnese()) {
   ["login", "aluno", "personal"].forEach(x => $("#t-" + x).classList.toggle("hide", x !== "aluno"));
-  $("#whoName").textContent = "👤 " + (ME.nome || "");
+  $("#whoName").textContent = "👤 " + primeiroNome(ME.nome || "");
   $("#anamCard").classList.add("hide");
   mountWa();
   mountFeeStudent();
@@ -178,7 +200,9 @@ if (ME.role === "student" && !ME.active) {
 const qs = new URLSearchParams(location.search);
 // esqueci a senha – aluno
 $("#t-login .lockbox").insertAdjacentHTML("beforeend", `<p style="font-size:.85rem"><a href="#" id="stuForgot">Esqueci a senha</a></p><div id="stuForgotMsg"></div>`);
-$("#stuForgot").onclick = e => { e.preventDefault(); $("#stuForgotMsg").innerHTML = `<div class="alert warn">🔑 Peça ao seu <b>personal</b> para criar uma nova senha para você: ele faz isso no painel dele, em <b>Senhas</b>. Depois é só entrar com a senha nova.</div>`; };
+$("#stuForgot").onclick = e => { e.preventDefault(); $("#stuForgotMsg").innerHTML = `<div class="alert warn" style="font-size:.9rem">Digite o e-mail da sua conta e toque em <b>Pedir nova senha</b>. O suporte envia um link para criar uma senha nova (vale 1 hora).<input id="stuFgEmail" type="email" placeholder="Seu e-mail" style="margin:8px 0"><button class="btn sm" id="stuFgGo" type="button">Pedir nova senha</button><div id="stuFgOut"></div><p style="margin:8px 0 0">Conta antiga sem e-mail? Peça ao personal uma senha nova, no painel dele, em Senhas.</p></div>`;
+  const atual = $("#lgEmail") && $("#lgEmail").value; if (atual && $("#stuFgEmail")) $("#stuFgEmail").value = atual;
+  $("#stuFgGo").onclick = async () => { try { const r = await api("/api/student/forgot", { email: $("#stuFgEmail").value }); $("#stuFgOut").innerHTML = `<div class="alert ok">${esc(r.msg)}</div>`; } catch (err) { $("#stuFgOut").innerHTML = `<div class="alert bad">${esc(err.message)}</div>`; } }; };
 // esqueci a senha – personal (na tela de login do personal)
 const _lockHTML = lockHTML;
 lockHTML = function () { let h = _lockHTML(); if (pView === "login" && !ME.role) h = h.replace('<p><a href="#" id="pSwap">', '<p style="font-size:.9rem"><a href="#" id="pForgot">Esqueci a senha</a></p><div id="pForgotBox"></div><p><a href="#" id="pSwap">'); return h; };
@@ -209,7 +233,7 @@ function zapBox() {
   <button class="btn sm" id="zapGo" type="button">Salvar</button><div id="zapMsg"></div></details>`;
 }
 function senhaBox() {
-  const opts = (ME.students || []).map(s => `<option value="${esc(s.u)}">${esc(s.nome)} (@${esc(s.u)})</option>`).join("");
+  const opts = (ME.students || []).map(s => `<option value="${esc(s.u)}">${esc(s.nome)} (${esc(s.email || s.u)})</option>`).join("");
   return `<details class="alert ok noprint" id="pwdBox" style="font-size:.85rem"><summary><b>🔑 Senhas</b></summary>
   <p style="margin:8px 0 4px"><b>Trocar minha senha</b></p><input type="password" id="myOld" placeholder="Senha atual" style="margin-bottom:6px"><input type="password" id="myNew" placeholder="Nova senha (mín. 8)" style="margin-bottom:6px"><button class="btn sm" id="myGo">Trocar minha senha</button>
   <p style="margin:12px 0 4px"><b>Nova senha para um aluno</b> (quando ele esquecer)</p>${opts ? `<select id="stSel" style="margin-bottom:6px">${opts}</select><input type="text" id="stNew" placeholder="Nova senha do aluno (mín. 6)" style="margin-bottom:6px"><button class="btn sm" id="stGo">Definir senha do aluno</button>` : "<small>Você ainda não tem alunos.</small>"}<div id="pwdMsg"></div></details>`;
@@ -393,7 +417,7 @@ renderPanel = function () { _renderPanel2(); paintFeeDots(); if (!unlocked || ME
   $("#zapGo").onclick = async () => { try { const r = await api("/api/personal/whatsapp", { numero: $("#zapNum").value }); ME.personal.whatsapp = r.whatsapp; $("#zapNum").value = r.whatsapp; zmsg(r.whatsapp ? "WhatsApp salvo. Seus alunos já podem falar com você." : "Número apagado.", 1); } catch (e) { zmsg(e.message); } };
   const msg = (m, ok) => ($("#pwdMsg").innerHTML = `<div class="alert ${ok ? "ok" : "bad"}">${esc(m)}</div>`);
   $("#myGo").onclick = async () => { try { await api("/api/personal/password", { atual: $("#myOld").value, nova: $("#myNew").value }); $("#myOld").value = $("#myNew").value = ""; msg("Sua senha foi trocada.", 1); } catch (e) { msg(e.message); } };
-  const sg = $("#stGo"); if (sg) sg.onclick = async () => { const u = $("#stSel").value, n = $("#stNew").value; try { await api("/api/personal/student-password", { usuario: u, nova: n }); $("#stNew").value = ""; msg(`Pronto! Passe para o aluno: usuário ${u} – senha ${n}`, 1); } catch (e) { msg(e.message); } };
+  const sg = $("#stGo"); if (sg) sg.onclick = async () => { const u = $("#stSel").value, n = $("#stNew").value, s = (ME.students || []).find(x => x.u === u); try { await api("/api/personal/student-password", { usuario: u, nova: n }); $("#stNew").value = ""; msg(s && s.email ? `Pronto! Passe para o aluno o e-mail ${s.email} e a senha ${n}. Ele entra com esse e-mail.` : `Pronto! Passe para o aluno o usuário ${u} e a senha ${n}.`, 1); } catch (e) { msg(e.message); } };
 };
 if (ME.role === "personal" && typeof unlocked !== "undefined" && unlocked) renderPanel();
 if (!$("#t-personal").classList.contains("hide")) render();

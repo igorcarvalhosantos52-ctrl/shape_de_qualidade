@@ -1,6 +1,6 @@
 // Shape de Qualidade – servidor (Express + SQLite ou Turso)
 const express = require('express'), cookieParser = require('cookie-parser'), bcrypt = require('bcrypt'), crypto = require('crypto'), path = require('path');
-const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards'), tuition = require('./src/tuition'), publicPage = require('./src/public-page'), ebook = require('./src/ebook'), ownerTest = require('./src/owner-test'), medidas = require('./src/medidas');
+const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards'), tuition = require('./src/tuition'), publicPage = require('./src/public-page'), ebook = require('./src/ebook'), ownerTest = require('./src/owner-test'), medidas = require('./src/medidas'), aluno = require('./src/aluno');
 const app = express(); app.set('trust proxy', 1);
 const PROD = process.env.NODE_ENV === 'production', DAY = 864e5;
 app.use(express.json({ limit: '2mb', verify: (req, _r, buf) => { req.rawBody = buf.toString(); } }));
@@ -23,8 +23,15 @@ app.use(async (req, res, next) => {
 const need = role => (req, res, next) => req.sess && req.sess.role === role ? next() : res.status(401).json({ error: 'Faça login.' });
 // limitador simples de tentativas de login
 const hits = new Map();
-function limit(req, res, next) { const k = req.ip + req.path, n = (hits.get(k) || []).filter(t => t > Date.now() - 15 * 60e3); n.push(Date.now()); hits.set(k, n); if (n.length > 20) return res.status(429).json({ error: 'Muitas tentativas. Aguarde 15 minutos.' }); next(); }
-const emailOk = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e), userOk = u => /^[a-z0-9._-]{3,30}$/.test(u);
+function limit(req, res, next) { const k = req.ip + req.path, n = (hits.get(k) || []).filter(t => t > Date.now() - 15 * 60e3); n.push(Date.now()); hits.set(k, n); if (n.length > 30) return res.status(429).json({ error: 'Muitas tentativas. Aguarde 15 minutos.' }); next(); }
+const emailOk = aluno.emailOk, userOk = u => /^[a-z0-9._-]{3,30}$/.test(u);
+async function novoUsuario() {
+  for (let i = 0; i < 8; i++) {
+    const u = 'a' + crypto.randomBytes(5).toString('hex');
+    if (userOk(u) && !(await db.prepare('SELECT 1 FROM students WHERE username=?').get(u))) return u;
+  }
+  throw new Error('Não foi possível criar a conta. Tente de novo.');
+}
 const code = () => crypto.randomBytes(4).toString('hex').toUpperCase();
 const pubP = p => ({ id: p.id, nome: p.nome, email: p.email, cref: p.cref, invite_code: p.invite_code, whatsapp: p.whatsapp || "", pix: tuition.pixPublic(p), has_foto: !!(p && p.foto) });
 function waNorm(raw) {
@@ -74,8 +81,9 @@ app.post('/api/personal/forgot', limit, async (req, res) => {
 app.get('/api/password/reset/:t', async (req, res) => {
   const r = await db.prepare('SELECT * FROM password_resets WHERE token_hash=? AND expires>?').get(sha(String(req.params.t)), Date.now());
   if (!r) return res.status(400).json({ error: 'Link inválido ou vencido. Peça um novo.' });
-  const u = r.role === 'personal' ? await db.prepare('SELECT nome,email login FROM personals WHERE id=?').get(r.user_id) : await db.prepare('SELECT nome,username login FROM students WHERE id=?').get(r.user_id);
-  res.json({ ok: true, role: r.role, nome: u && u.nome, login: u && u.login });
+  const u = r.role === 'personal' ? await db.prepare('SELECT nome,email login FROM personals WHERE id=?').get(r.user_id) : await db.prepare('SELECT nome,email,username FROM students WHERE id=?').get(r.user_id);
+  const login = !u ? '' : r.role === 'personal' ? u.login : (u.email || u.username);
+  res.json({ ok: true, role: r.role, nome: u && u.nome, login });
 });
 app.post('/api/password/reset', limit, async (req, res) => {
   const r = await db.prepare('SELECT * FROM password_resets WHERE token_hash=? AND expires>?').get(sha(String(req.body.token || '')), Date.now());
@@ -85,6 +93,7 @@ app.post('/api/password/reset', limit, async (req, res) => {
   const tbl = r.role === 'personal' ? 'personals' : 'students';
   await db.prepare(`UPDATE ${tbl} SET hash=? WHERE id=?`).run(await bcrypt.hash(pw, 11), r.user_id);
   if (r.role === 'personal') await db.prepare('UPDATE personals SET reset_requested_at=NULL WHERE id=?').run(r.user_id);
+  else await db.prepare('UPDATE students SET reset_requested_at=NULL WHERE id=?').run(r.user_id);
   await db.prepare('DELETE FROM password_resets WHERE token_hash=?').run(r.token_hash); await killSessions(r.role, r.user_id);
   await newSession(res, r.role, r.user_id); res.json({ ok: true, role: r.role });
 });
@@ -173,28 +182,48 @@ app.get('/api/invite/:code', async (req, res) => {
   res.json({ personal: p.nome, full: !!(sb.limit && cnt >= sb.limit), active: sb.active });
 });
 app.post('/api/student/signup', limit, async (req, res) => {
-  const u = String(req.body.usuario || '').trim().toLowerCase(), nome = String(req.body.nome || '').trim(), pw = String(req.body.senha || '');
+  const nome = String(req.body.nome || '').trim(), pw = String(req.body.senha || ''), email = aluno.emailNorm(req.body.email);
   const p = await db.prepare('SELECT * FROM personals WHERE invite_code=?').get(String(req.body.convite || '').trim().toUpperCase());
   if (!p) return res.status(400).json({ error: 'Código de convite inválido. Peça o link ao seu personal.' });
   if (!(await pay.subscriptionOf(p.id)).active) return res.status(402).json({ error: 'A assinatura do seu personal está inativa. Fale com ele.' });
   const sb = await pay.subscriptionOf(p.id), cnt = (await db.prepare('SELECT COUNT(*) n FROM students WHERE personal_id=?').get(p.id)).n;
   if (sb.limit && cnt >= sb.limit) return res.status(403).json({ error: `O seu personal atingiu o limite de ${sb.limit} alunos do plano ${sb.plan_nome}. Peça para ele fazer upgrade do plano para liberar novas vagas.`, code: 'limit' });
-  if (!userOk(u)) return res.status(400).json({ error: 'Usuário inválido (mín. 3 letras/números, sem espaços).' });
   if (nome.length < 2) return res.status(400).json({ error: 'Informe seu nome.' });
+  if (!emailOk(email)) return res.status(400).json({ error: 'Informe um e-mail válido.' });
   if (pw.length < 6) return res.status(400).json({ error: 'A senha precisa ter pelo menos 6 caracteres.' });
-  const alturaCm = medidas.altura(req.body.altura), pesoKg = medidas.peso(req.body.peso);
-  if (alturaCm == null) return res.status(400).json({ error: 'Informe a altura em centímetros ou em metros. Ex.: 175 ou 1,75.' });
-  if (pesoKg == null) return res.status(400).json({ error: 'Informe o peso em quilos. Ex.: 70,5.' });
-  if (await db.prepare('SELECT 1 FROM students WHERE username=?').get(u)) return res.status(409).json({ error: 'Esse usuário já existe.' });
+  if (await db.prepare('SELECT 1 FROM students WHERE email=?').get(email)) return res.status(409).json({ error: 'Esse e-mail já tem conta. Entre com ele ou use outro.' });
   const origin = req.body.origem === 'publico' ? 'publico' : 'convite';
-  const r = await db.prepare('INSERT INTO students(personal_id,username,nome,hash,created_at,origin,altura_cm,peso_kg) VALUES(?,?,?,?,?,?,?,?)').run(p.id, u, nome, await bcrypt.hash(pw, 11), Date.now(), origin, alturaCm, pesoKg);
+  let r;
+  try {
+    r = await db.prepare('INSERT INTO students(personal_id,username,nome,email,hash,created_at,origin) VALUES(?,?,?,?,?,?,?)').run(p.id, await novoUsuario(), nome, email, await bcrypt.hash(pw, 11), Date.now(), origin);
+  } catch (e) {
+    if (/unique/i.test(String(e && e.message))) return res.status(409).json({ error: 'Esse e-mail já tem conta. Entre com ele ou use outro.' });
+    throw e;
+  }
   await newSession(res, 'student', r.lastInsertRowid);
   res.json({ ok: true, pix: origin === 'publico' && (p.fee_cents || 0) > 0 });
 });
 app.post('/api/student/login', limit, async (req, res) => {
-  const s = await db.prepare('SELECT * FROM students WHERE username=?').get(String(req.body.usuario || '').trim().toLowerCase());
-  if (!s || !(await bcrypt.compare(String(req.body.senha || ''), s.hash))) return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
+  const raw = String(req.body.email || req.body.usuario || '').trim(), email = aluno.emailNorm(raw);
+  let s = emailOk(email) ? await db.prepare('SELECT * FROM students WHERE email=?').get(email) : null;
+  if (!s) s = await db.prepare('SELECT * FROM students WHERE username=?').get(raw.toLowerCase());
+  if (!s || !(await bcrypt.compare(String(req.body.senha || ''), s.hash))) return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
   await newSession(res, 'student', s.id); res.json({ ok: true });
+});
+app.post('/api/student/forgot', limit, async (req, res) => {
+  const email = aluno.emailNorm(req.body.email);
+  if (emailOk(email)) {
+    const s = await db.prepare('SELECT id FROM students WHERE email=?').get(email);
+    if (s) await db.prepare('UPDATE students SET reset_requested_at=? WHERE id=?').run(Date.now(), s.id);
+  }
+  res.json({ ok: true, msg: 'Pedido registrado. O suporte do Shape de Qualidade vai te enviar um link para criar uma nova senha' + (process.env.ADMIN_EMAIL ? ` (contato: ${process.env.ADMIN_EMAIL})` : '') + '. O link vale por 1 hora.' });
+});
+app.post('/api/student/medidas', need('student'), async (req, res) => {
+  const alturaCm = medidas.altura(req.body.altura), pesoKg = medidas.peso(req.body.peso);
+  if (alturaCm == null) return res.status(400).json({ error: 'Informe a altura em centímetros ou em metros. Ex.: 175 ou 1,75.' });
+  if (pesoKg == null) return res.status(400).json({ error: 'Informe o peso em quilos. Ex.: 70,5.' });
+  await db.prepare('UPDATE students SET altura_cm=?, peso_kg=? WHERE id=?').run(alturaCm, pesoKg, req.sess.user_id);
+  res.json({ ok: true, altura_cm: alturaCm, peso_kg: pesoKg });
 });
 
 // ---------- estado (bootstrap do app) ----------
@@ -208,7 +237,7 @@ app.get('/api/me', async (req, res) => {
     const paid = await pay.hasPaidAccess(p.id);
     const owner_test = await ownerTest.isOwner(p.id);
     const fees = sub.active ? await tuition.summaryForPersonal(p.id) : {};
-    const students = sub.active ? (await db.prepare('SELECT username,nome,ficha,altura_cm,peso_kg FROM students WHERE personal_id=? ORDER BY nome').all(p.id)).map(s => ({ u: s.username, nome: s.nome, ficha: parse(s.ficha), altura_cm: s.altura_cm == null ? null : Number(s.altura_cm), peso_kg: s.peso_kg == null ? null : Number(s.peso_kg), fee: fees[s.username] || { tone: 'none', label: 'Sem mensalidade', origin: 'convite', gate: '' } })) : [];
+    const students = sub.active ? (await db.prepare('SELECT username,nome,email,ficha,altura_cm,peso_kg FROM students WHERE personal_id=? ORDER BY nome').all(p.id)).map(s => ({ u: s.username, nome: s.nome, email: s.email || '', ficha: parse(s.ficha), altura_cm: s.altura_cm == null ? null : Number(s.altura_cm), peso_kg: s.peso_kg == null ? null : Number(s.peso_kg), fee: fees[s.username] || { tone: 'none', label: 'Sem mensalidade', origin: 'convite', gate: '' } })) : [];
     const count = (await db.prepare('SELECT COUNT(*) n FROM students WHERE personal_id=?').get(p.id)).n;
     return res.json({ role: 'personal', personal: { ...pubP(p), foto: p.foto || '' }, sub, paid, owner_test, students, count, ...P });
   }
@@ -216,7 +245,7 @@ app.get('/api/me', async (req, res) => {
     const s = await db.prepare('SELECT s.*,p.nome pnome,p.cref pcref,p.whatsapp pzap FROM students s JOIN personals p ON p.id=s.personal_id WHERE s.id=?').get(req.sess.user_id);
     if (!s) return res.json({ role: null, ...P });
     const extra = await tuition.attachStudent(s);
-    return res.json({ role: 'student', u: s.username, nome: s.nome, altura_cm: s.altura_cm == null ? null : Number(s.altura_cm), peso_kg: s.peso_kg == null ? null : Number(s.peso_kg), personal: { nome: s.pnome, cref: s.pcref, whatsapp: s.pzap || "" }, active: (await pay.subscriptionOf(s.personal_id)).active, ficha: parse(s.ficha), ...extra, ...P });
+    return res.json({ role: 'student', u: s.username, nome: s.nome, email: s.email || '', altura_cm: s.altura_cm == null ? null : Number(s.altura_cm), peso_kg: s.peso_kg == null ? null : Number(s.peso_kg), personal: { nome: s.pnome, cref: s.pcref, whatsapp: s.pzap || "" }, active: (await pay.subscriptionOf(s.personal_id)).active, ficha: parse(s.ficha), ...extra, ...P });
   }
   res.json({ role: null, ...P });
 });
@@ -288,9 +317,20 @@ app.get('/api/admin/summary', admin, async (req, res) => {
   const mes = await db.prepare("SELECT COALESCE(SUM(CASE WHEN test=0 THEN amount_cents END),0) real, COALESCE(SUM(amount_cents),0) total FROM payments WHERE status='approved' AND created_at>?").get(Date.now() - 30 * DAY);
   const byPlan = await db.prepare("SELECT plan, COUNT(*) n, COALESCE(SUM(CASE WHEN test=0 THEN amount_cents END),0) real, COALESCE(SUM(amount_cents),0) total FROM payments WHERE status='approved' GROUP BY plan").all();
   const pays = await db.prepare('SELECT pa.*,p.email FROM payments pa JOIN personals p ON p.id=pa.personal_id ORDER BY pa.created_at DESC LIMIT 100').all();
-  res.json({ plans: await pay.plans(), byPlan, personals: ps, revenue: rev, last30: mes, payments: pays, providers: pay.providers(), ativos: ps.filter(p => p.sub.active).length });
+  const alunosSenha = await db.prepare('SELECT id,nome,email,reset_requested_at FROM students WHERE reset_requested_at IS NOT NULL AND email IS NOT NULL ORDER BY reset_requested_at DESC').all();
+  res.json({ plans: await pay.plans(), byPlan, personals: ps, alunosSenha, revenue: rev, last30: mes, payments: pays, providers: pay.providers(), ativos: ps.filter(p => p.sub.active).length });
 });
-app.post('/api/admin/reset-link', admin, async (req, res) => { const p = await db.prepare('SELECT id,email FROM personals WHERE id=?').get(+req.body.personal_id); if (!p) return res.status(404).json({ error: 'Personal não encontrado.' }); res.json({ ok: true, email: p.email, link: await makeReset(req, 'personal', p.id), expira_em_min: 60 }); });
+app.post('/api/admin/reset-link', admin, async (req, res) => {
+  if (req.body.student_id) {
+    const s = await db.prepare('SELECT id,email,nome FROM students WHERE id=?').get(+req.body.student_id);
+    if (!s) return res.status(404).json({ error: 'Aluno não encontrado.' });
+    if (!s.email) return res.status(400).json({ error: 'Este aluno não tem e-mail cadastrado.' });
+    return res.json({ ok: true, email: s.email, nome: s.nome, link: await makeReset(req, 'student', s.id), expira_em_min: 60 });
+  }
+  const p = await db.prepare('SELECT id,email FROM personals WHERE id=?').get(+req.body.personal_id);
+  if (!p) return res.status(404).json({ error: 'Personal não encontrado.' });
+  res.json({ ok: true, email: p.email, link: await makeReset(req, 'personal', p.id), expira_em_min: 60 });
+});
 app.post('/api/admin/plans', admin, async (req, res) => { try { res.json({ ok: true, plans: await pay.setPlans(req.body || {}) }); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.get('/admin', admin, (_q, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/teste-voz', (_q, res) => res.sendFile(path.join(__dirname, 'public', 'teste-voz.html')));
