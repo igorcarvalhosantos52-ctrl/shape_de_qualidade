@@ -108,9 +108,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v26/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v27/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v26');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v27');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -275,6 +275,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok((await a.$eval('#whoName', e => e.textContent)) === '👤 Pamela' && (await a.$eval('#hdrAluno', e => e.textContent)) === 'Aluno: Pamela', 'perfil e cabeçalho mostram só o primeiro nome');
     await a.waitForFunction(() => (window.__played || []).some(s => /Quantos anos você tem/.test(s.text)), { timeout: 8000 });
     ok(await a.evaluate(() => !(window.__spoken || []).some(s => /Quantos anos você tem/.test(s.text))), 'depois do login a primeira pergunta toca em mp3, sem a voz do navegador');
+    ok(!!(await a.$('#voiceGo')) && /Toque aqui para conversar por voz/.test(await a.$eval('#voiceGo', e => e.innerText)), 'durante a anamnese o aluno vê o botão para conversar por voz');
     ok(/ligado/.test(await a.$eval('#ttsToggle', e => e.textContent)) && (await a.$eval('#tts', e => e.checked)) && /volume de mídia/.test(await a.$eval('#volHint', e => e.textContent)), 'alto-falante começa ligado e avisa para checar o volume de mídia');
     const nRep = await a.evaluate(() => (window.__played || []).length);
     await a.evaluate(() => document.querySelector('#chat .repetir').click());
@@ -314,6 +315,16 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await a.screenshot({ path: SHOTS + '/06-anamnese.png', fullPage: false });
     await a.waitForSelector('#genBtn', { visible: true, timeout: 15000 }); await a.click('#genBtn'); await sleep(1200);
     const txt = await a.$eval('#statusCard', e => e.innerText); ok(/aguard|pendente/i.test(txt), 'treino gerado e aguardando aprovação');
+    const muda = await a.evaluate(() => {
+      const n = (window.__played || []).length, s = (window.__spoken || []).length;
+      let cancelou = 0;
+      const orig = speechSynthesis.cancel.bind(speechSynthesis);
+      speechSynthesis.cancel = function () { cancelou += 1; return orig(); };
+      speak('Não fale no treino');
+      say('Fala automática no treino');
+      return { played: (window.__played || []).length - n, spoken: (window.__spoken || []).length - s, cancelou, voice: !!document.querySelector('#voiceGo'), anam: document.querySelector('#anamCard').classList.contains('hide'), tts: !!document.querySelector('#ttsPlay') };
+    });
+    ok(muda.played === 0 && muda.spoken === 0 && muda.cancelou > 0 && muda.anam && !muda.voice && !muda.tts, 'depois da anamnese a coach não fala, cancela a voz e esconde o botão');
     await a.screenshot({ path: SHOTS + '/07-aluno-aguardando.png' });
     // aluno não pode se autoaprovar via API
     const self = await a.evaluate(async (u) => { const F = JSON.parse(localStorage.getItem('coachvoz_v1_' + u)); F.status = 'aprovado'; F.aprov = { nome: 'hacker' };
@@ -636,15 +647,26 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const loginUsuario = await post(an, '/api/student/login', { email: pamU, senha: 'pam456' });
     const loginEmail = await post(an, '/api/student/login', { email: '  Pamela.Souza@teste.com ', senha: 'pam456' });
     ok(loginVelho.st === 401 && loginUsuario.st === 200 && loginEmail.st === 200, 'aluno entra com e-mail ou com o usuário interno, e a senha antiga deixa de valer');
-    await an.goto(URL, { waitUntil: 'networkidle0' }); await an.waitForSelector('#voiceGo');
-    ok(/Toque aqui para conversar por voz/.test(await an.$eval('#voiceGo', e => e.innerText)), 'aluno vê o botão para iniciar a conversa por voz');
-    await an.$eval('#voiceGo', e => e.click()); await sleep(300); ok(!(await an.$('#voiceGo')), 'toque inicia a voz (botão some)');
-    ok(await an.evaluate(() => !$('#mic').classList.contains('live') && listening === false), 'destravar a voz do coach não liga o microfone');
+    await an.goto(URL, { waitUntil: 'networkidle0' }); await an.waitForSelector('#statusCard');
+    const calada = await an.evaluate(() => {
+      const antes = (window.__played || []).length;
+      const falou = [];
+      let cancelou = 0;
+      const origCancel = speechSynthesis.cancel.bind(speechSynthesis);
+      const origSpeak = speechSynthesis.speak.bind(speechSynthesis);
+      speechSynthesis.cancel = function () { cancelou += 1; return origCancel(); };
+      speechSynthesis.speak = function (u) { falou.push(String(u && u.text || '')); return origSpeak(u); };
+      speak('Teste fora da anamnese');
+      say('Fala automática');
+      return { voiceGo: !!document.querySelector('#voiceGo'), anam: document.querySelector('#anamCard').classList.contains('hide'), played: (window.__played || []).length - antes, falou, cancelou, tts: !!document.querySelector('#ttsPlay'), status: S.status };
+    });
+    ok(calada.status === 'aprovado' && calada.anam && !calada.voiceGo && calada.played === 0 && calada.falou.length === 0 && !calada.tts && calada.cancelou > 0, 'com a ficha aprovada a coach não fala, não mostra o botão de voz e cancela a fala pendente');
+    ok(await an.evaluate(() => !$('#mic').classList.contains('live') && listening === false), 'a tela de treino não liga o microfone');
     const fg = await (await browser.createBrowserContext()).newPage(); await fg.goto(URL + '/?area=personal', { waitUntil: 'networkidle0' });
     await fg.waitForSelector('#pForgot'); await fg.$eval('#pForgot', e => e.click()); await fg.type('#fgEmail', 'igor@teste.com'); await fg.$eval('#fgGo', e => e.click()); await fg.waitForSelector('#fgMsg .alert');
     ok(/link/.test(await fg.$eval('#fgMsg', e => e.innerText)), 'personal pede nova senha em "Esqueci a senha"');
     // voz do coach bloqueada pelo navegador -> botão "Tocar para ouvir"
-    await an.evaluate(() => { window.speechSynthesis.cancel(); const o = speechSynthesis.speak; window.__orig = o; speechSynthesis.speak = () => {}; $("#tts").checked = true; speak("Teste de voz"); });
+    await an.evaluate(() => { S.status = 'none'; document.querySelector('#anamCard').classList.remove('hide'); window.speechSynthesis.cancel(); const o = speechSynthesis.speak; window.__orig = o; speechSynthesis.speak = () => {}; $("#tts").checked = true; speak("Teste de voz"); });
     await an.waitForSelector('#ttsPlay', { timeout: 8000 }); ok(/Tocar para ouvir/.test(await an.$eval('#ttsPlay', e => e.innerText)), 'se o navegador bloquear a fala aparece "Tocar para ouvir"');
     const vz = await an.evaluate(() => ({ lang: (curVoice() || { lang: 'pt-BR' }).lang, sr: !!SR }));
     ok(/^pt/i.test(vz.lang), 'voz escolhida é português (' + vz.lang + ')');
@@ -688,6 +710,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       window.SpeechRecognition = window.webkitSpeechRecognition = FakeSR;
     });
     await vp.goto(URL, { waitUntil: 'networkidle0' }); await vp.waitForSelector('#mic');
+    await vp.evaluate(() => { S.status = 'none'; const c = document.querySelector('#anamCard'); if (c) c.classList.remove('hide'); });
     await vp.evaluate(() => new Promise(ok => { if (!('speechSynthesis' in window) || speechSynthesis.getVoices().length) return ok(); const t = setTimeout(ok, 1600); speechSynthesis.addEventListener('voiceschanged', () => { clearTimeout(t); ok(); }, { once: true }); }));
     ok(await vp.evaluate(() => !window.__srN && listening === false && !$('#mic').classList.contains('live') && !$('#autoL')), 'ao abrir a tela o microfone continua desligado');
     const said = await vp.evaluate(() => { spkId++; clearTimeout(ttsWD); try { speechSynthesis.cancel(); } catch (e) {} $('#mic').classList.remove('ai'); updMode(); $('#tts').checked = false; const n = window.__srN || 0; say('Pergunta sem ligar o microfone.'); return n; });
@@ -963,9 +986,55 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const avancou = await f.evaluate(async (u) => (await (await fetch('/api/personal/tuition/' + u)).json()).fee, caioU);
     const esperado = pix.addMonth(pix.cycle({ amount_cents: 15000, due_day: dueDay, paid_through: null }).due, dueDay);
     ok(avancou.tone === 'ok' && avancou.paid_through && avancou.due === esperado, 'confirmar avança o vencimento um mês');
+    ok(!!(await pub.$('#feeCard img')) && !!(await pub.$('#feePayload')) && !!(await pub.$('#feeCard')), 'antes de revalidar o aluno ainda está com o Pix antigo na tela');
+    const emDia = await pub.evaluate(async () => {
+      await window.__syncFee();
+      const s = document.querySelector('#feeSelo');
+      return { selo: s ? s.textContent : '', card: !!document.querySelector('#feeCard'), payload: !!document.querySelector('#feePayload'), ja: !!document.querySelector('#feeJa'), equip: !document.querySelector('#equipCard').classList.contains('hide') };
+    });
+    ok(emDia.selo === 'Mensalidade em dia' && !emDia.card && !emDia.payload && !emDia.ja && emDia.equip, 'com a mensalidade confirmada some o Pix e fica o selo Mensalidade em dia');
+    await pub.evaluate(() => {
+      const s = document.querySelector('#feeSelo'); if (s) s.remove();
+      document.querySelector('#t-aluno .whoami').insertAdjacentHTML('afterend', '<div class="card feeCard" id="feeCard"><img alt="QR Code Pix"><textarea id="feePayload">VELHO</textarea><button id="feeJa" type="button">Já paguei</button></div>');
+      window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+    });
+    await pub.waitForFunction(() => { const s = document.querySelector('#feeSelo'); return s && s.textContent === 'Mensalidade em dia' && !document.querySelector('#feeCard') && !document.querySelector('#feePayload') && !document.querySelector('#feeJa'); });
+    ok(true, 'ao abrir de novo a página não restaura o Pix antigo');
+    const hdr = await pub.evaluate(async () => {
+      const r = await fetch('/api/student/tuition', { cache: 'no-store' });
+      const j = await r.json();
+      return { cc: r.headers.get('cache-control') || '', payload: j.payload || '', qr: j.qr || '', tone: (j.fee || {}).tone };
+    });
+    ok(hdr.tone === 'ok' && hdr.payload === '' && !hdr.qr && /no-store/.test(hdr.cc), 'mensalidade confirmada não devolve o código Pix e a resposta não fica em cache');
+    await pub.evaluate(() => {
+      window.scrollTo(0, 0);
+      const s = document.querySelector('#feeSelo'); if (s) s.remove();
+      document.querySelector('#t-aluno .whoami').insertAdjacentHTML('afterend', '<div class="card feeCard" id="feeCard"><img alt="QR Code Pix"><textarea id="feePayload">VELHO</textarea><button id="feeJa" type="button">Já paguei</button></div>');
+    });
+    const voltou = pub.waitForNavigation({ waitUntil: 'networkidle0' });
+    await pub.evaluate(() => window.__puxarAtualizar()).catch(() => {});
+    await voltou;
+    await pub.waitForFunction(() => { const s = document.querySelector('#feeSelo'); return s && s.textContent === 'Mensalidade em dia' && !document.querySelector('#feePayload') && !document.querySelector('#feeJa'); });
+    ok(true, 'puxar para atualizar busca a mensalidade de novo e não traz o Pix antigo');
+    let venceu = null;
+    for (let n = 1; n <= 8 && !venceu; n++) {
+      const dt = new Date(); dt.setMonth(dt.getMonth() - n); dt.setDate(Math.min(dueDay, new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate()));
+      const iso = pix.iso(dt);
+      const tone = pix.cycle({ amount_cents: 15000, due_day: dueDay, paid_through: iso }).tone;
+      if (tone === 'bad' || tone === 'soon') venceu = iso;
+    }
+    ok(!!venceu, 'há um vencimento seguinte para o Pix voltar');
+    const caioId = (await sql.prepare('SELECT id FROM students WHERE username=?').get(caioU)).id;
+    await sql.prepare('UPDATE tuition SET paid_through=? WHERE student_id=?').run(venceu, caioId);
+    await pub.evaluate(() => window.__syncFee());
+    await pub.waitForFunction(() => { const card = document.querySelector('#feeCard'); const payload = document.querySelector('#feePayload'); return card && card.querySelector('img') && payload && payload.value.includes('150.00') && document.querySelector('#feeJa') && !document.querySelector('#feeSelo'); });
+    ok(true, 'no próximo vencimento o Pix, o QR e o Já paguei voltam');
     await f.click('#feeUndo');
     await f.waitForFunction(() => /Pagamento informado/.test((document.querySelector('#feeEditBody') || {}).innerText || '') && /desfeito/.test((document.querySelector('#feeHist') || {}).innerText || ''));
     ok(!!(await f.$('.stu[data-u="' + caioU + '"] .feeDot.soon')), 'desfazer devolve o aviso de pagamento e a cor amarela');
+    await pub.evaluate(() => window.__syncFee());
+    await pub.waitForFunction(() => /Pagamento informado/.test((document.querySelector('#feeCard') || {}).innerText || '') && !document.querySelector('#feeJa') && !document.querySelector('#feeSelo'));
+    ok(true, 'sem a confirmação do mês o selo sai e o aviso de pagamento volta');
     const davi = await fetch(URL + '/api/student/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'davi@teste.com', nome: 'Davi Direto', senha: 'aluno123', convite: codeLia, whatsapp: '11911112222' }) });
     const daviJ = await davi.json();
     ok(davi.status === 200 && daviJ.pix === false, 'convite direto não manda o aluno para o Pix antes da anamnese');

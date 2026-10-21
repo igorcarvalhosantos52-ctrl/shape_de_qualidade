@@ -157,6 +157,7 @@ async function studentCard(studentId) {
   const p = await db.prepare('SELECT * FROM personals WHERE id=?').get(s.personal_id);
   const fee = viewOf(p, await rowOf(s.id));
   const out = { fee, pix_ok: pixReady(p), chave: '', tipo: '', payload: '', qr: '' };
+  if (fee.tone === 'ok') return { fee, pix_ok: false, chave: '', tipo: '', payload: '', qr: '' };
   if (fee.amount_cents && pixReady(p)) {
     out.chave = p.pix_chave;
     out.tipo = p.pix_tipo;

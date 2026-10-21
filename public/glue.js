@@ -3,7 +3,7 @@
 const ME = window.__ME || { role: null };
 const brl = c => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 async function api(url, body, method) {
-  const r = await fetch(url, { method: method || (body ? "POST" : "GET"), headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+  const r = await fetch(url, { method: method || (body ? "POST" : "GET"), cache: "no-store", headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }, body: body ? JSON.stringify(body) : undefined });
   const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Erro " + r.status); return j;
 }
 async function logoutAll() { try { speechSynthesis.cancel(); } catch (e) {} await api("/api/logout", {}); location.href = "/"; }
@@ -212,6 +212,7 @@ if (ME.role === "student" && !ME.active) {
    Depois do login a página recarrega; sem um toque o celular bloqueia a voz do coach.
    Este botão "destrava" a voz e repete a última pergunta. */
 (function voiceStart() {
+  if (typeof emAnamnese !== "function" || !emAnamnese()) return;
   if (ME.role !== "student" || !ME.active) return;
   const hasTTS = "speechSynthesis" in window, mic = $("#mic"); if (!mic) return;
   const box = document.createElement("div"); box.id = "voiceGo"; box.className = "alert ok noprint";
@@ -368,19 +369,49 @@ function pixAntesDaAnamnese() {
   const f = ME && ME.fee;
   return !!(ME && ME.role === "student" && ME.active !== false && ME.origin === "publico" && ME.gate !== "recusado" && f && f.amount_cents > 0 && !f.informed && f.tone !== "ok");
 }
+function feeEmDia(f) { return !!(f && f.tone === "ok"); }
+function paintFeeSelo() {
+  const card = $("#feeCard"); if (card) card.remove();
+  if ($("#feeSelo")) return;
+  const html = `<p id="feeSelo" class="feeSelo">Mensalidade em dia</p>`;
+  const wa = $("#waTop"), who = document.querySelector("#t-aluno .whoami");
+  if (wa) wa.insertAdjacentHTML("afterend", html);
+  else if (who) who.insertAdjacentHTML("afterend", html);
+}
 function mountFeeStudent() {
-  if (!ME || ME.role !== "student" || !ME.fee || !(ME.fee.amount_cents > 0) || $("#feeCard")) return;
+  if (!ME || ME.role !== "student" || !ME.fee || !(ME.fee.amount_cents > 0)) return;
+  if (feeEmDia(ME.fee)) { paintFeeSelo(); return; }
+  const selo = $("#feeSelo"); if (selo) selo.remove();
+  if ($("#feeCard")) return;
   const html = `<div class="card feeCard" id="feeCard"><h2>Mensalidade</h2><div id="feeCardBody">Carregando…</div></div>`;
   const wa = $("#waTop"), who = document.querySelector("#t-aluno .whoami");
   if (wa) wa.insertAdjacentHTML("afterend", html);
   else if (who) who.insertAdjacentHTML("afterend", html);
   loadFeeCard();
 }
+async function syncFee() {
+  if (!ME || ME.role !== "student") return;
+  let d;
+  try {
+    const r = await fetch("/api/student/tuition", { cache: "no-store", headers: { "Cache-Control": "no-store" } });
+    d = await r.json().catch(() => ({}));
+    if (!r.ok) return;
+  } catch (e) { return; }
+  ME.fee = d.fee;
+  if (window.__ME) window.__ME.fee = d.fee;
+  if (feeEmDia(d.fee)) { paintFeeSelo(); return; }
+  const selo = $("#feeSelo"); if (selo) selo.remove();
+  const card = $("#feeCard"); if (card) card.remove();
+  mountFeeStudent();
+}
+window.__syncFee = syncFee;
 async function loadFeeCard() {
   const body = $("#feeCardBody"); if (!body) return;
   try {
     const d = await api("/api/student/tuition");
     ME.fee = d.fee;
+    if (window.__ME) window.__ME.fee = d.fee;
+    if (feeEmDia(d.fee)) { paintFeeSelo(); return; }
     if (!$("#feeCardBody")) return;
     const f = d.fee || {}, pago = f.tone === "ok" || f.informed;
     body.innerHTML = `<p><b>${brl(f.amount_cents || 0)}</b>${f.due_br ? " · vence " + esc(f.due_br) : ""}<br>${esc(f.label || "")}${f.informed ? " · Pagamento informado" : ""}</p>` +
@@ -448,8 +479,18 @@ renderPanel = function () { _renderPanel2(); paintFeeDots(); if (!unlocked || ME
 };
 if (ME.role === "personal" && typeof unlocked !== "undefined" && unlocked) renderPanel();
 if (!$("#t-personal").classList.contains("hide")) render();
+if (ME && ME.role === "student" && ME.active !== false && ME.gate !== "recusado") syncFee();
+addEventListener("pageshow", () => { if (ME && ME.role === "student" && ME.active !== false && ME.gate !== "recusado") syncFee(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && ME && ME.role === "student" && ME.active !== false && ME.gate !== "recusado") syncFee(); });
 
 /* ---------- Puxar para atualizar (no app instalado não há botão de recarregar) ---------- */
+async function puxarAtualizar() {
+  const ind = document.getElementById("ptr");
+  if (ind) ind.textContent = "Atualizando...";
+  try { if (ME && ME.role === "student") await Promise.race([syncFee(), new Promise(r => setTimeout(r, 2000))]); } catch (e) {}
+  location.reload();
+}
+window.__puxarAtualizar = puxarAtualizar;
 (function ptr() {
   const ind = document.createElement("div"); ind.id = "ptr";
   ind.style.cssText = "position:fixed;left:50%;top:0;transform:translate(-50%,-60px);background:#111;color:#d4a017;border:1px solid #d4a017;padding:6px 14px;border-radius:0 0 12px 12px;font-size:.85rem;z-index:9998;transition:transform .15s;pointer-events:none";
@@ -460,7 +501,7 @@ if (!$("#t-personal").classList.contains("hide")) render();
   addEventListener("touchmove", e => { if (y0 === null) return; if (scrollY > 0) { y0 = null; ind.style.transform = "translate(-50%,-60px)"; return; }
     dy = e.touches[0].clientY - y0; if (dy <= 10) return; ind.textContent = dy > TH ? "↻ Solte para atualizar" : "↓ Puxe para atualizar";
     ind.style.transform = `translate(-50%,${Math.min(dy / 2, 40) - 20}px)`; }, { passive: true });
-  addEventListener("touchend", () => { if (y0 !== null && dy > TH) { ind.textContent = "Atualizando..."; location.reload(); } else ind.style.transform = "translate(-50%,-60px)"; y0 = null; dy = 0; });
+  addEventListener("touchend", () => { if (y0 !== null && dy > TH) puxarAtualizar(); else ind.style.transform = "translate(-50%,-60px)"; y0 = null; dy = 0; });
 })();
 // nova versão do app publicada: recarrega só se já havia um service worker ao abrir a página (troca de versão), no máximo uma vez
 if ("serviceWorker" in navigator) { const hadController = !!navigator.serviceWorker.controller; let reloading = false; navigator.serviceWorker.addEventListener("controllerchange", () => { if (!hadController || reloading || !navigator.serviceWorker.controller) return; reloading = true; if (!document.querySelector("input:focus,textarea:focus")) location.reload(); }); navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => {}); }
@@ -468,5 +509,11 @@ if ("serviceWorker" in navigator) { const hadController = !!navigator.serviceWor
 /* Chrome Android pausa a fala longa sozinho; resume() periódico segura. Não espera onvoiceschanged para falar. */
 (function ttsKeepAlive() {
   if (!("speechSynthesis" in window)) return;
-  setInterval(() => { if (speechSynthesis.speaking) try { speechSynthesis.resume(); } catch (e) {} }, 5000);
+  setInterval(() => {
+    if (typeof emAnamnese === "function" && !emAnamnese()) {
+      if (speechSynthesis.speaking || speechSynthesis.pending) { try { speechSynthesis.cancel(); } catch (e) {} }
+      return;
+    }
+    if (speechSynthesis.speaking) try { speechSynthesis.resume(); } catch (e) {}
+  }, 5000);
 })();

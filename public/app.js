@@ -245,7 +245,7 @@ function finishAnam(){
   S.queue.splice(at,0,...faltam);
   S.step=at;save();ask();return}
  const r=risk();
- say("Obrigado, "+(primeiroNome(S.a.nome)||"")+"! Anamnese concluída."+(r.length?" Atenção: identifiquei pontos de risco. Você vai precisar de liberação médica antes de treinar.":" Agora marque os equipamentos da sua academia."));
+ addMsg("c","Obrigado, "+(primeiroNome(S.a.nome)||"")+"! Anamnese concluída."+(r.length?" Atenção: identifiquei pontos de risco. Você vai precisar de liberação médica antes de treinar.":" Agora marque os equipamentos da sua academia."));
  S.status="equip";save();render()}
 
 function cleanObj(t){let x=String(t||"").trim().replace(/[.!?;]+$/,"").replace(/^(ah|eh|bom|entao|então|olha|tipo|é|e)[,\s]+/i,"").replace(/^(o )?meu objetivo (é|e|eh)\s+/i,"").replace(/^(eu )?(quero|queria|gostaria de|pretendo|busco)\s+/i,"").replace(/^(é|e)\s+/i,"").trim();return x?x.charAt(0).toUpperCase()+x.slice(1):""}
@@ -388,8 +388,8 @@ const PAINLBL={ombro:"ombro",lombar:"costas",joelho:"joelho",punho:"punho",cotov
 const MAINOF={ombro:["ombro"],lombar:["costas"],joelho:["quad"],punho:["antebraco"],cotovelo:["triceps","biceps"],quadril:["post"],tornozelo:["pant"]};
 const EXTRA={lombar:/agachamento livre|terra|stiff|remada curvada|smith|farmer|bulgaro|afundo/i,ombro:/desenvolvimento|mergulho|supino fechado|barra fixa|frances/i,joelho:/agachamento livre|bulgaro|afundo|extensora/i,pescoco:/desenvolvimento|farmer|terra|encolhimento/i};
 const UNSAFE="Não consegui ajustar com segurança. Consulte o seu personal.",DUV="Qualquer dúvida, consulte o seu personal.";
-function adjust(t){if(correction(t))return;if(S.status!=="aprovado"||!S.plan){say("Seu treino ainda aguarda a aprovação do personal. Se quiser corrigir uma resposta, diga por exemplo: errei, são 4 dias por semana.");return}
- const n=norm(t),td=todayTreino();if(!td.hoje){say("Hoje é descanso, não há treino para ajustar. "+DUV);return}
+function adjust(t){if(correction(t))return;if(S.status!=="aprovado"||!S.plan){const msg="Seu treino ainda aguarda a aprovação do personal. Se quiser corrigir uma resposta, diga por exemplo: errei, são 4 dias por semana.";$("#adjOut").innerHTML=`<div class="alert warn">${esc(msg)}</div>`;return}
+ const n=norm(t),td=todayTreino();if(!td.hoje){$("#adjOut").innerHTML=`<div class="alert warn">${esc("Hoje é descanso, não há treino para ajustar. "+DUV)}</div>`;return}
  const sw=activeSwap();const orig=(sw&&!sw.rest?sw:(S.plan.treinos[td.idx]||S.plan.treinos[0]));const day=JSON.parse(JSON.stringify(orig));const exp=[],lbl=[];let unsafe="";
  const tired=isTired(n),painW=/\bdor\b|dores|doendo|doi\b|machuc|lesion|incomod|travad/.test(n);
  const areas=PAINMAP.filter(([k,r])=>r.test(n)).map(x=>x[0]);
@@ -417,10 +417,10 @@ function adjust(t){if(correction(t))return;if(S.status!=="aprovado"||!S.plan){sa
   if(!unsafe&&/pouco tempo|pressa|rapido/.test(n)){day.blocos.forEach(b=>{b.ex=b.ex.slice(0,2);b.ex.forEach(e=>e.d="45s")});lbl.push("pouco tempo");exp.push("Pouco tempo: 2 exercícios por grupo com descanso menor.")}
   if(!unsafe&&!lbl.length)unsafe="não entendi o que ajustar";}
  const dk=dayKey(NOW()),dt=NOW().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
- if(unsafe){S.adjLog=(S.adjLog||[]).concat([dt+" “"+t+"” — não ajustado ("+unsafe+")"]);save();render();$("#adjOut").innerHTML=`<div class="alert bad">⚠️ <b>${UNSAFE}</b><br><small>${esc(unsafe[0].toUpperCase()+unsafe.slice(1))}.</small></div>`;say(UNSAFE);return}
+ if(unsafe){S.adjLog=(S.adjLog||[]).concat([dt+" “"+t+"” — não ajustado ("+unsafe+")"]);save();render();$("#adjOut").innerHTML=`<div class="alert bad">⚠️ <b>${UNSAFE}</b><br><small>${esc(unsafe[0].toUpperCase()+unsafe.slice(1))}.</small></div>`;return}
  exp.push(DUV);day.adj=true;day.lbl=lbl.join(" + ");
  S.adj=(S.adj||[]).filter(a=>a.dk!==dk);S.adj.unshift({t,dk,idx:td.idx,quando:new Date().toLocaleString("pt-BR"),exp,day});S.adj=S.adj.slice(0,10);
- S.adjLog=(S.adjLog||[]).concat([dt+" "+day.lbl]);save();render();say("Ajustei o treino de hoje: "+exp.join(" "))}
+ S.adjLog=(S.adjLog||[]).concat([dt+" "+day.lbl]);save();render()}
 function todayAdj(){if(!S.plan||S.status!=="aprovado")return null;const td=todayTreino();return td.hoje?(S.adj||[]).find(a=>a.dk===dayKey(NOW())&&a.day&&(a.idx===undefined||a.idx===td.idx)):null}
 
 /* ---------- Detalhes dos exercícios ---------- */
@@ -550,7 +550,24 @@ function clipSegments(text){const clips=window.COACH_CLIPS||{},keys=Object.keys(
   let at=rest.length;for(const k of keys){const j=rest.indexOf(k);if(j>0&&j<at)at=j}const bit=rest.slice(0,at).trim();if(bit)out.push({text:bit});rest=rest.slice(at)}
  return out}
 function primeAudio(){if(!clipPlayer)return;try{clipPlayer.src="/audio/silence.mp3";const p=clipPlayer.play();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
-function speak(t,onEnd,opts){const id=++spkId;let done=false;setAI(true);try{if(clipPlayer)clipPlayer.pause()}catch(e){}
+/* A coach só fala enquanto a anamnese está aberta. Treino, painel e mensalidade ficam em silêncio. */
+function emAnamnese(){
+ if(typeof viewing!=="undefined"&&viewing)return false;
+ if(window.__ME&&window.__ME.role&&window.__ME.role!=="student")return false;
+ if(!S||S.status!=="none")return false;
+ const card=document.getElementById("anamCard");
+ if(card&&card.classList.contains("hide"))return false;
+ return true}
+function silenciarCoach(){
+ spkId++;clearTimeout(ttsWD);
+ try{if("speechSynthesis"in window)speechSynthesis.cancel()}catch(e){}
+ try{if(clipPlayer){clipPlayer.pause();clipPlayer.currentTime=0}}catch(e){}
+ setAI(false);
+ const b=$("#ttsPlay");if(b)b.remove();
+ if(!emAnamnese()){const v=$("#voiceGo");if(v)v.remove()}}
+function speak(t,onEnd,opts){
+ if(!emAnamnese()){silenciarCoach();if(onEnd)onEnd();return}
+ const id=++spkId;let done=false;setAI(true);try{if(clipPlayer)clipPlayer.pause()}catch(e){}
  const fin=()=>{if(done||id!==spkId)return;done=true;clearTimeout(ttsWD);try{if(clipPlayer)clipPlayer.pause()}catch(e){}setAI(false);onEnd&&onEnd()};
  if(!t||!ttsEnabled()){fin();return}
  const segs=clipSegments(t);if(!segs.length){fin();return}
@@ -586,7 +603,7 @@ function speak(t,onEnd,opts){const id=++spkId;let done=false;setAI(true);try{if(
 function say(t){if(!t)return;addMsg("c",t);speak(t)}
 function addMsg(w,t){if(target==="anam"&&S.status==="none"||w==="a"&&target==="anam"){S.chat.push([w,t]);save()}renderChat()}
 function renderChat(){$("#chat").innerHTML="";S.chat.forEach(([w,t])=>{const d=document.createElement("div");d.className="msg "+w;if(w==="c"&&t){const s=document.createElement("span");s.textContent=t;d.appendChild(s);const b=document.createElement("button");b.type="button";b.className="btn sm sec repetir";b.textContent="Repetir";b.onclick=()=>speak(t,null,{interrupt:true});d.appendChild(b)}else d.textContent=t;$("#chat").appendChild(d)});$("#chat").scrollTop=1e6}
-function unlockTts(ev){if(window.__ttsUnlocked)return;window.__ttsUnlocked=true;try{speechSynthesis.resume()}catch(e){}
+function unlockTts(ev){if(!emAnamnese()){silenciarCoach();return}if(window.__ttsUnlocked)return;window.__ttsUnlocked=true;try{speechSynthesis.resume()}catch(e){}
  if(!ttsEnabled())return;const last=lastCoachText();const needs=last&&clipSegments(last).some(s=>s.mp3);
  if(needs?window.__audioHeard:window.__ttsHeard)return;const el=ev&&ev.target;if(el&&el.closest&&el.closest("#ttsToggle,#voiceGo,#ttsPlay,.repetir"))return;
  if(last)speak(last)}
@@ -736,6 +753,7 @@ function zapAlunoHTML(){if(!viewing)return "";const st=window.__ME&&(window.__ME
 function bindApagar(){const open=$("#apagarAluno"),box=$("#apagarBox"),go=$("#apagarGo"),txt=$("#apagarTxt"),dica=$("#apagarDica");if(!open||!box||!go)return;open.onclick=()=>{box.classList.remove("hide");if(txt)txt.focus()};go.onclick=()=>{const typed=(txt&&txt.value||"").trim().toUpperCase()==="APAGAR";if(!typed&&go.dataset.arm!=="1"){go.dataset.arm="1";if(dica)dica.classList.remove("hide");return}go.disabled=true;fetch("/api/personal/students/"+encodeURIComponent(viewing),{method:"DELETE"}).then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Não foi possível apagar.");location.href="/?area=personal&apagado=1"}).catch(e=>{go.disabled=false;if(dica){dica.textContent=e.message;dica.classList.remove("hide")}})}}
 function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.status,r=risk();
  $("#anamCard").classList.toggle("hide",st!=="none");
+ if(!emAnamnese())silenciarCoach();
  $("#equipCard").classList.toggle("hide",st!=="equip");
  $("#equipList").innerHTML=EQUIP.map(e=>`<label><input type="checkbox" value="${e}" ${S.equip.includes(e)?"checked":""}>${e}</label>`).join("");
  const sc=$("#statusCard");sc.classList.toggle("hide",!["pendente","bloqueado","aprovado","equip"].includes(st)||st==="equip"&&!r.length);
@@ -745,7 +763,7 @@ function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.stat
  if(st==="aprovado")sc.innerHTML=`<h2>Seu treino ${badge()}</h2><p style="color:var(--mut)">Treinador: ${esc(S.aprov.nome)}${S.aprov.cref?" – CREF "+esc(S.aprov.cref):""} · aprovado em ${esc(S.aprov.data)}</p>`+medNoteHTML()+todayHTML();
  const tdk=st==="aprovado"?todayTreino():null;
  $("#adjCard").classList.toggle("hide",!(st==="aprovado"&&tdk.hoje)&&!["equip","pendente","bloqueado"].includes(st));$("#adjTitle").textContent=st==="aprovado"?"Como você está hoje?":"Quer corrigir alguma resposta?";
- {const A=todayAdj();$("#adjOut").innerHTML=A?`<div class="alert ok"><b>“${esc(A.t)}”</b> <small>(${esc(A.quando)})</small><br>${A.exp.map(esc).join("<br>")}</div>`:""}const un=$("#adjUndo");if(un)un.onclick=()=>{const dk=dayKey(NOW());S.adj=(S.adj||[]).filter(a=>a.dk!==dk);S.adjLog=(S.adjLog||[]).concat([NOW().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})+" voltou ao treino original"]);save();render();say("Pronto, voltei para o treino original de hoje.")};
+ {const A=todayAdj();$("#adjOut").innerHTML=A?`<div class="alert ok"><b>“${esc(A.t)}”</b> <small>(${esc(A.quando)})</small><br>${A.exp.map(esc).join("<br>")}</div>`:""}const un=$("#adjUndo");if(un)un.onclick=()=>{const dk=dayKey(NOW());S.adj=(S.adj||[]).filter(a=>a.dk!==dk);S.adjLog=(S.adjLog||[]).concat([NOW().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})+" voltou ao treino original"]);save();render();const o=$("#adjOut");if(o)o.innerHTML='<div class="alert ok">Pronto, voltei para o treino original de hoje.</div>'};
  // Personal
  const pc=$("#persCard");
  if(!S.plan){pc.innerHTML='<h2>Painel do Personal</h2><div class="alert warn">ℹ️ O CREF é opcional. Quando informado, é verificado só pelo formato; confira o registro na consulta pública do sistema CONFEF/CREF.</div><p style="color:var(--mut)">Nenhum treino aguardando aprovação. O aluno precisa concluir a anamnese primeiro.</p>'+corpoHTML()+diasHTML()}
@@ -855,7 +873,7 @@ const sendTxt=()=>{const v=$("#txt").value.trim();if(v){target="anam";$("#txt").
 const sendAdj=()=>{const v=$("#adjTxt").value.trim();if(v){target="adj";$("#adjTxt").value="";adjust(v)}};$("#adjSend").onclick=sendAdj;$("#adjTxt").onkeydown=e=>{if(e.key==="Enter")sendAdj()};
 $("#genBtn").onclick=()=>{S.equip=[...document.querySelectorAll("#equipList input:checked")].map(i=>i.value);generate()};
 $("#reset").onclick=()=>{if(!curUser||viewing)return alert("Entre como aluno para reiniciar a anamnese.");if(confirm("Apagar a sua anamnese e o seu treino e recomeçar?")){localStorage.removeItem(CK);S=fresh();S.a.nome=accounts()[curUser].nome;start()}};
-function start(){if(!curUser){showTab("login");return}$("#whoName").textContent="👤 "+primeiroNome(accounts()[curUser].nome);if(!SR)$("#nosup").classList.remove("hide");if(!S.a.nome&&accounts()[curUser])S.a.nome=accounts()[curUser].nome;if(!S.queue){S.queue=baseQueue();save();render();target="anam";const g=greet(),it=S.queue[0];if(g&&it.id!=="nome")say(g+" "+it.q);else ask()}else render()}
+function start(){if(!curUser){showTab("login");return}$("#whoName").textContent="👤 "+primeiroNome(accounts()[curUser].nome);if(!SR)$("#nosup").classList.remove("hide");if(!S.a.nome&&accounts()[curUser])S.a.nome=accounts()[curUser].nome;if(!S.queue){S.queue=baseQueue();save();render();target="anam";const g=greet(),it=S.queue[0];if(g&&it.id!=="nome")say(g+" "+it.q);else ask()}else{if(!emAnamnese())silenciarCoach();render()}}
 if("speechSynthesis"in window){speechSynthesis.onvoiceschanged=loadVoices;loadVoices();setTimeout(loadVoices,800)}
 $("#rate").value=vpref.rate;$("#rateV").textContent=(+vpref.rate).toFixed(2);
 $("#rate").oninput=e=>{vpref.rate=+e.target.value;$("#rateV").textContent=vpref.rate.toFixed(2);localStorage.setItem(VKEY,JSON.stringify(vpref))};

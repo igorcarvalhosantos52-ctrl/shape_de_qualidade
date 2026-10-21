@@ -149,6 +149,7 @@ app.post('/api/personal/tuition/:u/gate', need('personal'), async (req, res) => 
   catch (e) { res.status(e.status || 400).json({ error: e.message }); }
 });
 app.get('/api/student/tuition', need('student'), async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
   try { res.json(await tuition.studentCard(req.sess.user_id)); }
   catch (e) { res.status(e.status || 400).json({ error: e.message }); }
 });
@@ -286,6 +287,7 @@ app.delete('/api/personal/students/:u', need('personal'), async (req, res) => {
 // ---------- estado (bootstrap do app) ----------
 const parse = t => { try { return t ? JSON.parse(t) : null; } catch { return null; } };
 app.get('/api/me', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
   const P = { plans: await pay.plans(), trial_days: pay.TRIAL_DAYS, providers: pay.providers() };
   if (!req.sess) return res.json({ role: null, ...P });
   if (req.sess.role === 'personal') {
