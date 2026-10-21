@@ -40,6 +40,12 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   const medidas = require('../src/medidas');
   ok(medidas.altura('1,75') === 175 && medidas.altura('175') === 175 && medidas.altura('1.70') === 170 && medidas.altura('175 cm') === 175 && medidas.peso('70,5') === 70.5 && medidas.peso('80') === 80, 'altura aceita cm ou metros com vírgula e peso aceita vírgula');
   ok(medidas.altura('') === null && medidas.altura('abc') === null && medidas.altura('0,4') === null && medidas.peso('10') === null, 'altura e peso fora da faixa não passam');
+  const avalMod = require('../src/avaliacao');
+  const cmpEx = avalMod.comparar([
+    { id: 1, kind: 'inicial', taken_on: '2026-01-15', created_at: 1, peso: 70.5, cintura: 92, gordura: 28, photo: 'data:image/jpeg;base64,aaaa' },
+    { id: 2, kind: 'atual', taken_on: '2026-04-15', created_at: 2, peso: 68, cintura: 86, gordura: 24, photo: '' },
+  ]);
+  ok(cmpEx && cmpEx.tempo === '3 meses' && cmpEx.linhas.some(l => l.k === 'cintura' && l.tom === 'ok' && l.texto === 'Cintura 92 → 86 cm (−6)') && cmpEx.linhas.some(l => l.k === 'peso' && l.tom === '' && l.texto === 'Peso 70,5 → 68 kg (−2,5)'), 'o comparativo marca a cintura que diminuiu e deixa o peso neutro');
   const voz = require('../public/voz');
   ok(voz.altura('um e setenta e cinco') === 175 && voz.altura('1 e 75') === 175 && voz.altura('um metro e setenta e cinco') === 175 && voz.altura('um e meio') === 150 && voz.altura('cento e setenta e cinco') === 175, 'altura falada vira centímetros');
   ok(voz.peso('setenta quilos') === 70 && voz.peso('setenta e meio') === 70.5 && voz.peso('setenta quilos e meio') === 70.5, 'peso falado entende quilos e meio');
@@ -108,9 +114,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v28/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v29/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v28');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v29');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -425,6 +431,79 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await p.evaluate((u) => { document.querySelector('#closeStu').click(); document.querySelector('.stu[data-u="' + u + '"]').click(); }, pamU);
     await p.waitForSelector('#persCard details.blk');
     ok(await p.evaluate(() => [...document.querySelectorAll('#persCard details.blk')].every(d => !d.open)), 'recarregar a ficha deixa os grupos fechados');
+
+    // ---- avaliação física (gaveta no celular; sidebar no notebook)
+    const fotoJpg = async (sel, cor) => {
+      await p.evaluate(async (sel, cor) => {
+        const c = document.createElement('canvas'); c.width = 80; c.height = 60;
+        const g = c.getContext('2d'); g.fillStyle = cor; g.fillRect(0, 0, 80, 60);
+        const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8));
+        const input = document.querySelector(sel);
+        const dt = new DataTransfer(); dt.items.add(new File([blob], 'foto.jpg', { type: 'image/jpeg' }));
+        input.files = dt.files; input.dispatchEvent(new Event('change', { bubbles: true }));
+      }, sel, cor);
+    };
+    await p.click('#avalOpen');
+    await p.waitForSelector('#avalSide.on #avIniSave');
+    ok(/Avaliação física/.test(await p.$eval('#avalSide', e => e.textContent)) && /Medida inicial/.test(await p.$eval('#avalSide', e => e.textContent)) && /Pamela Souza/.test(await p.$eval('#avalSide', e => e.textContent)) && !(await p.$('#avalAluno')), 'no celular a ficha abre a avaliação do aluno, sem o seletor');
+    const comp = await p.evaluate(async () => {
+      const c = document.createElement('canvas'); c.width = 1800; c.height = 1200;
+      const g = c.getContext('2d'); g.fillStyle = '#336699'; g.fillRect(0, 0, 1800, 1200);
+      const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+      const data = await comprimirFoto(new File([blob], 'grande.png', { type: 'image/png' }));
+      const img = new Image(); await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = data; });
+      return { w: img.naturalWidth, h: img.naturalHeight, bytes: Math.floor(data.split(',')[1].length * 3 / 4), jpeg: data.startsWith('data:image/jpeg') };
+    });
+    ok(comp.jpeg && comp.w === 1000 && comp.h === 667 && comp.bytes < 200 * 1024, 'a foto é comprimida no navegador para JPEG menor que 200 KB');
+    await p.evaluate(() => {
+      document.querySelector('#avIni .avData').value = '2026-01-15';
+      document.querySelector('#avIni [data-k="peso"]').value = '70,5';
+      document.querySelector('#avIni [data-k="cintura"]').value = '92';
+      document.querySelector('#avIni [data-k="gordura"]').value = '28';
+      document.querySelector('#avIniSave').click();
+    });
+    await p.waitForFunction(() => /Salvo/.test((document.querySelector('#avIniMsg') || {}).textContent || ''));
+    await fotoJpg('#avFotoIniFile', '#c9a227');
+    await p.waitForFunction(() => (document.querySelector('#avPrevIni').src || '').startsWith('data:image/jpeg'));
+    await p.click('#avFotoIniSave');
+    await p.waitForFunction(() => /\/photo/.test(document.querySelector('#avPrevIni').getAttribute('src') || '') && /Salvo/.test((document.querySelector('#avFotoIniMsg') || {}).textContent || ''));
+    await p.evaluate(() => {
+      document.querySelector('#avAtu .avData').value = '2026-04-15';
+      document.querySelector('#avAtu [data-k="peso"]').value = '68';
+      document.querySelector('#avAtu [data-k="cintura"]').value = '86';
+      document.querySelector('#avAtu [data-k="gordura"]').value = '24';
+    });
+    await fotoJpg('#avFotoAtuFile', '#15803d');
+    await p.waitForFunction(() => (document.querySelector('#avPrevAtu').src || '').startsWith('data:image/jpeg'));
+    await p.click('#avAtuSave');
+    await p.waitForFunction(() => {
+      const linha = [...document.querySelectorAll('#avCmp .avLinha')];
+      const cintura = linha.find(el => /Cintura/.test(el.textContent));
+      const peso = linha.find(el => /Peso/.test(el.textContent));
+      return cintura && cintura.classList.contains('ok') && /92 → 86 cm \(−6\)/.test(cintura.textContent) && peso && !peso.classList.contains('ok') && /70,5 → 68 kg/.test(peso.textContent) && (document.querySelector('#avTempo') || {}).textContent === '3 meses';
+    });
+    ok(true, 'salvar a medida inicial e a atual mostra o comparativo');
+    const hist = await p.evaluate(() => ({ n: document.querySelectorAll('#avHist .avHistGo').length, fotos: document.querySelectorAll('#avCmp .avFotos img').length }));
+    ok(hist.n >= 2 && hist.fotos === 2, 'o histórico lista as datas e o comparativo mostra as duas fotos');
+    await p.evaluate(() => { const bs = [...document.querySelectorAll('#avHist .avHistGo')]; bs[bs.length - 1].click(); });
+    await p.waitForFunction(() => /15\/01\/2026/.test((document.querySelector('#avHistView') || {}).textContent || '') && /Cintura: 92/.test((document.querySelector('#avHistView') || {}).textContent || ''));
+    ok(true, 'o histórico abre uma avaliação antiga');
+    await p.click('#avalFechar');
+    await p.waitForFunction(() => !document.querySelector('#avalSide').classList.contains('on'));
+    const desk = await ctxP.newPage();
+    await desk.setViewport({ width: 1366, height: 768, deviceScaleFactor: 1 });
+    await desk.goto(URL + '/?area=personal', { waitUntil: 'networkidle0' });
+    await desk.waitForSelector('#avalSide #avCmp .avLinha.ok');
+    const lay = await desk.evaluate(() => {
+      const s = document.querySelector('#avalSide').getBoundingClientRect();
+      const m = document.querySelector('main').getBoundingClientRect();
+      const sel = !!document.querySelector('#avalAluno');
+      document.querySelector('#avalSide').scrollTop = Math.max(0, document.querySelector('#avCmp').offsetTop - 8);
+      return { vw: innerWidth, vh: innerHeight, sl: s.left, sr: Math.round(s.right), sw: Math.round(s.width), st: Math.round(s.top), sh: Math.round(s.height), mr: m.right, sel };
+    });
+    ok(lay.vw >= 1300 && lay.vh >= 700 && lay.st <= 1 && lay.sh >= lay.vh - 2 && lay.sw >= 300 && Math.abs(lay.sr - lay.vw) <= 2 && lay.mr <= lay.sl + 2 && lay.sel, 'no notebook a sidebar fica fixa na lateral e tem o seletor de aluno');
+    if (fs.existsSync('/opt/cursor/artifacts')) await desk.screenshot({ path: '/opt/cursor/artifacts/sidebar_avaliacao_1366.png' });
+    await desk.close();
     ok(/Usar sugestão automática/.test(await p.$eval('#splitBox', e => e.innerText)) && /Personalizar dias/.test(await p.$eval('#splitEdit', e => e.innerText)), 'divisão padrão é a sugestão automática');
     await p.click('#splitEdit');
     await p.waitForSelector('.splitDay[data-w="1"] .splitG');
@@ -592,12 +671,13 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const aluno2 = aluno2row.username, aluno2id = aluno2row.id;
     await p.click('.stu[data-u="' + aluno2 + '"]');
     await p.waitForSelector('#apagarAluno');
+    await p.evaluate(async (u) => { const r = await fetch('/api/personal/students/' + encodeURIComponent(u) + '/assessments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'inicial', taken_on: '2026-02-01', peso: '80', cintura: '90' }) }); if (!r.ok) throw new Error(await r.text()); }, aluno2);
     await p.click('#apagarAluno');
     await p.waitForSelector('#apagarBox:not(.hide)');
     ok(/Apagar a ficha de Aluno 2\? Isso não pode ser desfeito\./.test(await p.$eval('#apagarBox', e => e.textContent)), 'apagar pede confirmação com o nome');
     await p.type('#apagarTxt', 'APAGAR');
     await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle0' }), p.click('#apagarGo')]);
-    ok(!(await sql.prepare('SELECT id FROM students WHERE email=?').get('aluno2@teste.com')) && !(await sql.prepare('SELECT student_id FROM tuition WHERE student_id=?').get(aluno2id)) && !(await sql.prepare('SELECT student_id FROM tuition_payments WHERE student_id=?').get(aluno2id)), 'apagar tira o aluno, a ficha e a mensalidade');
+    ok(!(await sql.prepare('SELECT id FROM students WHERE email=?').get('aluno2@teste.com')) && !(await sql.prepare('SELECT student_id FROM tuition WHERE student_id=?').get(aluno2id)) && !(await sql.prepare('SELECT student_id FROM tuition_payments WHERE student_id=?').get(aluno2id)) && !(await sql.prepare('SELECT id FROM assessments WHERE student_id=?').get(aluno2id)), 'apagar tira o aluno, a ficha, a mensalidade e a avaliação');
     const ctxGone = await browser.createBrowserContext(), gone = await ctxGone.newPage();
     await gone.goto(URL, { waitUntil: 'networkidle0' });
     const goneLogin = await gone.evaluate(async () => (await fetch('/api/student/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'aluno2@teste.com', senha: 'aluno123' }) })).status);
@@ -643,14 +723,19 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     // isolamento entre personais
     const ctxX = await browser.createBrowserContext(), x = await ctxX.newPage();
     await x.goto(URL, { waitUntil: 'networkidle0' });
-    const iso = await x.evaluate(async (u) => { await fetch('/api/personal/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Outro', email: 'outro@t.com', senha: 'senha1234' }) });
+    const pamFoto = await sql.prepare("SELECT id FROM assessments WHERE student_id=? AND photo IS NOT NULL AND photo<>'' ORDER BY id LIMIT 1").get(pamId);
+    if (!pamFoto) throw new Error('foto da avaliação não foi gravada');
+    const iso = await x.evaluate(async (u, fotoId) => { await fetch('/api/personal/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Outro', email: 'outro@t.com', senha: 'senha1234' }) });
       await fetch('/api/billing/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: 'demo' }) });
       const me = await (await fetch('/api/me')).json(); const put = await fetch('/api/ficha/' + encodeURIComponent(u), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{}' });
       const ex = await (await fetch('/api/personal/exercises')).json();
       const del = await fetch('/api/personal/exercises/1', { method: 'DELETE' });
       const delStu = await fetch('/api/personal/students/' + encodeURIComponent(u), { method: 'DELETE' });
-      return { n: me.students.length, put: put.status, ex: (ex.exercises || []).length, del: del.status, delStu: delStu.status }; }, pamU);
-    ok(iso.n === 0 && iso.put === 403 && iso.ex === 0 && iso.del === 404 && iso.delStu === 404, 'outro personal não vê alunos, fichas nem a lista de exercícios alheia, e não apaga aluno dos outros');
+      const av = await fetch('/api/personal/students/' + encodeURIComponent(u) + '/assessments');
+      const avPost = await fetch('/api/personal/students/' + encodeURIComponent(u) + '/assessments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'atual', taken_on: '2026-05-01', peso: '60' }) });
+      const foto = await fetch('/api/personal/assessments/' + fotoId + '/photo');
+      return { n: me.students.length, put: put.status, ex: (ex.exercises || []).length, del: del.status, delStu: delStu.status, av: av.status, avPost: avPost.status, foto: foto.status }; }, pamU, pamFoto && pamFoto.id);
+    ok(iso.n === 0 && iso.put === 403 && iso.ex === 0 && iso.del === 404 && iso.delStu === 404 && iso.av === 404 && iso.avPost === 404 && iso.foto === 404, 'outro personal não vê alunos, fichas, exercícios nem a avaliação, e não apaga aluno dos outros');
     await p.screenshot({ path: SHOTS + '/04-painel-personal-convite.png' });
 
     // ---- senhas

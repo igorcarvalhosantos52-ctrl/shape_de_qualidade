@@ -1,6 +1,6 @@
 // Shape de Qualidade – servidor (Express + SQLite ou Turso)
 const express = require('express'), cookieParser = require('cookie-parser'), bcrypt = require('bcrypt'), crypto = require('crypto'), path = require('path');
-const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards'), tuition = require('./src/tuition'), publicPage = require('./src/public-page'), ebook = require('./src/ebook'), ownerTest = require('./src/owner-test'), medidas = require('./src/medidas'), aluno = require('./src/aluno');
+const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards'), tuition = require('./src/tuition'), publicPage = require('./src/public-page'), ebook = require('./src/ebook'), ownerTest = require('./src/owner-test'), medidas = require('./src/medidas'), aluno = require('./src/aluno'), avaliacao = require('./src/avaliacao');
 const app = express(); app.set('trust proxy', 1);
 const PROD = process.env.NODE_ENV === 'production', DAY = 864e5;
 app.use(express.json({ limit: '2mb', verify: (req, _r, buf) => { req.rawBody = buf.toString(); } }));
@@ -273,11 +273,28 @@ app.post('/api/student/whatsapp', need('student'), async (req, res) => {
     res.json({ ok: true, whatsapp: w });
   } catch (e) { res.status(e.status || 400).json({ error: e.message }); }
 });
+app.get('/api/personal/students/:u/assessments', need('personal'), async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  try { res.json(await avaliacao.listar(req.sess.user_id, req.params.u)); }
+  catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+});
+app.post('/api/personal/students/:u/assessments', need('personal'), async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  try { res.json(await avaliacao.salvar(req.sess.user_id, req.params.u, req.body || {})); }
+  catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+});
+app.get('/api/personal/assessments/:id/photo', need('personal'), async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  const foto = await avaliacao.lerFoto(req.sess.user_id, req.params.id);
+  if (!foto) return res.status(404).json({ error: 'Foto não encontrada.' });
+  res.type(foto.type).send(foto.buf);
+});
 app.delete('/api/personal/students/:u', need('personal'), async (req, res) => {
   const s = await db.prepare('SELECT * FROM students WHERE username=? AND personal_id=?').get(String(req.params.u || '').toLowerCase(), req.sess.user_id);
   if (!s) return res.status(404).json({ error: 'Aluno não encontrado.' });
   await db.prepare('DELETE FROM tuition_payments WHERE student_id=?').run(s.id);
   await db.prepare('DELETE FROM tuition WHERE student_id=?').run(s.id);
+  await avaliacao.apagar(s.id);
   await db.prepare("DELETE FROM sessions WHERE role='student' AND user_id=?").run(s.id);
   await db.prepare("DELETE FROM password_resets WHERE role='student' AND user_id=?").run(s.id);
   await db.prepare('DELETE FROM students WHERE id=? AND personal_id=?').run(s.id, req.sess.user_id);

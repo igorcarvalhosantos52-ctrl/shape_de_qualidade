@@ -149,6 +149,178 @@ function mountWa() {
     el.insertAdjacentHTML("beforeend", html);
   });
 }
+/* ---------- Avaliação física (sidebar no notebook, gaveta no celular) ---------- */
+let avalU = "", avalModo = "", avalGen = 0, avalDados = null, avalFlash = {}, fotoPend = { inicial: "", atual: "" };
+function avalPainel() {
+  return !!(ME && ME.role === "personal" && typeof unlocked !== "undefined" && unlocked && ME.sub && ME.sub.active && $("#t-personal") && !$("#t-personal").classList.contains("hide"));
+}
+function alunoAval() {
+  const list = (ME.students || []).map(s => s.u);
+  if (typeof viewing === "string" && viewing && list.includes(viewing)) {
+    try { window.localStorage.setItem("sq_aval_u", viewing); } catch (e) {}
+    return viewing;
+  }
+  let u = "";
+  try { u = window.localStorage.getItem("sq_aval_u") || ""; } catch (e) {}
+  if (!list.includes(u)) u = list[0] || "";
+  return u;
+}
+function nomeAval(u) { const s = (ME.students || []).find(x => x.u === u); return (s && s.nome) || u; }
+function hojeISO() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function avFmt(n) { const x = Math.round(Number(n) * 10) / 10; return Math.abs(x - Math.round(x)) < 1e-6 ? String(Math.round(x)) : x.toFixed(1).replace(".", ","); }
+function avDataBr(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ""); return m ? m[3] + "/" + m[2] + "/" + m[1] : ""; }
+function avBytes(data) { const i = String(data || "").indexOf(","); return Math.floor((i >= 0 ? data.slice(i + 1) : "").length * 3 / 4); }
+async function comprimirFoto(file) {
+  if (!file) throw new Error("Escolha uma foto.");
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error("Não foi possível ler a foto.")); im.src = url; });
+    let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (!w || !h) throw new Error("Não foi possível ler a foto.");
+    const fit = Math.min(1, 1000 / Math.max(w, h));
+    w = Math.max(1, Math.round(w * fit)); h = Math.max(1, Math.round(h * fit));
+    const canvas = document.createElement("canvas");
+    const draw = (ww, hh, q) => { canvas.width = ww; canvas.height = hh; canvas.getContext("2d").drawImage(img, 0, 0, ww, hh); return canvas.toDataURL("image/jpeg", q); };
+    let cw = w, ch = h, data = "";
+    for (let i = 0; i < 6; i++) {
+      let q = 0.7; data = draw(cw, ch, q);
+      while (avBytes(data) > 200 * 1024 && q > 0.4) { q = Math.round((q - 0.1) * 10) / 10; data = draw(cw, ch, q); }
+      if (avBytes(data) <= 200 * 1024 && Math.max(cw, ch) <= 1000) return data;
+      cw = Math.max(1, Math.round(cw * 0.75)); ch = Math.max(1, Math.round(ch * 0.75));
+    }
+    if (avBytes(data) > 200 * 1024) throw new Error("A foto está grande demais. Escolha uma menor.");
+    return data;
+  } finally { URL.revokeObjectURL(url); }
+}
+function avCamposHTML(vals) {
+  const campos = (avalDados && avalDados.campos) || [];
+  return campos.map(c => {
+    const rot = c.k === "gordura" ? "% de gordura (opcional)" : c.nome + " (" + c.un + ")";
+    const v = !vals || vals[c.k] == null ? "" : avFmt(vals[c.k]);
+    return `<label>${esc(rot)}<input data-k="${esc(c.k)}" inputmode="decimal" autocomplete="off" value="${esc(v)}"></label>`;
+  }).join("");
+}
+function avFotoHTML(id, alt, item) {
+  const src = item && item.has_photo ? "/api/personal/assessments/" + item.id + "/photo" : "";
+  return `<img id="${id}" class="avFoto${src ? "" : " hide"}" alt="${esc(alt)}" src="${src ? esc(src) : ""}">`;
+}
+function paintAval() {
+  const side = $("#avalSide"); if (!side) return;
+  const y = side.scrollTop;
+  const aberto = side.classList.contains("on");
+  if (!avalU) {
+    side.innerHTML = `<button type="button" class="btn sm sec" id="avalFechar">Fechar</button><h2>Avaliação física</h2><p class="avMut">Nenhum aluno ainda.</p>`;
+  } else {
+    const items = (avalDados && avalDados.items) || [];
+    const ini = items.find(x => x.kind === "inicial") || null;
+    const atus = items.filter(x => x.kind === "atual");
+    const ult = atus.length ? atus[atus.length - 1] : null;
+    const fichaAberta = typeof viewing === "string" && viewing === avalU;
+    const topo = fichaAberta ? `<p class="avQuem">Aluno: <b>${esc(nomeAval(avalU))}</b></p>` : `<label class="avSel">Aluno<select id="avalAluno">${(ME.students || []).map(s => `<option value="${esc(s.u)}"${s.u === avalU ? " selected" : ""}>${esc(s.nome)}</option>`).join("")}</select></label>`;
+    const cmp = avalDados && avalDados.compare;
+    const linhas = cmp && cmp.linhas && cmp.linhas.length ? cmp.linhas.map(l => `<p class="avLinha${l.tom === "ok" ? " ok" : ""}">${esc(l.texto)}</p>`).join("") : `<p class="avMut">${cmp ? "Sem medidas nos dois lados para comparar." : "Salve uma medida atual para comparar."}</p>`;
+    const fig = (id, leg) => id ? `<figure><img alt="${esc(leg)}" src="/api/personal/assessments/${id}/photo"><figcaption>${esc(leg)}</figcaption></figure>` : `<figure><div class="avSem">Sem foto</div><figcaption>${esc(leg)}</figcaption></figure>`;
+    const cmpBox = `<section class="card avCard" id="avCmp"><h3>Comparativo</h3>${cmp ? `<p id="avTempo">${esc(cmp.tempo)}</p>` : ""}${linhas}${cmp ? `<div class="avFotos">${fig(cmp.antes_id, "Antes")}${fig(cmp.depois_id, "Depois")}</div>` : ""}</section>`;
+    const hist = items.slice().reverse().map(it => `<li><button type="button" class="btn sm sec avHistGo" data-id="${it.id}">${esc(avDataBr(it.taken_on))} · ${it.kind === "inicial" ? "inicial" : "atual"}</button></li>`).join("");
+    const erro = avalDados && avalDados.erro ? `<div class="alert bad">${esc(avalDados.erro)}</div>` : "";
+    side.innerHTML = `<button type="button" class="btn sm sec" id="avalFechar">Fechar</button><h2>Avaliação física</h2>${erro}${topo}
+      <section class="card avCard" id="avIni"><h3>Medida inicial</h3><label>Data<input type="date" class="avData" value="${esc(ini && ini.taken_on || hojeISO())}"></label><div class="avGrid">${avCamposHTML(ini)}</div><button type="button" class="btn sm" id="avIniSave">Salvar</button><p id="avIniMsg">${avalFlash.ini ? `<span class="avOkMsg">${esc(avalFlash.ini)}</span>` : ""}</p></section>
+      <section class="card avCard" id="avFotoIniBox"><h3>Foto inicial</h3>${avFotoHTML("avPrevIni", "Foto inicial", ini)}<label class="btn sm sec avFile">Enviar ou trocar foto<input id="avFotoIniFile" type="file" accept="image/*" capture="environment" hidden></label><button type="button" class="btn sm" id="avFotoIniSave">Salvar</button><p id="avFotoIniMsg">${avalFlash.foto ? `<span class="avOkMsg">${esc(avalFlash.foto)}</span>` : ""}</p></section>
+      <section class="card avCard" id="avAtu"><h3>Medida atual</h3><label>Data<input type="date" class="avData" value="${esc(hojeISO())}"></label><div class="avGrid">${avCamposHTML(ult)}</div><h3>Foto atual</h3>${avFotoHTML("avPrevAtu", "Foto atual", null)}<label class="btn sm sec avFile">Enviar ou trocar foto<input id="avFotoAtuFile" type="file" accept="image/*" capture="environment" hidden></label><button type="button" class="btn sm" id="avAtuSave">Salvar</button><p id="avAtuMsg">${avalFlash.atu ? `<span class="avOkMsg">${esc(avalFlash.atu)}</span>` : ""}</p></section>
+      ${cmpBox}
+      <section class="card avCard" id="avHist"><h3>Histórico</h3>${hist ? `<ul class="avHist">${hist}</ul>` : `<p class="avMut">Nenhuma avaliação salva.</p>`}<div id="avHistView"></div></section>`;
+  }
+  avalFlash = {};
+  if (aberto) side.classList.add("on");
+  side.scrollTop = y;
+  bindAval();
+}
+function lerAvForm(root) { const o = {}; if (!root) return o; root.querySelectorAll("[data-k]").forEach(el => { o[el.dataset.k] = el.value; }); return o; }
+function avMsg(id, text, ok) { const el = $(id); if (el) el.innerHTML = `<span class="${ok ? "avOkMsg" : "avErr"}">${esc(text)}</span>`; }
+async function enviarAval(kind, extra) {
+  const box = kind === "atual" ? $("#avAtu") : $("#avIni");
+  const body = Object.assign({ kind, taken_on: (box && box.querySelector(".avData") || {}).value || hojeISO() }, lerAvForm(box), extra || {});
+  const j = await api("/api/personal/students/" + encodeURIComponent(avalU) + "/assessments", body);
+  avalDados = j;
+  return j;
+}
+function ligarFoto(inputId, previewId, slot) {
+  const input = $(inputId); if (!input) return;
+  input.onchange = async () => {
+    const file = input.files && input.files[0]; if (!file) return;
+    try {
+      const data = await comprimirFoto(file);
+      fotoPend[slot] = data;
+      const img = $(previewId); if (img) { img.src = data; img.classList.remove("hide"); }
+    } catch (e) { avMsg(slot === "atual" ? "#avAtuMsg" : "#avFotoIniMsg", e.message, false); }
+  };
+}
+function mostrarHist(id) {
+  const it = ((avalDados && avalDados.items) || []).find(x => String(x.id) === String(id));
+  const box = $("#avHistView"); if (!it || !box) return;
+  const lis = ((avalDados.campos) || []).filter(c => it[c.k] != null).map(c => `<li>${esc(c.nome)}: ${esc(avFmt(it[c.k]))} ${esc(c.un)}</li>`).join("") || "<li>Sem medidas</li>";
+  box.innerHTML = `<div class="alert ok"><b>${esc(avDataBr(it.taken_on))}</b> · ${it.kind === "inicial" ? "inicial" : "atual"}<ul>${lis}</ul>${it.has_photo ? `<img class="avFoto" alt="" src="/api/personal/assessments/${it.id}/photo">` : ""}</div>`;
+}
+function bindAval() {
+  const fechar = $("#avalFechar"); if (fechar) fechar.onclick = () => { const s = $("#avalSide"); if (s) s.classList.remove("on"); };
+  const sel = $("#avalAluno"); if (sel) sel.onchange = () => {
+    try { window.localStorage.setItem("sq_aval_u", sel.value); } catch (e) {}
+    if (sel.value !== avalU) { avalU = sel.value; fotoPend = { inicial: "", atual: "" }; carregarAval(); }
+  };
+  ligarFoto("#avFotoIniFile", "#avPrevIni", "inicial");
+  ligarFoto("#avFotoAtuFile", "#avPrevAtu", "atual");
+  const iniB = $("#avIniSave"); if (iniB) iniB.onclick = async () => {
+    iniB.disabled = true;
+    try {
+      const extra = fotoPend.inicial ? { photo: fotoPend.inicial } : {};
+      await enviarAval("inicial", extra); fotoPend.inicial = ""; avalFlash.ini = "Salvo."; paintAval();
+    } catch (e) { avMsg("#avIniMsg", e.message, false); iniB.disabled = false; }
+  };
+  const fotoB = $("#avFotoIniSave"); if (fotoB) fotoB.onclick = async () => {
+    if (!fotoPend.inicial) return avMsg("#avFotoIniMsg", "Escolha uma foto primeiro.", false);
+    fotoB.disabled = true;
+    try { await enviarAval("inicial", { photo: fotoPend.inicial }); fotoPend.inicial = ""; avalFlash.foto = "Salvo."; paintAval(); }
+    catch (e) { avMsg("#avFotoIniMsg", e.message, false); fotoB.disabled = false; }
+  };
+  const atuB = $("#avAtuSave"); if (atuB) atuB.onclick = async () => {
+    atuB.disabled = true;
+    try {
+      const extra = fotoPend.atual ? { photo: fotoPend.atual } : {};
+      await enviarAval("atual", extra); fotoPend.atual = ""; avalFlash.atu = "Salvo."; paintAval();
+    } catch (e) { avMsg("#avAtuMsg", e.message, false); atuB.disabled = false; }
+  };
+  document.querySelectorAll("#avalSide .avHistGo").forEach(b => b.onclick = () => mostrarHist(b.dataset.id));
+}
+async function carregarAval() {
+  const u = avalU, gen = ++avalGen;
+  if (!u) { avalDados = { items: [], compare: null, campos: [] }; paintAval(); return; }
+  try {
+    const j = await api("/api/personal/students/" + encodeURIComponent(u) + "/assessments");
+    if (gen !== avalGen || u !== avalU) return;
+    avalDados = j;
+  } catch (e) {
+    if (gen !== avalGen || u !== avalU) return;
+    avalDados = { items: [], compare: null, campos: [], erro: e.message };
+  }
+  paintAval();
+}
+function placeAvalBtn() {
+  const topo = $("#fichaTopo");
+  if (!topo) return;
+  if (topo.querySelector("#avalOpen")) return;
+  topo.insertAdjacentHTML("beforeend", `<button type="button" class="btn sm sec" id="avalOpen">📏 Medidas</button>`);
+  $("#avalOpen").onclick = () => { const s = $("#avalSide"); if (s) { s.classList.add("on"); s.scrollTop = 0; } };
+}
+function mountAval() {
+  const side = $("#avalSide");
+  const on = avalPainel();
+  document.body.classList.toggle("aval-ready", on);
+  if (!on) { if (side) side.classList.remove("on"); return; }
+  placeAvalBtn();
+  const u = alunoAval();
+  const modo = (typeof viewing === "string" && viewing === u) ? "ficha" : "lista";
+  if (u !== avalU || modo !== avalModo || !(side && side.querySelector("#avIni, #avalFechar"))) { avalU = u; avalModo = modo; carregarAval(); }
+}
 const _render = render;
 function pedirZapUmaVez() {
   if (!ME || ME.role !== "student" || ME.whatsapp) return;
@@ -177,6 +349,7 @@ render = function () {
   mountFeeStudent();
   mountFeeEditor();
   pedirZapUmaVez();
+  if (typeof mountAval === "function") mountAval();
 };
 const _renderChat = renderChat;
 renderChat = function () { _renderChat(); mountWa(); };
@@ -496,7 +669,7 @@ window.__puxarAtualizar = puxarAtualizar;
   ind.style.cssText = "position:fixed;left:50%;top:0;transform:translate(-50%,-60px);background:#111;color:#d4a017;border:1px solid #d4a017;padding:6px 14px;border-radius:0 0 12px 12px;font-size:.85rem;z-index:9998;transition:transform .15s;pointer-events:none";
   document.body.appendChild(ind);
   let y0 = null, dy = 0; const TH = 80;
-  const blocked = t => (t.closest && t.closest("#detDrawer,#detOv,#stuPanel,#cardView,#chat,select,textarea,input,.open")) || (document.getElementById("detDrawer") || {}).classList?.contains("open");
+  const blocked = t => (t.closest && t.closest("#detDrawer,#detOv,#stuPanel,#avalSide,#cardView,#chat,select,textarea,input,.open")) || (document.getElementById("detDrawer") || {}).classList?.contains("open") || (document.getElementById("avalSide") || {}).classList?.contains("on");
   addEventListener("touchstart", e => { y0 = (scrollY <= 0 && e.touches.length === 1 && !blocked(e.target)) ? e.touches[0].clientY : null; dy = 0; }, { passive: true });
   addEventListener("touchmove", e => { if (y0 === null) return; if (scrollY > 0) { y0 = null; ind.style.transform = "translate(-50%,-60px)"; return; }
     dy = e.touches[0].clientY - y0; if (dy <= 10) return; ind.textContent = dy > TH ? "↻ Solte para atualizar" : "↓ Puxe para atualizar";

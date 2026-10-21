@@ -184,6 +184,42 @@ header h1 .logo{font-family:'Anton','Bebas Neue',Impact,'Arial Black','Helvetica
 .cvlock{text-align:center;padding:24px;max-width:22rem}
 .cvlock span{font-size:2.4rem}
 #cardCap{text-align:center;margin:8px 12px 16px;font-size:.9rem;color:#f4e2a8}
+#avalSide{display:none}
+#avalOpen{display:none}
+#avalSide h2{font-size:1.05rem;margin:0 0 8px}
+#avalSide h3{margin:.2em 0 .45em}
+.avCard{margin-bottom:10px}
+.avQuem,.avSel{font-size:.9rem;margin:0 0 8px}
+.avGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.avGrid label,.avCard>label{font-size:.75rem;color:var(--mut);display:flex;flex-direction:column;gap:3px}
+.avGrid input,#avalSide input[type=date],#avalSide select{padding:8px;font-size:.9rem}
+.avFile{display:inline-block;margin:8px 8px 8px 0}
+.avFoto{width:100%;max-height:160px;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:#f6f3ea;display:block}
+.avFotos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.avFotos figure{margin:0}
+.avFotos img,.avSem{width:100%;height:110px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:#f6f3ea}
+.avSem{display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:.75rem}
+.avFotos figcaption{display:block;text-align:center;font-size:.75rem;color:var(--mut);margin-top:3px}
+.avLinha{margin:3px 0;font-size:.88rem}
+.avLinha.ok{color:#15803d;font-weight:700}
+.avMut{color:var(--mut);font-size:.85rem;margin:4px 0}
+.avErr{color:#b91c1c;font-size:.82rem;font-weight:600}
+.avOkMsg{color:#15803d;font-weight:700;font-size:.82rem}
+.avHist{list-style:none;padding:0;margin:0}
+.avHist li{margin:4px 0}
+#avTempo{font-weight:700;margin:.2em 0 .5em}
+#avalFechar{margin-bottom:8px}
+@media(min-width:1024px){
+  body.aval-ready{padding-right:340px}
+  body.aval-ready #avalSide{display:block;position:fixed;top:0;right:0;width:340px;height:100vh;overflow:auto;z-index:30;background:#fff;border-left:1px solid var(--line);box-shadow:-6px 0 18px #00000010;padding:12px 12px 28px;box-sizing:border-box}
+  #avalOpen,#avalFechar{display:none!important}
+}
+@media(max-width:1023px){
+  body.aval-ready #avalSide{display:block;position:fixed;inset:0;z-index:96;background:#fff;overflow:auto;padding:12px 12px 32px;box-sizing:border-box;transform:translateX(105%);pointer-events:none}
+  body.aval-ready #avalSide.on{transform:none;pointer-events:auto}
+  #avalOpen{display:inline-block}
+}
+@media print{#avalSide,#avalOpen{display:none!important}body.aval-ready{padding-right:0!important}}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
 </head>
@@ -227,6 +263,7 @@ header h1 .logo{font-family:'Anton','Bebas Neue',Impact,'Arial Black','Helvetica
 </section>
 <section id="t-personal" class="hide"><button class="btn sm sec" id="backAluno" style="margin-bottom:10px">← Voltar para a área do aluno</button><div class="pwrap"><aside id="stuPanel" class="card hide"></aside><div><div class="card" id="persCard"></div><div class="card hide" id="repCard"></div></div></div></section>
 <div id="detOv"></div><aside id="detDrawer" aria-label="Detalhes do exercício"></aside>
+<aside id="avalSide" aria-label="Avaliação física"></aside>
 <p class="disc">⚠️ O Shape de Qualidade é uma ferramenta de apoio e <b>não substitui avaliação médica</b> nem o acompanhamento de um profissional de Educação Física (CREF).</p>
 </main>
 <script src="/baixar.js"></script>

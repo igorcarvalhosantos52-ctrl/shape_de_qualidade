@@ -39,6 +39,17 @@ CREATE TABLE IF NOT EXISTS custom_exercises(
   id INTEGER PRIMARY KEY, personal_id INTEGER NOT NULL REFERENCES personals(id) ON DELETE CASCADE,
   nome TEXT NOT NULL, nota TEXT DEFAULT '', grupo TEXT NOT NULL,
   series INTEGER DEFAULT 3, reps TEXT DEFAULT '', descanso TEXT DEFAULT '', created_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS assessments(
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL,
+  personal_id INTEGER NOT NULL,
+  taken_on TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  peso REAL, gordura REAL, pescoco REAL, ombros REAL, torax REAL, cintura REAL, abdomen REAL, quadril REAL,
+  braco_d REAL, braco_e REAL, antebraco_d REAL, antebraco_e REAL, coxa_d REAL, coxa_e REAL, panturrilha_d REAL, panturrilha_e REAL,
+  photo TEXT DEFAULT '',
+  created_at INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS assessments_student ON assessments(student_id, taken_on, id);
 `;
 // Bancos criados antes destas colunas: o CREATE não altera tabela existente.
 const ALTERS = [
