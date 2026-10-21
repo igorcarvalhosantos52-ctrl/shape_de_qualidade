@@ -490,24 +490,44 @@ function senhaBox() {
   <p style="margin:8px 0 4px"><b>Trocar minha senha</b></p><input type="password" id="myOld" placeholder="Senha atual" style="margin-bottom:6px"><input type="password" id="myNew" placeholder="Nova senha (mín. 8)" style="margin-bottom:6px"><button class="btn sm" id="myGo">Trocar minha senha</button>
   <p style="margin:12px 0 4px"><b>Nova senha para um aluno</b> (quando ele esquecer)</p>${opts ? `<select id="stSel" style="margin-bottom:6px">${opts}</select><input type="text" id="stNew" placeholder="Nova senha do aluno (mín. 6)" style="margin-bottom:6px"><button class="btn sm" id="stGo">Definir senha do aluno</button>` : "<small>Você ainda não tem alunos.</small>"}<div id="pwdMsg"></div></details>`;
 }
-const TUTOS = [["link", "Cadastrar e convidar aluno"], ["aprovar", "Aprovar a ficha"], ["dias", "Montar os dias da semana"], ["troca", "Trocar o treino de hoje"], ["pix", "Chave Pix e mensalidade"], ["mensalidade", "Como funciona a mensalidade"], ["cards", "Cards de memorização"], ["acesso", "WhatsApp e senhas"]];
+const TUTOS = [["link", "Cadastrar e convidar aluno"], ["aprovar", "Aprovar a ficha"], ["dias", "Montar os dias da semana"], ["troca", "Trocar o treino de hoje"], ["pix", "Chave Pix e mensalidade"], ["mensalidade", "Como funciona a mensalidade"], ["cards", "Cards de memorização"], ["acesso", "WhatsApp e senhas"], ["medidas", "Avaliação física"]];
+const TUTO_TEXTO = {
+  medidas: `<ol>
+<li><b>Onde fica.</b> Abra a ficha do aluno. No notebook, a avaliação fica na barra da direita. Nas outras telas do painel, escolha o aluno no topo dessa barra. No celular, toque em 📏 Medidas.</li>
+<li><b>Medida inicial.</b> Ela começa aberta. Toque no título para fechar. Preencha peso, dobras e circunferências (a vírgula vale; a gordura é opcional) e toque em Salvar. Em Foto inicial, toque em Enviar ou trocar foto e depois em Salvar. No celular, a foto pode sair da câmera.</li>
+<li><b>Medida atual.</b> Ela começa fechada. Abra e preencha só ao concluir o ciclo com o aluno, por exemplo após 3 meses. Envie a foto atual e toque em Salvar. Cada salvamento vira uma avaliação nova, com a data.</li>
+<li><b>O que aparece.</b> A tabela tem uma coluna por data. A diferença fica verde quando a gordura, a cintura, o abdômen ou uma dobra diminui. O gasto basal aparece em kcal. Se faltar peso, altura, idade ou sexo, o quadro diz complete os dados. Antes e depois mostra as duas fotos lado a lado.</li>
+<li><b>Privacidade.</b> Só você, o personal desse aluno, vê as fotos. Apagar aluno também apaga as avaliações e as fotos.</li>
+</ol>`,
+};
 function tutoBox() {
   return `<details class="alert ok noprint" id="tutoBox"><summary><b>🎬 Como usar o app</b></summary>
   <div class="tutoList">${TUTOS.map(([id, t]) => `<button type="button" class="btn sm sec tutoItem" data-tuto="${id}">${esc(t)}</button>`).join("")}</div>
+  <div id="tutoNota" hidden></div>
   <video id="tutoPlayer" controls playsinline preload="none" hidden></video></details>`;
 }
 function bindTuto(prev) {
   const box = $("#tutoBox"); if (!box) return;
   const player = $("#tutoPlayer");
+  const nota = $("#tutoNota");
+  const pararVideo = () => { try { player.pause(); } catch (e) {} player.hidden = true; player.removeAttribute("src"); try { player.load(); } catch (e) {} };
   const show = id => {
+    box.querySelectorAll("[data-tuto]").forEach(b => b.classList.toggle("on", b.dataset.tuto === id));
+    if (TUTO_TEXTO[id]) {
+      pararVideo();
+      if (nota) { nota.hidden = false; nota.innerHTML = TUTO_TEXTO[id]; }
+      return;
+    }
+    if (nota) { nota.hidden = true; nota.innerHTML = ""; }
     const url = "/api/tutoriais/" + encodeURIComponent(id);
     player.hidden = false;
     if (player.getAttribute("src") !== url) player.setAttribute("src", url);
     const go = player.play(); if (go && go.catch) go.catch(() => {});
-    box.querySelectorAll("[data-tuto]").forEach(b => b.classList.toggle("on", b.dataset.tuto === id));
   };
   box.querySelectorAll("[data-tuto]").forEach(b => { b.onclick = () => show(b.dataset.tuto); });
   if (!prev || !prev.id) return;
+  if (TUTO_TEXTO[prev.id]) { show(prev.id); return; }
+  if (nota) { nota.hidden = true; nota.innerHTML = ""; }
   player.hidden = false;
   player.setAttribute("src", "/api/tutoriais/" + encodeURIComponent(prev.id));
   box.querySelectorAll("[data-tuto]").forEach(b => b.classList.toggle("on", b.dataset.tuto === prev.id));
@@ -691,7 +711,9 @@ async function loadFeeEdit(u) {
 const _renderPanel2 = renderPanel;
 renderPanel = function () { _renderPanel2(); paintFeeDots(); if (!unlocked || ME.role !== "personal" || !$("#planBox")) return;
   const o = $("#pwdBox") && $("#pwdBox").open, zo = $("#zapBox") && $("#zapBox").open, po = $("#pixBox") && $("#pixBox").open, to = $("#tutoBox") && $("#tutoBox").open;
-  const tv = $("#tutoPlayer"), prev = tv && tv.getAttribute("src") ? { id: tv.getAttribute("src").split("/").pop(), t: tv.currentTime || 0, playing: !tv.paused && !tv.ended } : null;
+  const tv = $("#tutoPlayer"), itemOn = $("#tutoBox .tutoItem.on");
+  const notaAberta = $("#tutoNota") && !$("#tutoNota").hidden && itemOn;
+  const prev = notaAberta ? { id: itemOn.getAttribute("data-tuto"), t: 0, playing: false } : (tv && tv.getAttribute("src") ? { id: tv.getAttribute("src").split("/").pop(), t: tv.currentTime || 0, playing: !tv.paused && !tv.ended } : null);
   $("#planBox").insertAdjacentHTML("afterend", zapBox() + pixBox() + senhaBox() + tutoBox()); if (o) $("#pwdBox").open = true; if (zo) $("#zapBox").open = true; if (po) $("#pixBox").open = true; if (to) $("#tutoBox").open = true;
   bindTuto(prev);
   bindPix();

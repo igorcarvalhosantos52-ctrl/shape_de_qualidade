@@ -124,9 +124,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v32/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v33/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v32');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v33');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -408,7 +408,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       return { next: senha && senha.nextElementSibling && senha.nextElementSibling.id, text: box ? box.textContent : '', preload: v && v.getAttribute('preload'), src: v && v.getAttribute('src') };
     });
     ok(tuto.next === 'tutoBox' && /Como usar o app/.test(tuto.text), 'Como usar o app fica logo abaixo de Senhas');
-    ok(/Cadastrar e convidar aluno/.test(tuto.text) && /Aprovar a ficha/.test(tuto.text) && /Montar os dias da semana/.test(tuto.text) && /Trocar o treino de hoje/.test(tuto.text) && /Chave Pix e mensalidade/.test(tuto.text) && /Como funciona a mensalidade/.test(tuto.text) && tuto.text.indexOf('Chave Pix e mensalidade') < tuto.text.indexOf('Como funciona a mensalidade') && tuto.text.indexOf('Como funciona a mensalidade') < tuto.text.indexOf('Cards de memorização') && /Cards de memorização/.test(tuto.text) && /WhatsApp e senhas/.test(tuto.text), 'lista os oito vídeos do personal, com a mensalidade depois do Pix');
+    ok(/Cadastrar e convidar aluno/.test(tuto.text) && /Aprovar a ficha/.test(tuto.text) && /Montar os dias da semana/.test(tuto.text) && /Trocar o treino de hoje/.test(tuto.text) && /Chave Pix e mensalidade/.test(tuto.text) && /Como funciona a mensalidade/.test(tuto.text) && tuto.text.indexOf('Chave Pix e mensalidade') < tuto.text.indexOf('Como funciona a mensalidade') && tuto.text.indexOf('Como funciona a mensalidade') < tuto.text.indexOf('Cards de memorização') && /Cards de memorização/.test(tuto.text) && /WhatsApp e senhas/.test(tuto.text) && tuto.text.indexOf('WhatsApp e senhas') < tuto.text.indexOf('Avaliação física'), 'lista os vídeos do personal e, no fim, a avaliação física');
     ok(tuto.preload === 'none' && !tuto.src, 'o vídeo não carrega antes do toque');
     await p.evaluate(() => { document.querySelector('#tutoBox').open = true; document.querySelector('[data-tuto="link"]').click(); });
     await p.waitForFunction(() => (document.querySelector('#tutoPlayer').getAttribute('src') || '') === '/api/tutoriais/link');
@@ -418,6 +418,23 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok((mensalVid.s === 206 || mensalVid.s === 200) && /mp4/.test(mensalVid.t), 'o vídeo da mensalidade abre para qualquer personal logado');
     ok(await a.evaluate(async () => (await fetch('/api/tutoriais/link')).status) === 401, 'aluno não baixa o vídeo');
     ok(await p.evaluate(async () => (await fetch('/api/tutoriais/nao-existe')).status) === 404, 'vídeo desconhecido responde 404');
+    await p.evaluate(() => document.querySelector('[data-tuto="medidas"]').click());
+    await p.waitForFunction(() => {
+      const n = document.querySelector('#tutoNota');
+      return n && !n.hidden && /📏 Medidas/.test(n.textContent) && /Enviar ou trocar foto/.test(n.textContent) && /após 3 meses/.test(n.textContent) && /complete os dados/.test(n.textContent) && /Apagar aluno/.test(n.textContent) && document.querySelector('#tutoPlayer').hidden && !document.querySelector('#tutoPlayer').getAttribute('src');
+    });
+    ok(true, 'o item Avaliação física explica a sidebar, a medida atual fechada e a privacidade das fotos');
+    if (fs.existsSync('/opt/cursor/artifacts')) {
+      const guia = await ctxP.newPage();
+      await guia.setViewport({ width: 420, height: 1400, deviceScaleFactor: 2 });
+      await guia.goto(URL + '/?area=personal', { waitUntil: 'networkidle0' });
+      await guia.waitForSelector('[data-tuto="medidas"]');
+      await guia.evaluate(() => { document.querySelector('#tutoBox').open = true; document.querySelector('[data-tuto="medidas"]').click(); });
+      await guia.waitForSelector('#tutoNota li');
+      const caixa = await guia.$('#tutoBox');
+      await caixa.screenshot({ path: '/opt/cursor/artifacts/tutorial_avaliacao_fisica.png' });
+      await guia.close();
+    }
 
     // ---- divisão da semana (personal) + troca só de hoje
     const MON = new Date(2026, 9, 12, 15, 0, 0).getTime();
