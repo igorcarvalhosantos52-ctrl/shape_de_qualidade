@@ -108,9 +108,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v27/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v28/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v27');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v28');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -408,6 +408,23 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     p.on('dialog', d => d.accept()); a.on('dialog', d => d.accept());
     await p.evaluate(t => { window.__fakeNow = t; render(); }, MON);
     await p.waitForSelector('#splitEdit');
+    const grupos0 = await p.evaluate(() => {
+      const ds = [...document.querySelectorAll('#persCard details.blk')];
+      const vis = el => !!(el && el.checkVisibility && el.checkVisibility());
+      return { n: ds.length, fechados: ds.length > 0 && ds.every(d => !d.open && !vis(d.querySelector('.ex')) && vis(d.querySelector('summary'))), nomes: ds.map(d => (d.querySelector('summary') || {}).textContent || ''), estilo: ds.length > 0 && ds.every(d => d.classList.contains('alert') && d.classList.contains('ok') && d.querySelector('summary > b')) };
+    });
+    ok(grupos0.n > 1 && grupos0.fechados && grupos0.estilo && grupos0.nomes.some(n => /Peito/.test(n)), 'os grupos da ficha começam fechados, só com o nome');
+    await p.evaluate(() => document.querySelector('#persCard details.blk summary').click());
+    ok(await p.evaluate(() => { const ds = [...document.querySelectorAll('#persCard details.blk')]; const vis = el => !!(el && el.checkVisibility && el.checkVisibility()); return ds.filter(d => d.open).length === 1 && ds[0].open && vis(ds[0].querySelector('.ex')); }), 'abrir um grupo mostra os exercícios e fecha os outros');
+    await p.evaluate(() => document.querySelectorAll('#persCard details.blk')[1].querySelector('summary').click());
+    ok(await p.evaluate(() => { const ds = [...document.querySelectorAll('#persCard details.blk')]; return ds[1].open && !ds[0].open && ds.filter(d => d.open).length === 1; }), 'abrir outro grupo fecha o anterior');
+    await p.evaluate(() => document.querySelectorAll('#persCard details.blk')[1].querySelector('summary').click());
+    ok(await p.evaluate(() => [...document.querySelectorAll('#persCard details.blk')].every(d => !d.open)), 'tocar no grupo aberto fecha ele');
+    await p.evaluate(() => { document.querySelector('#persCard details.blk summary').click(); document.querySelector('#persCard .wk li.tr').click(); });
+    ok(await p.evaluate(() => [...document.querySelectorAll('#persCard details.blk')].every(d => !d.open)), 'trocar de dia fecha os grupos');
+    await p.evaluate((u) => { document.querySelector('#closeStu').click(); document.querySelector('.stu[data-u="' + u + '"]').click(); }, pamU);
+    await p.waitForSelector('#persCard details.blk');
+    ok(await p.evaluate(() => [...document.querySelectorAll('#persCard details.blk')].every(d => !d.open)), 'recarregar a ficha deixa os grupos fechados');
     ok(/Usar sugestão automática/.test(await p.$eval('#splitBox', e => e.innerText)) && /Personalizar dias/.test(await p.$eval('#splitEdit', e => e.innerText)), 'divisão padrão é a sugestão automática');
     await p.click('#splitEdit');
     await p.waitForSelector('.splitDay[data-w="1"] .splitG');
@@ -417,7 +434,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       row.querySelectorAll('.splitG').forEach(i => { i.checked = i.value === 'abdomen'; });
       row.querySelector('.splitG').dispatchEvent(new Event('change', { bubbles: true }));
     });
-    await p.waitForFunction(() => /Core de segunda/.test(document.querySelector('#persCard').innerText) && /Prancha abdominal/.test(document.querySelector('#persCard').innerText));
+    await p.waitForFunction(() => /Core de segunda/.test(document.querySelector('#persCard').textContent) && /Prancha abdominal/.test(document.querySelector('#persCard').textContent));
     await p.evaluate(() => { const thu = document.querySelector('.splitDay[data-w="4"] .splitOn'); thu.checked = false; thu.dispatchEvent(new Event('change', { bubbles: true })); });
     await p.waitForSelector('.splitDay[data-w="6"] .splitOn');
     await p.evaluate(() => { const sat = document.querySelector('.splitDay[data-w="6"] .splitOn'); sat.checked = true; sat.dispatchEvent(new Event('change', { bubbles: true })); });

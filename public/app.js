@@ -337,16 +337,16 @@ function treinoFromGs(label,gs){const groups=gsClean(gs);if(!groups.length)retur
  return{nome,titulo:groups.map(g=>GN[g]||g).join(" + "),gs:groups,blocos:groups.map(g=>buildBlock(g,restr,P,g==="cardio"?Math.min(perGroup(),3):perGroup()))}}
 function autoSeed(){const N=S.a.dias||3,days=DAYSETS[N]||DAYSETS[3],ids=SPLIT_GS.map(g=>g.id);
  return days.map((w,pos)=>{const tr=TREINOS[pos%TREINOS.length];return{w,label:tr.titulo,gs:tr.gs.filter(g=>ids.includes(g))}})}
-function applySplit(days){if(!S.plan)return;const prev={};(S.plan.treinos||[]).forEach(t=>{if(t&&t.w!=null)prev[t.w]=t});
+function applySplit(days){if(!S.plan)return;grpOpen=null;const prev={};(S.plan.treinos||[]).forEach(t=>{if(t&&t.w!=null)prev[t.w]=t});
  const train=days.filter(d=>gsClean(d.gs).length);if(!train.length){alert("Escolha pelo menos um grupo muscular em algum dia.");render();return}
  S.plan.treinos=train.map(d=>{const gs=gsClean(d.gs),old=prev[d.w],same=old&&JSON.stringify(old.gs||[])===JSON.stringify(gs);
   if(same){const copy=JSON.parse(JSON.stringify(old));copy.nome=(d.label||"").trim()||copy.nome;copy.w=d.w;return copy}
   const t=treinoFromGs(d.label,gs);t.w=d.w;return t});
  S.plan.split={custom:true,days:days.map(d=>({w:d.w,label:(d.label||"").trim(),gs:gsClean(d.gs)}))};
  S.plan.params=params();S.plan.restr=curRestr();save();render()}
-function useAutoSplit(){if(!S.plan)return;const criado=S.plan.criado,swap=S.plan.swapHoje;
+function useAutoSplit(){if(!S.plan)return;grpOpen=null;const criado=S.plan.criado,swap=S.plan.swapHoje;
  S.plan.treinos=autoTreinos();S.plan.params=params();S.plan.restr=curRestr();S.plan.split=null;S.plan.criado=criado;if(swap)S.plan.swapHoje=swap;save();render()}
-function setSwap(treino){if(!S.plan)return;const dk=dayKey(NOW());S.adj=(S.adj||[]).filter(a=>a.dk!==dk);
+function setSwap(treino){if(!S.plan)return;grpOpen=null;const dk=dayKey(NOW());S.adj=(S.adj||[]).filter(a=>a.dk!==dk);
  if(!treino){S.plan.swapHoje=null;save();render();return}
  const slot=weekPlan(NOW()).find(x=>x.w===NOW().getDay());
  S.plan.swapHoje={dk,nome:treino.nome,titulo:treino.titulo||treino.nome,gs:treino.gs||[],blocos:treino.blocos||[],rest:!!treino.rest,idx:slot&&slot.t!=null?slot.t:-1};save();render()}
@@ -354,15 +354,15 @@ function swapFromDay(idx){const src=S.plan&&S.plan.treinos[+idx];if(!src)return;
 function swapFromGs(gs){const groups=gsClean(gs);if(!groups.length){setSwap({rest:true,nome:"Descanso",titulo:"Descanso",gs:["descanso"],blocos:[]});return}const t=treinoFromGs("",groups);if(t)setSwap(t)}
 /* Edição pelo personal */
 function editPlan(act,di,bi,ei,val){const P=S.plan.params||params(),d=S.plan.treinos[di];if(!d)return;const blk=d.blocos[bi];if(!blk)return;
- if(act==="add"){const x=(EX[blk.g]||[]).find(z=>z.n===val);if(!x||blk.ex.some(e=>e.n===x.n))return;blk.ex.push(mkEx(x,blk.g,P));save();render();return}
+ if(act==="add"){const x=(EX[blk.g]||[]).find(z=>z.n===val);if(!x||blk.ex.some(e=>e.n===x.n))return;blk.ex.push(mkEx(x,blk.g,P));grpOpen=di+"-"+bi;save();render();return}
  const e=blk.ex[ei];if(!e)return;
- if(act==="rm"){blk.ex.splice(ei,1);if(!blk.ex.length)d.blocos.splice(bi,1)}
- else if(act==="up"&&ei>0){[blk.ex[ei-1],blk.ex[ei]]=[blk.ex[ei],blk.ex[ei-1]]}
- else if(act==="down"&&ei<blk.ex.length-1){[blk.ex[ei+1],blk.ex[ei]]=[blk.ex[ei],blk.ex[ei+1]]}
- else if(act==="swap"){const x=EX[e.g]&&EX[e.g].find(z=>z.n===val);if(!x)return;const b=badTags(x,S.plan.restr||[]);const ne=mkEx(x,e.g,P);ne.s=e.s;ne.r=e.r;ne.d=e.d;ne.sub="Trocado pelo personal"+(b.length?" (atenção: restrição "+b.join(", ")+")":"");blk.ex[ei]=ne}
- else if(act==="s"){const v=parseInt(val);if(v>=1&&v<=10)e.s=v;else return}
- else if(act==="r"&&val.trim())e.r=val.trim().slice(0,20);
- else if(act==="d"&&val.trim())e.d=val.trim().slice(0,20);
+ if(act==="rm"){blk.ex.splice(ei,1);if(!blk.ex.length){d.blocos.splice(bi,1);grpOpen=null}else grpOpen=di+"-"+bi}
+ else if(act==="up"&&ei>0){[blk.ex[ei-1],blk.ex[ei]]=[blk.ex[ei],blk.ex[ei-1]];grpOpen=di+"-"+bi}
+ else if(act==="down"&&ei<blk.ex.length-1){[blk.ex[ei+1],blk.ex[ei]]=[blk.ex[ei],blk.ex[ei+1]];grpOpen=di+"-"+bi}
+ else if(act==="swap"){const x=EX[e.g]&&EX[e.g].find(z=>z.n===val);if(!x)return;const b=badTags(x,S.plan.restr||[]);const ne=mkEx(x,e.g,P);ne.s=e.s;ne.r=e.r;ne.d=e.d;ne.sub="Trocado pelo personal"+(b.length?" (atenção: restrição "+b.join(", ")+")":"");blk.ex[ei]=ne;grpOpen=di+"-"+bi}
+ else if(act==="s"){const v=parseInt(val);if(v>=1&&v<=10)e.s=v;else return;grpOpen=di+"-"+bi}
+ else if(act==="r"&&val.trim()){e.r=val.trim().slice(0,20);grpOpen=di+"-"+bi}
+ else if(act==="d"&&val.trim()){e.d=val.trim().slice(0,20);grpOpen=di+"-"+bi}
  else return;
  save();render()}
 const MANUAL_HINT="Seu personal vai te ensinar a execução";
@@ -372,7 +372,7 @@ function meRole(){try{return typeof ME!=="undefined"&&ME&&ME.role}catch(err){ret
 function mkManual(g,nome,nota,s,r,d,P){const note=String(nota||"").trim().slice(0,200),name=String(nome||"").trim().slice(0,80);let sv=parseInt(s,10);if(!(sv>=1&&sv<=10))sv=(P&&P.s)||3;const rv=String(r||(P&&P.r)||"10–12").trim().slice(0,20)||"10–12",dv=String(d||(P&&P.d)||"60s").trim().slice(0,20)||"60s";return{n:name,g,s:sv,r:rv,d:dv,j:note||MANUAL_HINT,nota:note,manual:true,sub:""}}
 function ensureCustom(){if(customTried||meRole()!=="personal"||!unlocked||!viewing)return;customTried=true;const gen=customGen;fetch("/api/personal/exercises").then(async r=>{if(!r.ok||gen!==customGen)return;const j=await r.json();if(gen!==customGen)return;customEx=j.exercises||[];if(customOpen)render()}).catch(()=>{})}
 async function customReq(url,method,body){const r=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Não foi possível salvar o exercício.");return j}
-function applyManual(di,bi,ei,row){const d=S.plan&&S.plan.treinos[di];if(!d)return;const blk=d.blocos[bi];if(!blk||row.n.length<2)return;if(ei<0){if(blk.ex.some(e=>String(e.n).toLowerCase()===row.n.toLowerCase()))return;blk.ex.push(row)}else{if(!blk.ex[ei])return;blk.ex[ei]=row}customOpen="";save();render()}
+function applyManual(di,bi,ei,row){const d=S.plan&&S.plan.treinos[di];if(!d)return;const blk=d.blocos[bi];if(!blk||row.n.length<2)return;if(ei<0){if(blk.ex.some(e=>String(e.n).toLowerCase()===row.n.toLowerCase()))return;blk.ex.push(row)}else{if(!blk.ex[ei])return;blk.ex[ei]=row}customOpen="";grpOpen=di+"-"+bi;save();render()}
 function customKey(di,bi,ei){return di+"-"+bi+"-"+(ei<0?"add":ei)}
 function customTab(di,bi,ei){const k=customKey(di,bi,ei);return `<button type="button" class="btn sm sec exCustomTab${customOpen===k?" on":""}" data-cxkey="${k}">✏️ Outro exercício</button>`}
 function customPanel(di,bi,ei,g){const k=customKey(di,bi,ei);if(customOpen!==k)return "";const P=(S.plan&&S.plan.params)||params();const cur=ei>=0?((((S.plan.treinos[di]||{}).blocos||[])[bi]||{}).ex||[])[ei]||{}:{};const mine=(customEx||[]).filter(x=>x.grupo===g);const list=mine.length?`<div class="meus"><b>Meus exercícios</b>${mine.map(x=>`<div class="meu"><span><b>${esc(x.nome)}</b>${x.nota?`<small>${esc(x.nota)}</small>`:""}</span><span class="exActs"><button type="button" class="btn sm" data-use="${x.id}" data-d="${di}" data-b="${bi}" data-e="${ei}">Usar</button><button type="button" class="btn sm bad" data-delx="${x.id}">Apagar</button></span></div>`).join("")}</div>`:`<p class="meusEmpty">Meus exercícios: nenhum neste grupo ainda.</p>`;return `<div class="exCustom" data-cx="${k}"><label>Nome do exercício<input class="cxNome" maxlength="80" placeholder="Ex.: Remada cavalinho" value="${esc(ei>=0&&cur.manual?cur.n:"")}"></label><label>Instrução (opcional)<input class="cxNota" maxlength="200" placeholder="Como o aluno deve fazer" value="${esc(cur.nota||"")}"></label><div class="cxSets"><label>Séries <input class="cxS" type="number" min="1" max="10" value="${esc(cur.manual?cur.s:(P.s||3))}"></label><label>Reps <input class="cxR" maxlength="20" value="${esc(cur.manual?cur.r:(P.r||""))}"></label><label>Descanso <input class="cxD" maxlength="20" value="${esc(cur.manual?cur.d:(P.d||""))}"></label></div><button type="button" class="btn sm" data-savecx="1" data-d="${di}" data-b="${bi}" data-e="${ei}" data-g="${esc(g)}">Salvar exercício</button>${list}</div>`}
@@ -721,9 +721,18 @@ function dayExp(d){if(!d||!d.blocos||!d.blocos.length)return"";const A=S.a,M=A.m
  if(d.lbl&&/dor no/.test(d.lbl))ad.push("pela "+d.lbl.split(" + ").find(x=>/dor no/.test(x))+" relatada hoje, exercícios que forçam essa região foram trocados ou feitos em versão leve; não treine com dor")
  if(Object.keys(A.dores||{}).length)ad.push("por causa da dor/lesão informada ("+Object.keys(A.dores).join(", ")+"), evitamos movimentos que sobrecarregam essa região");
  if(ad.length)t.push("Adaptações: "+ad.join("; ")+".");return t.join(" ")}
-let DETMAP={},DETN=0;
+let DETMAP={},DETN=0,grpOpen=null;
 function planHTML(treinos,edit){const wp=S.plan?weekPlan(NOW()):[];return treinos.map((d,di)=>{const wk=d.adj?"":wp.filter(x=>x.t===di).map(x=>x.dia).join(", ");
- return `<h3>${esc(d.nome+(d.titulo&&d.titulo!==d.nome?" – "+d.titulo:""))}${wk?` <small style="color:var(--mut)">(${wk})</small>`:""}</h3>`+(dayExp(d)?`<div class="dexp">💡 <b>Sobre este treino:</b> ${esc(dayExp(d))}</div>`:"")+d.blocos.map((b,bi)=>`<div class="blk"><div class="blkh">${b.g==="caminhada"?"":("ABCDEFGHIJK"[bi]||"")+" – "}${esc(GN[b.g]||b.g)}</div>${b.aviso?`<div class="sub">${esc(b.aviso)}</div>`:""}`+b.ex.map((e,ei)=>`<div class="ex"><b>${esc(e.n)}</b>${edit?exEdit(e,di,bi,ei):""}${e.s} série(s) × ${esc(e.r)} · descanso ${esc(e.d)}<div class="j">${esc(e.manual?manualText(e):e.j)}</div>${e.sub?`<div class="sub">↺ ${esc(e.sub)}</div>`:""}${!edit&&!e.manual?(()=>{const k="d"+(++DETN);DETMAP[k]=e;return `<button class="detBtn" data-k="${k}">Detalhes</button>`})():""}</div>`).join("")+(edit&&EX[b.g]?`<div class="edit"><select data-act="add" data-d="${di}" data-b="${bi}" data-e="-1"><option value="">Adicionar exercício</option>${alts(b.g).filter(x=>!b.ex.some(e=>e.n===x.n)).map(x=>`<option>${esc(x.n)}</option>`).join("")}</select>${customTab(di,bi,-1)}${customPanel(di,bi,-1,b.g)}</div>`:"")+`</div>`).join("")}).join("")}
+ const head=`<h3>${esc(d.nome+(d.titulo&&d.titulo!==d.nome?" – "+d.titulo:""))}${wk?` <small style="color:var(--mut)">(${wk})</small>`:""}</h3>`+(dayExp(d)?`<div class="dexp">💡 <b>Sobre este treino:</b> ${esc(dayExp(d))}</div>`:"");
+ return head+d.blocos.map((b,bi)=>{
+  const titulo=`${b.g==="caminhada"?"":("ABCDEFGHIJK"[bi]||"")+" – "}${esc(GN[b.g]||b.g)}`;
+  const corpo=`${b.aviso?`<div class="sub">${esc(b.aviso)}</div>`:""}`+b.ex.map((e,ei)=>`<div class="ex"><b>${esc(e.n)}</b>${edit?exEdit(e,di,bi,ei):""}${e.s} série(s) × ${esc(e.r)} · descanso ${esc(e.d)}<div class="j">${esc(e.manual?manualText(e):e.j)}</div>${e.sub?`<div class="sub">↺ ${esc(e.sub)}</div>`:""}${!edit&&!e.manual?(()=>{const k="d"+(++DETN);DETMAP[k]=e;return `<button class="detBtn" data-k="${k}">Detalhes</button>`})():""}</div>`).join("")+(edit&&EX[b.g]?`<div class="edit"><select data-act="add" data-d="${di}" data-b="${bi}" data-e="-1"><option value="">Adicionar exercício</option>${alts(b.g).filter(x=>!b.ex.some(e=>e.n===x.n)).map(x=>`<option>${esc(x.n)}</option>`).join("")}</select>${customTab(di,bi,-1)}${customPanel(di,bi,-1,b.g)}</div>`:"");
+  if(!edit)return `<div class="blk"><div class="blkh">${titulo}</div>${corpo}</div>`;
+  const key=di+"-"+bi;
+  return `<details class="blk alert ok" data-grp="${key}"${grpOpen===key?" open":""}><summary><b>${titulo}</b></summary>${corpo}</details>`}).join("")}).join("")}
+function bindGrupos(){const root=$("#persCard");if(!root)return;
+ root.querySelectorAll("details.blk").forEach(d=>{d.ontoggle=()=>{if(d.open){grpOpen=d.dataset.grp||null;root.querySelectorAll("details.blk").forEach(o=>{if(o!==d&&o.open)o.open=false})}else if(grpOpen===d.dataset.grp)grpOpen=null}});
+ root.querySelectorAll(".wk li").forEach(li=>{li.onclick=()=>{grpOpen=null;root.querySelectorAll("details.blk").forEach(d=>{d.open=false})}})}
 function splitHTML(){const custom=isCustomSplit(),by={};if(custom)S.plan.split.days.forEach(d=>{by[d.w]=d});
  const order=[1,2,3,4,5,6,0];
  if(!custom)return `<div id="splitBox" class="noprint"><h3>Divisão da semana</h3><p style="margin:.2em 0"><b>Usar sugestão automática</b></p><p style="color:var(--mut);font-size:.9rem">A divisão fixa do app, conforme os dias da anamnese. Personalize só se quiser mudar os dias, os grupos ou o nome de cada treino.</p><button type="button" class="btn sec" id="splitEdit">Personalizar dias</button></div>`;
@@ -797,9 +806,9 @@ function render(){DETMAP={};DETN=0;closeDet();renderChat();hdr();const st=S.stat
  if(unlocked&&viewing)ensureCustom();
  const planEdit=ev=>{const t=ev.target.closest?ev.target.closest("[data-act]"):ev.target;if(!t||!t.dataset||!t.dataset.act)return;if(!unlocked||!viewing)return;if(t.dataset.act==="add"&&!t.value)return;editPlan(t.dataset.act,+t.dataset.d,+t.dataset.b,+t.dataset.e,t.value)};
  pc.onchange=ev=>{if(ev.target.id==="revF"||ev.target.id==="revD"||ev.target.closest(".exCustom"))return;planEdit(ev)};
- pc.onclick=ev=>{const tab=ev.target.closest&&ev.target.closest(".exCustomTab");if(tab){customOpen=customOpen===tab.dataset.cxkey?"":tab.dataset.cxkey;render();return}const saveB=ev.target.closest&&ev.target.closest("[data-savecx]");if(saveB){saveCustomFrom(saveB);return}const useB=ev.target.closest&&ev.target.closest("[data-use]");if(useB){useCustom(+useB.dataset.use,+useB.dataset.d,+useB.dataset.b,+useB.dataset.e);return}const delB=ev.target.closest&&ev.target.closest("[data-delx]");if(delB){delCustom(+delB.dataset.delx);return}const t=ev.target.closest&&ev.target.closest("button[data-act]");if(t)planEdit(ev)};
+ pc.onclick=ev=>{const tab=ev.target.closest&&ev.target.closest(".exCustomTab");if(tab){const parts=String(tab.dataset.cxkey||"").split("-");if(parts.length>=2)grpOpen=parts[0]+"-"+parts[1];customOpen=customOpen===tab.dataset.cxkey?"":tab.dataset.cxkey;render();return}const saveB=ev.target.closest&&ev.target.closest("[data-savecx]");if(saveB){saveCustomFrom(saveB);return}const useB=ev.target.closest&&ev.target.closest("[data-use]");if(useB){useCustom(+useB.dataset.use,+useB.dataset.d,+useB.dataset.b,+useB.dataset.e);return}const delB=ev.target.closest&&ev.target.closest("[data-delx]");if(delB){delCustom(+delB.dataset.delx);return}const t=ev.target.closest&&ev.target.closest("button[data-act]");if(t)planEdit(ev)};
  const ap=$("#aprovar");if(ap)ap.onclick=approve;const rv=$("#revogar");if(rv)rv.onclick=()=>{if(!unlocked)return;S.status=risk().length?"bloqueado":"pendente";S.aprov=null;S.adj=[];save();render()};
- bindProg();
+ bindProg();bindGrupos();
 }
 function approve(){if(!unlocked)return;const nome=$("#pNome").value.trim(),cref=$("#pCref").value.trim().toUpperCase();const err=m=>$("#pErr").innerHTML=`<div class="alert bad">${m}</div>`;
  if(nome.length<3)return err("Informe o nome do personal.");
@@ -853,8 +862,8 @@ function renderPanel(){const p=$("#stuPanel");const cardStudyOpen=!!($("#cardStu
  p.querySelectorAll(".stu").forEach(d=>d.onclick=()=>openStu(d.dataset.u));
  const sec=$("#cardStudySec");if(sec){sec.ontoggle=()=>{if(sec.open)loadCards()};if(cardStudyOpen)loadCards()}
  const eg=$("#ebookGo");if(eg)eg.onclick=()=>window.open("/api/ebook","_blank","noopener")}
-function openStu(u){viewing=u;if(innerWidth<=700)panelOpen=false;CK=fkey(u);S=loadF(u);render()}
-function closeStu(){viewing=null;S=load();render()}
+function openStu(u){viewing=u;grpOpen=null;if(innerWidth<=700)panelOpen=false;CK=fkey(u);S=loadF(u);render()}
+function closeStu(){viewing=null;grpOpen=null;S=load();render()}
 function showTab(t){if(t==="aluno"&&viewing)closeStu();["login","aluno","personal"].forEach(x=>$("#t-"+x).classList.toggle("hide",x!==t));render()}
 /* ---------- Login do aluno ---------- */
 let lgNew=false;
