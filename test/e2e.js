@@ -124,9 +124,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v30/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v31/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v30');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v31');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -458,6 +458,19 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(/Avaliação física/.test(await p.$eval('#avalSide', e => e.textContent)) && /Medida inicial/.test(await p.$eval('#avalSide', e => e.textContent)) && /Pamela Souza/.test(await p.$eval('#avalSide', e => e.textContent)) && !(await p.$('#avalAluno')), 'no celular a ficha abre a avaliação do aluno, sem o seletor');
     const cabecaVazia = await p.$eval('#avalSide', e => e.textContent);
     ok(/19 anos/.test(cabecaVazia) && /Ganho de massa muscular/.test(cabecaVazia) && /4 dias\/semana/.test(cabecaVazia) && /complete os dados/.test(await p.$eval('#avGebVal', e => e.textContent)) && /Dobras cutâneas/.test(cabecaVazia) && /Circunferências corporais/.test(cabecaVazia) && !!(await p.$('#avSexo')), 'o cabeçalho puxa a anamnese e o gasto basal pede os dados que faltam');
+    const pills = await p.evaluate(() => {
+      const st = el => { const s = getComputedStyle(el); return { r: s.borderRadius, pad: s.padding, bg: s.backgroundImage }; };
+      const ini = document.querySelector('#avIni .avPill');
+      const atu = document.querySelector('#avAtu summary .avPill');
+      const copy = document.querySelector('#invCopy');
+      return { fechada: !document.querySelector('#avAtu').open, aviso: document.querySelector('#avAtuAviso').textContent, ini: ini.className, atu: atu.className, igual: st(ini).r === st(copy).r && st(ini).pad === st(copy).pad && st(ini).bg === st(copy).bg && st(atu).bg === st(copy).bg };
+    });
+    ok(pills.fechada && /concluir o ciclo de treino/.test(pills.aviso) && /btn sm avPill/.test(pills.ini) && /btn sm avPill/.test(pills.atu) && pills.igual, 'medida atual começa fechada, com o aviso, e as pílulas repetem o Copiar link');
+    await p.evaluate(() => document.querySelector('#avAtu summary').scrollIntoView({ block: 'center' }));
+    await p.click('#avAtu summary');
+    ok(await p.$eval('#avAtu', e => e.open), 'o acordeão abre a medida atual');
+    await p.click('#avAtu summary');
+    ok(!(await p.$eval('#avAtu', e => e.open)), 'o acordeão fecha a medida atual');
     const comp = await p.evaluate(async () => {
       const c = document.createElement('canvas'); c.width = 1800; c.height = 1200;
       const g = c.getContext('2d'); g.fillStyle = '#336699'; g.fillRect(0, 0, 1800, 1200);
@@ -500,6 +513,8 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     });
     await fotoJpg('#avFotoAtuFile', '#15803d');
     await p.waitForFunction(() => (document.querySelector('#avPrevAtu').src || '').startsWith('data:image/jpeg'));
+    await p.evaluate(() => document.querySelector('#avAtu summary').scrollIntoView({ block: 'center' }));
+    await p.click('#avAtu summary');
     await p.click('#avAtuSave');
     await p.waitForFunction(() => {
       const linha = [...document.querySelectorAll('#avCmp .avLinha')];
@@ -535,7 +550,22 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       return { vw: innerWidth, vh: innerHeight, sl: s.left, sr: Math.round(s.right), sw: Math.round(s.width), st: Math.round(s.top), sh: Math.round(s.height), mr: m.right, sel };
     });
     ok(lay.vw >= 1300 && lay.vh >= 700 && lay.st <= 1 && lay.sh >= lay.vh - 2 && lay.sw >= 300 && Math.abs(lay.sr - lay.vw) <= 2 && lay.mr <= lay.sl + 2 && lay.sel, 'no notebook a sidebar fica fixa na lateral e tem o seletor de aluno');
-    if (fs.existsSync('/opt/cursor/artifacts')) await desk.screenshot({ path: '/opt/cursor/artifacts/sidebar_avaliacao_1366.png' });
+    if (fs.existsSync('/opt/cursor/artifacts')) {
+      await desk.evaluate(() => {
+        const side = document.querySelector('#avalSide');
+        const aviso = document.querySelector('#avAtuAviso');
+        side.scrollTop = Math.max(0, aviso.offsetTop - 36);
+      });
+      await desk.screenshot({ path: '/opt/cursor/artifacts/sidebar_medida_fechada_1366.png' });
+      await desk.click('#avAtu summary');
+      await desk.waitForFunction(() => document.querySelector('#avAtu').open && document.querySelector('#avAtuSave'));
+      await desk.evaluate(() => {
+        const side = document.querySelector('#avalSide');
+        const aviso = document.querySelector('#avAtuAviso');
+        side.scrollTop = Math.max(0, aviso.offsetTop - 12);
+      });
+      await desk.screenshot({ path: '/opt/cursor/artifacts/sidebar_medida_aberta_1366.png' });
+    }
     await desk.close();
     ok(/Usar sugestão automática/.test(await p.$eval('#splitBox', e => e.innerText)) && /Personalizar dias/.test(await p.$eval('#splitEdit', e => e.innerText)), 'divisão padrão é a sugestão automática');
     await p.click('#splitEdit');
