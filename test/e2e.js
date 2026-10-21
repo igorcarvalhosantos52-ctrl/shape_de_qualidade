@@ -76,6 +76,13 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   const videosMod = require('../src/videos');
   ok(videosMod.slug('Tríceps na polia (corda)') === 'triceps-na-polia-corda' && videosMod.slug('Agachamento livre com barra') === 'agachamento-livre-com-barra', 'o slug do vídeo tira acento, parêntese e vira o nome do arquivo');
   ok(videosMod.catalogo().includes('Prancha abdominal') && videosMod.catalogo().includes("World's greatest stretch (passo longo com rotação)") && !videosMod.catalogo().includes('Remada cavalinho'), 'o catálogo de vídeos é o da ficha, sem exercício livre');
+  const slugsCat = require('../src/video-slugs.json'), promptsCat = require('../src/video-prompts.json');
+  const nomesCat = videosMod.catalogo();
+  ok(nomesCat.length === 225 && nomesCat.includes('Remada cavalinho (T-bar)') && nomesCat.includes('Puxada frontal pegada neutra no pulley') && nomesCat.includes('Rosca punho na polia'), 'a biblioteca passa a ter as variações novas, sem mudar o nome livre');
+  ok(slugsCat.length === 229 && new Set(slugsCat.map(x => x.slug)).size === 225 && slugsCat.every(x => videosMod.slug(x.n) === x.slug && nomesCat.includes(x.n)), 'o arquivo de slugs cobre as 229 entradas do catálogo');
+  ok(promptsCat.length === 229 && promptsCat.every(x => typeof x.video_prompt === 'string' && x.video_prompt.length > 20) && !fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8').includes('video_prompt'), 'os prompts de vídeo ficam fora do app do aluno');
+  const mapaVid = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'public', 'videos', 'index.json'), 'utf8'));
+  ok(nomesCat.every(n => mapaVid[n] === videosMod.slug(n) + '.mp4'), 'o mapa de vídeos aponta o slug de cada exercício');
   ok(Object.keys(videosMod.padroes()).length === 0, 'sem mp4 gravado, nenhum vídeo padrão aparece');
   if (savedOwner === undefined) delete process.env.OWNER_TEST_EMAILS; else process.env.OWNER_TEST_EMAILS = savedOwner;
   if (savedAdmin === undefined) delete process.env.ADMIN_EMAIL; else process.env.ADMIN_EMAIL = savedAdmin;
@@ -129,9 +136,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v34/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v35/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v34 sem pré-cache de vídeo');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v35 sem pré-cache de vídeo');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -773,6 +780,49 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(!!back && back.treinos[0].nome === 'Treino 1', 'voltar à divisão automática restaura a sugestão fixa');
     await see();
     ok(/Peito/.test(await a.$eval('#statusCard', e => e.innerText)) && !/Core de segunda/.test(await a.$eval('#statusCard', e => e.innerText)), 'aba Dia volta ao treino automático');
+    const gerado = await p.evaluate(() => {
+      const barra = EX.costas.find(x => x.n === 'Barra fixa');
+      const fora = [];
+      Object.values(EX).forEach(arr => arr.forEach(x => { if (x.e && !EQUIP.includes(x.e)) fora.push(x.n); }));
+      const equip = S.equip.slice();
+      S.equip = EQUIP.slice();
+      const livre = buildBlock('costas', [], params(), 4).ex.map(e => e.n);
+      const poupa = buildBlock('costas', ['lombar'], params(), 30).ex.map(e => e.n);
+      S.equip = equip;
+      const comLombar = nome => { const x = EX.costas.find(z => z.n === nome); return !!x && (x.t || '').split(' ').includes('lombar'); };
+      return { barra: barra && barra.e, fora: fora.length, n: EX.costas.length, livre, poupa, how: !!(HOW['Gato-camelo no colchonete'] && HOW['Remada cavalinho (T-bar)']), comLombar: poupa.filter(comLombar), neutra: poupa.includes('Puxada frontal pegada neutra no pulley') };
+    });
+    ok(gerado.n === 29 && gerado.fora === 0 && gerado.barra === 'Barra fixa/Paralelas' && gerado.how && gerado.livre[0] === 'Puxada frontal no pulley' && !gerado.comLombar.length && gerado.neutra && !gerado.poupa.includes('Remada curvada com barra'), 'o gerador mantém a ordem, a Barra fixa pede o equipamento e pula a restrição lombar');
+    if (fs.existsSync('/opt/cursor/artifacts')) {
+      const vp = p.viewport();
+      await p.setViewport({ width: 480, height: 980, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      await p.waitForSelector('#persCard details.blk');
+      await p.evaluate(() => {
+        const blocos = [...document.querySelectorAll('#persCard details.blk')];
+        const d = blocos.find(el => /Costas/.test((el.querySelector('summary') || {}).textContent || ''));
+        if (!d) throw new Error('sem grupo de costas: ' + blocos.map(el => (el.querySelector('summary') || {}).textContent || '').join(' | ').slice(0, 500));
+        d.open = true;
+        const inp = d.querySelector('.exBusca');
+        inp.value = 'remada';
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+        const sel = d.querySelector('select[data-act="add"]');
+        const alvo = [...sel.options].find(o => o.textContent === 'Remada cavalinho (T-bar)');
+        if (alvo) alvo.scrollIntoView({ block: 'center' });
+      });
+      await p.waitForFunction(() => {
+        const d = [...document.querySelectorAll('#persCard details.blk')].find(el => el.open && /Costas/.test((el.querySelector('summary') || {}).textContent || ''));
+        const sel = d && d.querySelector('select[data-act="add"]');
+        if (!sel) return false;
+        const vis = [...sel.options].filter(o => !o.hidden && o.value !== '').map(o => o.textContent);
+        return vis.some(t => /cavalinho/.test(t)) && vis.every(t => /remada/i.test(t));
+      });
+      await (await p.$('#persCard details.blk[open] .exPick')).screenshot({ path: '/opt/cursor/artifacts/seletor_costas.png' });
+      await p.evaluate(() => {
+        document.querySelectorAll('.exBusca').forEach(inp => { inp.value = ''; inp.dispatchEvent(new Event('input', { bubbles: true })); });
+        document.querySelectorAll('#persCard details.blk').forEach(d => { d.open = false; });
+      });
+      if (vp) await p.setViewport(vp);
+    }
 
     // ---- exercício livre do personal (a lista da biblioteca continua igual)
     const libSnap = await p.evaluate(() => {
