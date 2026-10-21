@@ -73,10 +73,15 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   ok(ownerTest.allows('marina@exemplo.com', 3) && ownerTest.allows('joao@exemplo.com', 3) && ownerTest.allows('dono@teste.com', 3) && !ownerTest.allows('igor@teste.com', 3), 'a lista e a conta do admin liberam; as outras não');
   process.env.OWNER_TEST_EMAILS = 'off';
   ok(!ownerTest.config().on && !ownerTest.allows('dono@teste.com', 1), 'OWNER_TEST_EMAILS=off desliga o teste do dono');
+  const videosMod = require('../src/videos');
+  ok(videosMod.slug('Tríceps na polia (corda)') === 'triceps-na-polia-corda' && videosMod.slug('Agachamento livre com barra') === 'agachamento-livre-com-barra', 'o slug do vídeo tira acento, parêntese e vira o nome do arquivo');
+  ok(videosMod.catalogo().includes('Prancha abdominal') && videosMod.catalogo().includes("World's greatest stretch (passo longo com rotação)") && !videosMod.catalogo().includes('Remada cavalinho'), 'o catálogo de vídeos é o da ficha, sem exercício livre');
+  ok(Object.keys(videosMod.padroes()).length === 0, 'sem mp4 gravado, nenhum vídeo padrão aparece');
   if (savedOwner === undefined) delete process.env.OWNER_TEST_EMAILS; else process.env.OWNER_TEST_EMAILS = savedOwner;
   if (savedAdmin === undefined) delete process.env.ADMIN_EMAIL; else process.env.ADMIN_EMAIL = savedAdmin;
   const srv = spawn('node', ['server.js'], { cwd: path.join(__dirname, '..'), env: { ...process.env, PORT, TURSO_DATABASE_URL: 'file:' + LIB, TURSO_AUTH_TOKEN: '', ADMIN_EMAIL: 'dono@teste.com', ADMIN_PASSWORD: 'admin123', MP_ACCESS_TOKEN: '', STRIPE_SECRET_KEY: '' }, stdio: 'inherit' });
   await sleep(1200);
+  let videoTeste = '';
     const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
   const phone = { width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
   try {
@@ -124,9 +129,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v33/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v34/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v33');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v34 sem pré-cache de vídeo');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -408,7 +413,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       return { next: senha && senha.nextElementSibling && senha.nextElementSibling.id, text: box ? box.textContent : '', preload: v && v.getAttribute('preload'), src: v && v.getAttribute('src') };
     });
     ok(tuto.next === 'tutoBox' && /Como usar o app/.test(tuto.text), 'Como usar o app fica logo abaixo de Senhas');
-    ok(/Cadastrar e convidar aluno/.test(tuto.text) && /Aprovar a ficha/.test(tuto.text) && /Montar os dias da semana/.test(tuto.text) && /Trocar o treino de hoje/.test(tuto.text) && /Chave Pix e mensalidade/.test(tuto.text) && /Como funciona a mensalidade/.test(tuto.text) && tuto.text.indexOf('Chave Pix e mensalidade') < tuto.text.indexOf('Como funciona a mensalidade') && tuto.text.indexOf('Como funciona a mensalidade') < tuto.text.indexOf('Cards de memorização') && /Cards de memorização/.test(tuto.text) && /WhatsApp e senhas/.test(tuto.text) && tuto.text.indexOf('WhatsApp e senhas') < tuto.text.indexOf('Avaliação física'), 'lista os vídeos do personal e, no fim, a avaliação física');
+    ok(/Cadastrar e convidar aluno/.test(tuto.text) && /Aprovar a ficha/.test(tuto.text) && /Montar os dias da semana/.test(tuto.text) && /Trocar o treino de hoje/.test(tuto.text) && /Chave Pix e mensalidade/.test(tuto.text) && /Como funciona a mensalidade/.test(tuto.text) && tuto.text.indexOf('Chave Pix e mensalidade') < tuto.text.indexOf('Como funciona a mensalidade') && tuto.text.indexOf('Como funciona a mensalidade') < tuto.text.indexOf('Cards de memorização') && /Cards de memorização/.test(tuto.text) && /WhatsApp e senhas/.test(tuto.text) && tuto.text.indexOf('WhatsApp e senhas') < tuto.text.indexOf('Avaliação física') && tuto.text.indexOf('Avaliação física') < tuto.text.indexOf('Vídeos dos exercícios'), 'lista os vídeos do personal e, no fim, a avaliação física e os vídeos dos exercícios');
     ok(tuto.preload === 'none' && !tuto.src, 'o vídeo não carrega antes do toque');
     await p.evaluate(() => { document.querySelector('#tutoBox').open = true; document.querySelector('[data-tuto="link"]').click(); });
     await p.waitForFunction(() => (document.querySelector('#tutoPlayer').getAttribute('src') || '') === '/api/tutoriais/link');
@@ -424,6 +429,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       return n && !n.hidden && /📏 Medidas/.test(n.textContent) && /Enviar ou trocar foto/.test(n.textContent) && /após 3 meses/.test(n.textContent) && /complete os dados/.test(n.textContent) && /Apagar aluno/.test(n.textContent) && document.querySelector('#tutoPlayer').hidden && !document.querySelector('#tutoPlayer').getAttribute('src');
     });
     ok(true, 'o item Avaliação física explica a sidebar, a medida atual fechada e a privacidade das fotos');
+    await p.evaluate(() => document.querySelector('[data-tuto="videos"]').click());
+    await p.waitForFunction(() => { const n = document.querySelector('#tutoNota'); return n && !n.hidden && /Vídeos seus/.test(n.textContent) && /30 segundos/.test(n.textContent) && /sem espaço vazio/.test(n.textContent) && document.querySelector('#tutoPlayer').hidden; });
+    ok(true, 'o item Vídeos dos exercícios explica a gaveta e o vídeo do personal');
     if (fs.existsSync('/opt/cursor/artifacts')) {
       const guia = await ctxP.newPage();
       await guia.setViewport({ width: 420, height: 1400, deviceScaleFactor: 2 });
@@ -628,7 +636,115 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await see();
     ok(/Core de segunda/.test(await a.$eval('#statusCard', e => e.innerText)) && /Core de segunda/.test(await a.$eval('#hdrDia', e => e.textContent)) && /6 série/.test(await a.$eval('#statusCard', e => e.innerText)) && !/Cardio de sábado/.test(await a.$eval('#statusCard', e => e.innerText)), 'aba Dia do aluno mostra o treino personalizado de hoje');
     await a.click('.detBtn'); await a.waitForSelector('#detDrawer.open');
-    ok(/Como fazer/.test(await a.$eval('#detDrawer', e => e.innerText)), 'Detalhes abre no exercício do dia personalizado');
+    ok(/Como fazer/.test(await a.$eval('#detDrawer', e => e.innerText)) && !/YouTube|Ver vídeo/.test(await a.$eval('#detDrawer', e => e.innerText)), 'Detalhes abre no exercício do dia personalizado, sem busca no YouTube');
+    ok(!(await a.$('#detDrawer .dvidBox')), 'sem vídeo pronto a gaveta não deixa espaço vazio');
+    const nomeVid = await a.$eval('#detDrawer h3', e => e.textContent.trim());
+    videoTeste = path.join(__dirname, '..', 'public', 'videos', videosMod.slug(nomeVid) + '.mp4');
+    const ff = spawnSync('ffmpeg', ['-y', '-f', 'lavfi', '-i', 'testsrc=size=270x480:rate=12:duration=2', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-movflags', '+faststart', videoTeste], { encoding: 'utf8' });
+    if (ff.status !== 0) throw new Error('ffmpeg: ' + String(ff.stderr || ff.stdout || '').slice(-500));
+    const mapa0 = await a.evaluate(() => loadExVid());
+    ok(!!(mapa0 && mapa0.defaults && mapa0.defaults[nomeVid]), 'o arquivo em public/videos entra no mapa do exercício');
+    await a.evaluate(() => closeDet());
+    await a.evaluate(() => document.querySelector('.detBtn').click());
+    await a.waitForSelector('#detDrawer .dvidBox video', { timeout: 8000 });
+    await a.waitForFunction(() => { const v = document.querySelector('#detDrawer video'); return v && v.readyState >= 2; });
+    const vidInfo = await a.evaluate(() => {
+      const v = document.querySelector('#detDrawer video'), r = v.getBoundingClientRect();
+      return { muted: v.muted, loop: v.loop, inline: v.hasAttribute('playsinline'), pre: v.getAttribute('preload'), auto: v.autoplay, src: v.getAttribute('src'), w: r.width, h: r.height, marca: document.querySelector('.dvidMarca').textContent, yt: !!document.querySelector('#detDrawer a[href*="youtube"]') };
+    });
+    ok(vidInfo.muted && vidInfo.loop && vidInfo.inline && vidInfo.pre === 'metadata' && vidInfo.auto && /\/videos\/.+\.mp4$/.test(vidInfo.src) && vidInfo.w >= 160 && vidInfo.w <= 230 && vidInfo.h > vidInfo.w * 1.5 && vidInfo.marca === 'Shape de Qualidade' && !vidInfo.yt, 'o vídeo padrão entra mudo, em loop, vertical e com a marca, sem ocupar a gaveta toda');
+    if (fs.existsSync('/opt/cursor/artifacts')) {
+      const dv = await ctxA.newPage();
+      await dv.setViewport({ width: 1100, height: 800, deviceScaleFactor: 1 });
+      await dv.goto(URL, { waitUntil: 'networkidle0' });
+      await dv.waitForFunction(() => typeof S !== 'undefined' && S && S.plan && S.status === 'aprovado');
+      await dv.evaluate(t => { window.__fakeNow = t; render(); }, MON);
+      await dv.waitForSelector('.detBtn');
+      await dv.evaluate(() => loadExVid());
+      await dv.evaluate(() => document.querySelector('.detBtn').click());
+      await dv.waitForFunction(() => {
+        const v = document.querySelector('#detDrawer .dvidBox video');
+        if (!v || v.readyState < 2) return false;
+        v.muted = true; const p = v.play(); if (p && p.catch) p.catch(() => {});
+        const r = v.getBoundingClientRect();
+        return r.width >= 160 && r.height > r.width && r.left >= 0 && r.right <= window.innerWidth + 1;
+      });
+      await sleep(400);
+      await dv.screenshot({ path: '/opt/cursor/artifacts/detalhe_video.png' });
+      await dv.close();
+    }
+    await a.evaluate(() => closeDet());
+    await p.evaluate(() => { const s = document.querySelector('#vidSec'); s.open = true; });
+    await p.waitForSelector('#vidBusca');
+    await p.evaluate(nome => { const el = document.querySelector('#vidBusca'); el.value = nome; el.dispatchEvent(new Event('input', { bubbles: true })); }, nomeVid);
+    await p.waitForSelector('[data-vidn]');
+    await p.evaluate(nome => { const b = [...document.querySelectorAll('[data-vidn]')].find(x => x.getAttribute('data-vidn') === nome); if (!b) throw new Error('sem exercício'); b.click(); }, nomeVid);
+    await p.waitForFunction(nome => (document.querySelector('#vidEscolha') || {}).textContent.includes(nome), {}, nomeVid);
+    await (await p.$('#vidFile')).uploadFile(videoTeste);
+    await p.click('#vidGo');
+    await p.waitForFunction(() => /Enviado/.test((document.querySelector('#vidMsg') || {}).textContent || ''), { timeout: 20000 });
+    ok(/no lugar do padrão/.test(await p.$eval('#vidSec', e => e.innerText)), 'Vídeos seus lista o vídeo que substitui o padrão');
+    if (fs.existsSync('/opt/cursor/artifacts')) {
+      const gv = await ctxP.newPage();
+      await gv.setViewport({ width: 420, height: 1100, deviceScaleFactor: 2 });
+      await gv.goto(URL + '/?area=personal', { waitUntil: 'networkidle0' });
+      await gv.waitForSelector('#vidSec');
+      await gv.evaluate(() => loadExVid());
+      await gv.evaluate(() => { document.querySelector('#vidSec').open = true; });
+      await gv.waitForSelector('#vidBusca');
+      await gv.evaluate(nome => { const el = document.querySelector('#vidBusca'); el.value = nome; el.dispatchEvent(new Event('input', { bubbles: true })); }, nomeVid);
+      await gv.waitForFunction(nome => [...document.querySelectorAll('[data-vidn]')].some(b => b.getAttribute('data-vidn') === nome), {}, nomeVid);
+      await gv.evaluate(nome => { const b = [...document.querySelectorAll('[data-vidn]')].find(x => x.getAttribute('data-vidn') === nome); b.click(); }, nomeVid);
+      await gv.waitForSelector('#vidSec .viditem');
+      await gv.evaluate(() => document.querySelector('#vidSec').scrollIntoView({ block: 'start' }));
+      await sleep(200);
+      await gv.screenshot({ path: '/opt/cursor/artifacts/videos_seus.png' });
+      await gv.close();
+    }
+    const mapa = await a.evaluate(() => loadExVid());
+    ok(mapa.custom[nomeVid] && /\/api\/exercise-videos\/\d+\/file$/.test(mapa.custom[nomeVid]) && mapa.defaults[nomeVid] && /\/videos\//.test(mapa.defaults[nomeVid]) && (!mapa.meus || mapa.meus.length === 0), 'o aluno recebe o vídeo do personal e o padrão, sem a lista de edição');
+    await a.evaluate(() => document.querySelector('.detBtn').click());
+    await a.waitForFunction(() => /\/api\/exercise-videos\//.test((document.querySelector('#detDrawer video') || {}).getAttribute ? document.querySelector('#detDrawer video').getAttribute('src') : ''));
+    ok(true, 'na ficha do aluno o vídeo do personal substitui o padrão');
+    await a.evaluate(() => closeDet());
+    await p.evaluate(nome => { const b = [...document.querySelectorAll('#persCard .detBtn')].find(btn => { const ex = btn.closest('.ex'); return ex && ex.querySelector('b') && ex.querySelector('b').textContent === nome; }); if (!b) throw new Error('sem detalhes'); b.click(); }, nomeVid);
+    await p.waitForSelector('#detDrawer.open video');
+    ok(/\/api\/exercise-videos\//.test(await p.$eval('#detDrawer video', v => v.getAttribute('src'))), 'o personal vê o mesmo vídeo ao abrir Detalhes na ficha');
+    await p.evaluate(() => closeDet());
+    const idVid = mapa.custom[nomeVid].match(/(\d+)\/file$/)[1];
+    const longo = await p.evaluate(async (nome) => { const r = await fetch('/api/personal/exercise-videos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, mime: 'video/mp4', duration_ms: 31000, bytes: 8, seq: 0, total: 1, data: 'AAAA' }) }); return { st: r.status, j: await r.json() }; }, nomeVid);
+    ok(longo.st === 400 && /30 segundos/.test(longo.j.error), 'vídeo maior que 30 segundos é recusado');
+    ok(await a.evaluate(async () => (await fetch('/api/personal/exercise-videos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status) === 401, 'aluno não envia vídeo');
+    const outro = await fetch(URL + '/api/personal/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: 'Video Outro', email: 'video.outro@teste.com', senha: 'senha1234', plano: 'basico' }) });
+    const setCookie = (outro.headers.getSetCookie ? outro.headers.getSetCookie() : [outro.headers.get('set-cookie')]).find(s => s && s.startsWith('sq=')) || '';
+    const cookieOutro = setCookie.split(';')[0];
+    ok(outro.status === 200 && !!cookieOutro, 'outra conta de personal entra para testar o vídeo');
+    const negado = await fetch(URL + '/api/exercise-videos/' + idVid + '/file', { headers: { cookie: cookieOutro } });
+    ok(negado.status === 404, 'outro personal não baixa o vídeo');
+    const pedaco = fs.readFileSync(videoTeste).toString('base64');
+    const sobe = await fetch(URL + '/api/personal/exercise-videos', { method: 'POST', headers: { 'Content-Type': 'application/json', cookie: cookieOutro }, body: JSON.stringify({ nome: 'Abdominal crunch no colchonete', mime: 'video/mp4', duration_ms: 2000, bytes: fs.statSync(videoTeste).size, seq: 0, total: 1, data: pedaco }) });
+    const sobeJ = await sobe.json();
+    ok(sobe.status === 200 && sobeJ.pronto && sobeJ.id, 'o outro personal grava o vídeo dele no banco');
+    const oid = (await sql.prepare("SELECT id FROM personals WHERE email='video.outro@teste.com'").get()).id;
+    await sql.prepare('DELETE FROM personals WHERE id=?').run(oid);
+    ok(!(await sql.prepare('SELECT id FROM exercise_videos WHERE personal_id=?').get(oid)) && !(await sql.prepare('SELECT video_id FROM exercise_video_parts WHERE video_id=?').get(sobeJ.id)), 'apagar a conta do personal apaga os vídeos');
+    const nome2 = nomeVid === 'Prancha abdominal' ? 'Elevação de pernas deitado' : 'Prancha abdominal';
+    const segundo = await p.evaluate(async (nome, origem) => {
+      const src = (window.__EXVID && window.__EXVID.defaults && window.__EXVID.defaults[origem]) || '';
+      const buf = await (await fetch(src)).arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      const r = await fetch('/api/personal/exercise-videos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, mime: 'video/mp4', duration_ms: 2000, bytes: bytes.length, seq: 0, total: 1, data: btoa(s) }) });
+      const j = await r.json();
+      return { st: r.status, id: j.id, erro: j.error || '', n: bytes.length, src: !!src };
+    }, nome2, nomeVid);
+    ok(segundo.st === 200 && segundo.id && segundo.n > 0 && segundo.n <= 300 * 1024, 'dá para enviar um segundo vídeo');
+    await p.evaluate(() => { const s = document.querySelector('#vidSec'); if (s) s.open = true; });
+    await p.evaluate(() => loadExVid());
+    await p.waitForFunction(() => [...document.querySelectorAll('[data-vidrm]')].length >= 2);
+    await p.evaluate(id => { const b = [...document.querySelectorAll('[data-vidrm]')].find(x => x.getAttribute('data-vidrm') === String(id)); b.click(); }, segundo.id);
+    await p.waitForFunction(() => /Removido/.test((document.querySelector('#vidMsg') || {}).textContent || ''));
+    ok(!(await sql.prepare('SELECT id FROM exercise_videos WHERE id=?').get(segundo.id)) && !!(await sql.prepare('SELECT id FROM exercise_videos WHERE id=? AND ready=1').get(idVid)), 'remover volta aquele exercício ao padrão e mantém os outros vídeos');
     await a.evaluate(() => document.querySelector('#detOv').click());
     const hack = await a.evaluate(async (u) => { const F = await (await fetch('/api/me')).json(); F.ficha.plan.split = { custom: true, days: [{ w: 1, label: 'HACK', gs: ['peito'] }] }; F.ficha.plan.treinos[0].nome = 'HACK'; await fetch('/api/ficha/' + u, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(F.ficha) }); return (await (await fetch('/api/me')).json()).ficha.plan.treinos[0].nome; }, pamU);
     ok(hack === 'Core de segunda', 'aluno não consegue trocar a divisão gravada pelo personal');
@@ -759,7 +875,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(/Apagar a ficha de Aluno 2\? Isso não pode ser desfeito\./.test(await p.$eval('#apagarBox', e => e.textContent)), 'apagar pede confirmação com o nome');
     await p.type('#apagarTxt', 'APAGAR');
     await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle0' }), p.click('#apagarGo')]);
-    ok(!(await sql.prepare('SELECT id FROM students WHERE email=?').get('aluno2@teste.com')) && !(await sql.prepare('SELECT student_id FROM tuition WHERE student_id=?').get(aluno2id)) && !(await sql.prepare('SELECT student_id FROM tuition_payments WHERE student_id=?').get(aluno2id)) && !(await sql.prepare('SELECT id FROM assessments WHERE student_id=?').get(aluno2id)), 'apagar tira o aluno, a ficha, a mensalidade e a avaliação');
+    ok(!(await sql.prepare('SELECT id FROM students WHERE email=?').get('aluno2@teste.com')) && !(await sql.prepare('SELECT student_id FROM tuition WHERE student_id=?').get(aluno2id)) && !(await sql.prepare('SELECT student_id FROM tuition_payments WHERE student_id=?').get(aluno2id)) && !(await sql.prepare('SELECT id FROM assessments WHERE student_id=?').get(aluno2id)) && !!(await sql.prepare('SELECT id FROM exercise_videos WHERE ready=1 AND personal_id=(SELECT id FROM personals WHERE email=?)').get('igor@teste.com')), 'apagar tira o aluno, a ficha, a mensalidade e a avaliação, e o vídeo do personal fica');
     const ctxGone = await browser.createBrowserContext(), gone = await ctxGone.newPage();
     await gone.goto(URL, { waitUntil: 'networkidle0' });
     const goneLogin = await gone.evaluate(async () => (await fetch('/api/student/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'aluno2@teste.com', senha: 'aluno123' }) })).status);
@@ -1271,5 +1387,5 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(/inativa/.test(htmlParado) && !/Quero ser aluno/.test(htmlParado), 'link público avisa quando a assinatura do personal está inativa');
 
     console.log('\nTODOS OS TESTES PASSARAM');
-  } catch (e) { console.error(e); process.exitCode = 1; } finally { await browser.close(); srv.kill(); }
+  } catch (e) { console.error(e); process.exitCode = 1; } finally { if (videoTeste) fs.rmSync(videoTeste, { force: true }); await browser.close(); srv.kill(); }
 })();

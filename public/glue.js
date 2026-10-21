@@ -490,7 +490,7 @@ function senhaBox() {
   <p style="margin:8px 0 4px"><b>Trocar minha senha</b></p><input type="password" id="myOld" placeholder="Senha atual" style="margin-bottom:6px"><input type="password" id="myNew" placeholder="Nova senha (mín. 8)" style="margin-bottom:6px"><button class="btn sm" id="myGo">Trocar minha senha</button>
   <p style="margin:12px 0 4px"><b>Nova senha para um aluno</b> (quando ele esquecer)</p>${opts ? `<select id="stSel" style="margin-bottom:6px">${opts}</select><input type="text" id="stNew" placeholder="Nova senha do aluno (mín. 6)" style="margin-bottom:6px"><button class="btn sm" id="stGo">Definir senha do aluno</button>` : "<small>Você ainda não tem alunos.</small>"}<div id="pwdMsg"></div></details>`;
 }
-const TUTOS = [["link", "Cadastrar e convidar aluno"], ["aprovar", "Aprovar a ficha"], ["dias", "Montar os dias da semana"], ["troca", "Trocar o treino de hoje"], ["pix", "Chave Pix e mensalidade"], ["mensalidade", "Como funciona a mensalidade"], ["cards", "Cards de memorização"], ["acesso", "WhatsApp e senhas"], ["medidas", "Avaliação física"]];
+const TUTOS = [["link", "Cadastrar e convidar aluno"], ["aprovar", "Aprovar a ficha"], ["dias", "Montar os dias da semana"], ["troca", "Trocar o treino de hoje"], ["pix", "Chave Pix e mensalidade"], ["mensalidade", "Como funciona a mensalidade"], ["cards", "Cards de memorização"], ["acesso", "WhatsApp e senhas"], ["medidas", "Avaliação física"], ["videos", "Vídeos dos exercícios"]];
 const TUTO_TEXTO = {
   medidas: `<ol>
 <li><b>Onde fica.</b> Abra a ficha do aluno. No notebook, a avaliação fica na barra da direita. Nas outras telas do painel, escolha o aluno no topo dessa barra. No celular, toque em 📏 Medidas.</li>
@@ -498,6 +498,10 @@ const TUTO_TEXTO = {
 <li><b>Medida atual.</b> Ela começa fechada. Abra e preencha só ao concluir o ciclo com o aluno, por exemplo após 3 meses. Envie a foto atual e toque em Salvar. Cada salvamento vira uma avaliação nova, com a data.</li>
 <li><b>O que aparece.</b> A tabela tem uma coluna por data. A diferença fica verde quando a gordura, a cintura, o abdômen ou uma dobra diminui. O gasto basal aparece em kcal. Se faltar peso, altura, idade ou sexo, o quadro diz complete os dados. Antes e depois mostra as duas fotos lado a lado.</li>
 <li><b>Privacidade.</b> Só você, o personal desse aluno, vê as fotos. Apagar aluno também apaga as avaliações e as fotos.</li>
+</ol>`,
+  videos: `<ol>
+<li><b>Ver o movimento.</b> Em Detalhes, o vídeo fica logo abaixo do título, sem som, e fica repetindo. Se o exercício ainda não tem vídeo, a gaveta continua igual, sem espaço vazio.</li>
+<li><b>Vídeos seus.</b> No painel, abra Vídeos seus, busque o exercício e envie um vídeo de até 30 segundos. Ele substitui o padrão só para os seus alunos. Remover volta ao vídeo padrão. Apagar um aluno não apaga esses vídeos.</li>
 </ol>`,
 };
 function tutoBox() {
@@ -723,6 +727,142 @@ renderPanel = function () { _renderPanel2(); paintFeeDots(); if (!unlocked || ME
   $("#myGo").onclick = async () => { try { await api("/api/personal/password", { atual: $("#myOld").value, nova: $("#myNew").value }); $("#myOld").value = $("#myNew").value = ""; msg("Sua senha foi trocada.", 1); } catch (e) { msg(e.message); } };
   const sg = $("#stGo"); if (sg) sg.onclick = async () => { const u = $("#stSel").value, n = $("#stNew").value, s = (ME.students || []).find(x => x.u === u); try { await api("/api/personal/student-password", { usuario: u, nova: n }); $("#stNew").value = ""; msg(s && s.email ? `Pronto! Passe para o aluno o e-mail ${s.email} e a senha ${n}. Ele entra com esse e-mail.` : `Pronto! Passe para o aluno o usuário ${u} e a senha ${n}.`, 1); } catch (e) { msg(e.message); } };
 };
+let vidQ = "", vidSel = "";
+const VID_MAX = 4 * 1024 * 1024, VID_PART = 256 * 1024;
+function duracaoVideo(file) {
+  return new Promise((ok, err) => {
+    const url = URL.createObjectURL(file), v = document.createElement("video");
+    v.preload = "metadata"; v.muted = true;
+    const fim = fn => { URL.revokeObjectURL(url); fn(); };
+    const t = setTimeout(() => fim(() => err(new Error("Não consegui ler esse vídeo."))), 8000);
+    v.onloadedmetadata = () => { clearTimeout(t); const d = v.duration; fim(() => ok(d)); };
+    v.onerror = () => { clearTimeout(t); fim(() => err(new Error("Não consegui ler esse vídeo."))); };
+    v.src = url;
+  });
+}
+function mimeVideo(file) {
+  if (file.type === "video/mp4" || file.type === "video/webm") return file.type;
+  if (file.type === "video/quicktime") return "video/mp4";
+  const n = String(file.name || "").toLowerCase();
+  if (n.endsWith(".webm")) return "video/webm";
+  if (n.endsWith(".mp4") || n.endsWith(".mov") || n.endsWith(".m4v")) return "video/mp4";
+  return "";
+}
+function b64Bytes(bytes) {
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + 0x8000, bytes.length)));
+  return btoa(s);
+}
+async function reduzirVideo(file, dur) {
+  if (typeof MediaRecorder === "undefined" || !HTMLCanvasElement.prototype.captureStream) throw new Error("Esse vídeo passa de 4 MB. Envie um menor, de até 30 segundos.");
+  const url = URL.createObjectURL(file);
+  try {
+    const v = document.createElement("video");
+    v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = url;
+    await new Promise((ok, err) => { v.onloadeddata = () => ok(); v.onerror = () => err(new Error("Não consegui abrir o vídeo.")); });
+    const W = 540, H = 960, canvas = document.createElement("canvas");
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext("2d"), stream = canvas.captureStream(12);
+    const tipos = ["video/webm;codecs=vp8", "video/webm", "video/mp4"];
+    const mimeRec = tipos.find(t => MediaRecorder.isTypeSupported(t));
+    if (!mimeRec) throw new Error("Esse vídeo passa de 4 MB. Envie um menor, de até 30 segundos.");
+    const rec = new MediaRecorder(stream, { mimeType: mimeRec, videoBitsPerSecond: 600000 });
+    const parts = [];
+    rec.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
+    const parado = new Promise(ok => { rec.onstop = () => ok(); });
+    let acabou = false;
+    rec.start(250);
+    await v.play();
+    await new Promise(ok => {
+      const draw = () => {
+        if (acabou) return;
+        if (v.ended || v.currentTime >= dur || v.currentTime >= 30) { acabou = true; try { rec.stop(); } catch (e) {} ok(); return; }
+        const vw = v.videoWidth || W, vh = v.videoHeight || H, sc = Math.max(W / vw, H / vh), dw = vw * sc, dh = vh * sc;
+        ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H); ctx.drawImage(v, (W - dw) / 2, (H - dh) / 2, dw, dh);
+        requestAnimationFrame(draw);
+      };
+      draw();
+    });
+    await parado;
+    const tipo = mimeRec.split(";")[0];
+    const blob = new Blob(parts, { type: tipo });
+    if (!blob.size || blob.size > VID_MAX) throw new Error("O vídeo ficou grande demais mesmo reduzido. Grave um mais curto.");
+    return { blob, mime: tipo, duration_ms: Math.min(30000, Math.max(1, Math.round(Math.min(dur, 30) * 1000))) };
+  } finally { URL.revokeObjectURL(url); }
+}
+async function prepararVideo(file) {
+  if (!file) throw new Error("Escolha um vídeo.");
+  const dur = await duracaoVideo(file);
+  if (!isFinite(dur) || dur <= 0) throw new Error("Não consegui ler esse vídeo.");
+  if (dur > 30) throw new Error("O vídeo pode ter no máximo 30 segundos.");
+  const mime = mimeVideo(file) || "video/mp4";
+  const duration_ms = Math.min(30000, Math.max(1, Math.round(dur * 1000)));
+  if (file.size <= VID_MAX) return { blob: file, mime, duration_ms };
+  return reduzirVideo(file, dur);
+}
+async function enviarVideoPersonal(nome, file) {
+  const pronto = await prepararVideo(file);
+  const bytes = new Uint8Array(await pronto.blob.arrayBuffer());
+  const total = Math.max(1, Math.ceil(bytes.length / VID_PART));
+  let id = 0;
+  for (let seq = 0; seq < total; seq++) {
+    const slice = bytes.subarray(seq * VID_PART, Math.min(bytes.length, (seq + 1) * VID_PART));
+    const j = await api("/api/personal/exercise-videos", { id, nome, mime: pronto.mime, duration_ms: pronto.duration_ms, bytes: bytes.length, seq, total, data: b64Bytes(slice) });
+    id = j.id;
+  }
+  await loadExVid();
+}
+function paintVid() {
+  const body = $("#vidBody"); if (!body) return;
+  const nomes = typeof nomesCatalogo === "function" ? nomesCatalogo() : [];
+  const q = norm(vidQ);
+  const hits = nomes.filter(n => !q || norm(n).includes(q)).slice(0, 8);
+  const v = window.__EXVID || {};
+  const meus = v.meus || [];
+  const lista = meus.length ? meus.map(it => `<div class="viditem"><span><b>${esc(it.nome)}</b><small> · ${Math.max(1, Math.round(it.duration_ms / 1000))} s${v.defaults && v.defaults[it.nome] ? " · no lugar do padrão" : ""}</small></span><button type="button" class="btn sm sec" data-vidrm="${it.id}">Remover</button></div>`).join("") : `<p class="avMut">Nenhum vídeo seu ainda. Os alunos veem o padrão, quando houver.</p>`;
+  body.innerHTML = `<p>O vídeo padrão vale para todo mundo. O seu aparece só para os seus alunos.</p>
+  <input id="vidBusca" type="search" placeholder="Buscar exercício" value="${esc(vidQ)}">
+  <div class="vidhits">${hits.length ? hits.map(n => `<button type="button" class="btn sm sec${n === vidSel ? " on" : ""}" data-vidn="${esc(n)}">${esc(n)}</button>`).join("") : `<p>Nenhum exercício com esse nome.</p>`}</div>
+  <p id="vidEscolha">${vidSel ? "Exercício: <b>" + esc(vidSel) + "</b>" : "Escolha um exercício."}</p>
+  <input id="vidFile" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov">
+  <p>Até 30 segundos. Se passar de 4 MB, o app tenta reduzir.</p>
+  <button type="button" class="btn sm" id="vidGo">Enviar</button>
+  <p id="vidMsg"></p>
+  <h4 style="margin:12px 0 4px">Enviados</h4>${lista}`;
+  const busca = $("#vidBusca");
+  busca.oninput = () => { vidQ = busca.value; const pos = busca.selectionStart; paintVid(); const n = $("#vidBusca"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } };
+  body.querySelectorAll("[data-vidn]").forEach(b => { b.onclick = () => { vidSel = b.getAttribute("data-vidn"); paintVid(); }; });
+  const go = $("#vidGo");
+  go.onclick = async () => {
+    const msg = (t, ok) => { const el = $("#vidMsg"); if (el) el.innerHTML = `<span class="${ok ? "avOkMsg" : "avErr"}">${esc(t)}</span>`; };
+    const file = $("#vidFile") && $("#vidFile").files && $("#vidFile").files[0];
+    if (!vidSel) return msg("Escolha um exercício.");
+    if (!file) return msg("Escolha um vídeo.");
+    go.disabled = true;
+    try { await enviarVideoPersonal(vidSel, file); msg("Enviado. Seus alunos veem este vídeo no lugar do padrão.", 1); }
+    catch (e) { msg(e.message); if (go) go.disabled = false; }
+  };
+  body.querySelectorAll("[data-vidrm]").forEach(b => { b.onclick = async () => {
+    const msg = (t, ok) => { const el = $("#vidMsg"); if (el) el.innerHTML = `<span class="${ok ? "avOkMsg" : "avErr"}">${esc(t)}</span>`; };
+    b.disabled = true;
+    try { await api("/api/personal/exercise-videos/" + b.getAttribute("data-vidrm"), null, "DELETE"); await loadExVid(); msg("Removido. Volta o vídeo padrão, se houver.", 1); }
+    catch (e) { msg(e.message); b.disabled = false; }
+  }; });
+}
+function bindVid() {
+  const sec = $("#vidSec"); if (!sec) return;
+  sec.ontoggle = () => { if (sec.open) paintVid(); };
+  if (sec.open) paintVid();
+}
+async function loadExVid() {
+  if (!ME || (ME.role !== "personal" && ME.role !== "student")) { window.__EXVID = { defaults: {}, custom: {}, meus: [] }; return window.__EXVID; }
+  try { window.__EXVID = await api("/api/exercise-videos"); }
+  catch (e) { window.__EXVID = { defaults: {}, custom: {}, meus: [] }; }
+  if (!window.__EXVID.meus) window.__EXVID.meus = [];
+  if ($("#vidBody") && $("#vidSec") && $("#vidSec").open) paintVid();
+  return window.__EXVID;
+}
+loadExVid();
 if (ME.role === "personal" && typeof unlocked !== "undefined" && unlocked) renderPanel();
 if (!$("#t-personal").classList.contains("hide")) render();
 if (ME && ME.role === "student" && ME.active !== false && ME.gate !== "recusado") syncFee();

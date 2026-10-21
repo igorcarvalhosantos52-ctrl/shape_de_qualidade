@@ -509,16 +509,21 @@ const BREATH={peito:"Puxe o ar na descida e solte ao empurrar.",triceps:"Solte o
 const GAIN={hipertrofia:"o estímulo de tensão com carga desafiadora faz esse músculo crescer ao longo das semanas",emagrecimento:"trabalhar esse músculo aumenta o gasto calórico do treino e preserva a massa magra enquanto você perde gordura",forca:"progredir a carga neste exercício deixa você mais forte no movimento",condicionamento:"as repetições mais altas melhoram a resistência desse músculo para você cansar menos",saude:"fortalece músculos e articulações, melhora a postura e deixa o dia a dia mais fácil"};
 function howOf(n,g){const h=HOW[n];if(h)return{setup:h[0],exec:h[1],err:h[2],seg:h[3],mus:h[4]};return{setup:"Ajuste o equipamento ao seu corpo e fique numa posição firme e estável antes de começar.",exec:"Faça o movimento de forma lenta e controlada em toda a amplitude confortável, sem usar impulso.",err:"Usar carga alta demais, fazer rápido, perder a postura.",seg:"Se não souber executar, peça ao seu personal para demonstrar. Pare se sentir dor.",mus:GN[g]||"Músculos do treino de hoje"}}
 let detOpen=null;
+function nomesCatalogo(){const s=[];Object.keys(EX).forEach(g=>(EX[g]||[]).forEach(x=>{if(x&&x.n&&!s.includes(x.n))s.push(x.n)}));return s.sort((a,b)=>a.localeCompare(b,"pt"))}
+function videoDoExercicio(nome){const v=window.__EXVID||{};if(v.custom&&v.custom[nome])return v.custom[nome];if(v.defaults&&v.defaults[nome])return v.defaults[nome];return ""}
 function detHTML(e){const h=howOf(e.n,e.g),A=S.a,cat=/forc/.test(norm(A.objTxt||""))&&A.objetivo==="hipertrofia"?"forca":A.objetivo,light=/leve/.test(e.r+" "+(e.sub||""))||/90/.test(e.d)||(S.a.medInfo&&S.a.medInfo.low);
- const q=encodeURIComponent(e.n.replace(/\(.*?\)/g,"").trim()+" execução");
+ const src=videoDoExercicio(e.n);
+ const vid=src?`<div class="dvidBox"><video src="${esc(src)}" muted autoplay loop playsinline preload="metadata"></video><span class="dvidMarca">Shape de Qualidade</span></div>`:"";
  return `<div class="dhead"><button class="dback" id="detBack" aria-label="Voltar">←</button><h3>${esc(e.n)}</h3></div>
+ ${vid}
  <p class="dmeta">${e.s} série(s) × ${esc(e.r)} · descanso ${esc(e.d)}</p>
  <h4>Como fazer</h4><ol><li><b>Posição inicial:</b> ${esc(h.setup)}</li><li><b>Execução:</b> ${esc(h.exec)}</li><li><b>Respiração:</b> ${esc(BREATH[e.g]||"Solte o ar no esforço e puxe na volta, sem prender a respiração.")}</li></ol>
  <h4>Erros comuns</h4><p>${esc(h.err)}</p><h4>Segurança</h4><p>${esc(h.seg)}${light?" Hoje: carga leve, amplitude controlada e foco na técnica.":""} Se sentir dor, pare e fale com seu personal.</p>
  <h4>Músculos trabalhados</h4><p>${esc(h.mus)}</p>
- <h4>O que você ganha</h4><p><b>${esc(objShow())}:</b> ${esc(GAIN[cat]||GAIN.saude)}.</p>
- <a class="btn sec dvid" href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener">▶ Ver vídeo (busca no YouTube)</a>`}
-function openDet(key,e){if(!e||e.manual)return;const d=$("#detDrawer"),o=$("#detOv");if(detOpen===key){closeDet();return}detOpen=key;d.innerHTML=detHTML(e);d.classList.add("open");o.classList.add("open");$("#detBack").onclick=closeDet;document.querySelectorAll(".detBtn").forEach(b=>b.classList.toggle("on",b.dataset.k===key))}
+ <h4>O que você ganha</h4><p><b>${esc(objShow())}:</b> ${esc(GAIN[cat]||GAIN.saude)}.</p>`}
+function openDet(key,e){if(!e||e.manual)return;const d=$("#detDrawer"),o=$("#detOv");if(detOpen===key){closeDet();return}
+ const paint=()=>{detOpen=key;d.innerHTML=detHTML(e);d.classList.add("open");o.classList.add("open");$("#detBack").onclick=closeDet;document.querySelectorAll(".detBtn").forEach(b=>b.classList.toggle("on",b.dataset.k===key));const vid=d.querySelector("video");if(vid){vid.muted=true;vid.playsInline=true;const p=vid.play();if(p&&p.catch)p.catch(()=>{})}};
+ paint();if(!window.__EXVID&&typeof loadExVid==="function")loadExVid().then(()=>{if(detOpen===key)paint()})}
 function closeDet(){detOpen=null;const d=$("#detDrawer");if(d){d.classList.remove("open");$("#detOv").classList.remove("open")}document.querySelectorAll(".detBtn").forEach(b=>b.classList.remove("on"))}
 
 /* ---------- Voz ---------- */
@@ -726,7 +731,7 @@ function planHTML(treinos,edit){const wp=S.plan?weekPlan(NOW()):[];return treino
  const head=`<h3>${esc(d.nome+(d.titulo&&d.titulo!==d.nome?" – "+d.titulo:""))}${wk?` <small style="color:var(--mut)">(${wk})</small>`:""}</h3>`+(dayExp(d)?`<div class="dexp">💡 <b>Sobre este treino:</b> ${esc(dayExp(d))}</div>`:"");
  return head+d.blocos.map((b,bi)=>{
   const titulo=`${b.g==="caminhada"?"":("ABCDEFGHIJK"[bi]||"")+" – "}${esc(GN[b.g]||b.g)}`;
-  const corpo=`${b.aviso?`<div class="sub">${esc(b.aviso)}</div>`:""}`+b.ex.map((e,ei)=>`<div class="ex"><b>${esc(e.n)}</b>${edit?exEdit(e,di,bi,ei):""}${e.s} série(s) × ${esc(e.r)} · descanso ${esc(e.d)}<div class="j">${esc(e.manual?manualText(e):e.j)}</div>${e.sub?`<div class="sub">↺ ${esc(e.sub)}</div>`:""}${!edit&&!e.manual?(()=>{const k="d"+(++DETN);DETMAP[k]=e;return `<button class="detBtn" data-k="${k}">Detalhes</button>`})():""}</div>`).join("")+(edit&&EX[b.g]?`<div class="edit"><select data-act="add" data-d="${di}" data-b="${bi}" data-e="-1"><option value="">Adicionar exercício</option>${alts(b.g).filter(x=>!b.ex.some(e=>e.n===x.n)).map(x=>`<option>${esc(x.n)}</option>`).join("")}</select>${customTab(di,bi,-1)}${customPanel(di,bi,-1,b.g)}</div>`:"");
+  const corpo=`${b.aviso?`<div class="sub">${esc(b.aviso)}</div>`:""}`+b.ex.map((e,ei)=>`<div class="ex"><b>${esc(e.n)}</b>${edit?exEdit(e,di,bi,ei):""}${e.s} série(s) × ${esc(e.r)} · descanso ${esc(e.d)}<div class="j">${esc(e.manual?manualText(e):e.j)}</div>${e.sub?`<div class="sub">↺ ${esc(e.sub)}</div>`:""}${!e.manual?(()=>{const k="d"+(++DETN);DETMAP[k]=e;return `<button class="detBtn" data-k="${k}">Detalhes</button>`})():""}</div>`).join("")+(edit&&EX[b.g]?`<div class="edit"><select data-act="add" data-d="${di}" data-b="${bi}" data-e="-1"><option value="">Adicionar exercício</option>${alts(b.g).filter(x=>!b.ex.some(e=>e.n===x.n)).map(x=>`<option>${esc(x.n)}</option>`).join("")}</select>${customTab(di,bi,-1)}${customPanel(di,bi,-1,b.g)}</div>`:"");
   if(!edit)return `<div class="blk"><div class="blkh">${titulo}</div>${corpo}</div>`;
   const key=di+"-"+bi;
   return `<details class="blk alert ok" data-grp="${key}"${grpOpen===key?" open":""}><summary><b>${titulo}</b></summary>${corpo}</details>`}).join("")}).join("")}
@@ -848,7 +853,7 @@ function showCard(){const c=cardList[cardIdx],v=$("#cardView");if(!c||!v)return;
 function stuList(){const A=accounts();return Object.keys(A).map(u=>{const F=loadF(u);const st=F.status==="aprovado"?"apr":F.plan?"pend":"none";return{u,nome:A[u].nome,email:A[u].email||"",st,F}})}
 function ebookView(){const sub=ME.sub||{},paid=!!ME.paid;if(ME.owner_test||(paid&&sub.plan==="ilimitado"))return{open:true,msg:""};if(sub.trial||!paid)return{open:false,msg:"Liberado após a assinatura"};return{open:false,msg:"Exclusivo do plano Ilimitado"}}
 function ebookCard(){const v=ebookView();const body=v.open?'<button type="button" class="btn sm" id="ebookGo">Abrir ebook</button>':'<p class="ebooklock">🔒 '+esc(v.msg)+'</p>';return '<section id="ebookSec" class="ebookcard noprint"><h3>📘 Ebook: Guia Prático dos Exercícios</h3><div class="ebookcover"><b>Guia Prático dos Exercícios de Musculação</b><span>abordagem anatômica</span></div>'+body+'</section>'}
-function renderPanel(){const p=$("#stuPanel");const cardStudyOpen=!!($("#cardStudySec")&&$("#cardStudySec").open);p.classList.toggle("hide",!unlocked);if(!unlocked){p.innerHTML="";return}
+function renderPanel(){const p=$("#stuPanel");const cardStudyOpen=!!($("#cardStudySec")&&$("#cardStudySec").open),vidWas=!!($("#vidSec")&&$("#vidSec").open);p.classList.toggle("hide",!unlocked);if(!unlocked){p.innerHTML="";return}
  const L=stuList(),q=norm(pq);let v=L.filter(x=>!q||norm(x.nome+" "+x.u).includes(q)).filter(x=>pf==="todos"||(pf==="pend"?x.st!=="apr":x.st==="apr"));
  v.sort((a,b)=>(a.st==="apr")-(b.st==="apr")||a.nome.localeCompare(b.nome));
  const np=L.filter(x=>x.st!=="apr").length,na=L.length-np;
@@ -856,12 +861,13 @@ function renderPanel(){const p=$("#stuPanel");const cardStudyOpen=!!($("#cardStu
  <div class="flt">${[["todos","Todos ("+L.length+")"],["pend","Pendentes ("+np+")"],["apr","Aprovados ("+na+")"]].map(([k,l])=>`<button data-f="${k}" class="${pf===k?"on":""}">${l}</button>`).join("")}</div>
  ${v.map(x=>{const sub=x.email||x.u;return `<div class="stu ${x.st} ${viewing===x.u?"sel":""}" data-u="${esc(x.u)}"><div><b>${esc(x.nome)}</b><small>${esc(sub)}${revNext(x.F)?" · rev. "+revNext(x.F).toLocaleDateString("pt-BR"):""}</small></div>${x.st==="apr"?'<span class="badge apr">Aprovado</span>':x.st==="pend"?(x.F.status==="bloqueado"?'<span class="badge blk">Bloqueado</span>':'<span class="badge pend">Pendente</span>'):'<span class="badge">Sem treino</span>'}</div>`}).join("")||'<p style="color:var(--mut)">Nenhum aluno encontrado.</p>'}</details>
  <details id="cardStudySec" class="cardstudy noprint" ${cardStudyOpen?"open":""}><summary>📚 Cards de memorização para estudo</summary><div id="cardStudyBody"></div></details>
- ${ebookCard()}`;
+ ${ebookCard()}
+ <details id="vidSec" class="vidsec noprint" ${vidWas?"open":""}><summary><b>Vídeos seus</b></summary><div id="vidBody"></div></details>`;
  $("#stuDet").ontoggle=e=>{panelOpen=e.target.open};const qi=$("#stuQ");qi.oninput=()=>{pq=qi.value;const pos=qi.selectionStart;renderPanel();const n=$("#stuQ");n.focus();n.setSelectionRange(pos,pos)};
  p.querySelectorAll(".flt button").forEach(b=>b.onclick=()=>{pf=b.dataset.f;renderPanel()});
  p.querySelectorAll(".stu").forEach(d=>d.onclick=()=>openStu(d.dataset.u));
  const sec=$("#cardStudySec");if(sec){sec.ontoggle=()=>{if(sec.open)loadCards()};if(cardStudyOpen)loadCards()}
- const eg=$("#ebookGo");if(eg)eg.onclick=()=>window.open("/api/ebook","_blank","noopener")}
+ const eg=$("#ebookGo");if(eg)eg.onclick=()=>window.open("/api/ebook","_blank","noopener");if(typeof bindVid==="function")bindVid()}
 function openStu(u){viewing=u;grpOpen=null;if(innerWidth<=700)panelOpen=false;CK=fkey(u);S=loadF(u);render()}
 function closeStu(){viewing=null;grpOpen=null;S=load();render()}
 function showTab(t){if(t==="aluno"&&viewing)closeStu();["login","aluno","personal"].forEach(x=>$("#t-"+x).classList.toggle("hide",x!==t));render()}

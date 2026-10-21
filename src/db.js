@@ -52,6 +52,27 @@ CREATE TABLE IF NOT EXISTS assessments(
   photo TEXT DEFAULT '',
   created_at INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS assessments_student ON assessments(student_id, taken_on, id);
+CREATE TABLE IF NOT EXISTS exercise_videos(
+  id INTEGER PRIMARY KEY,
+  personal_id INTEGER NOT NULL REFERENCES personals(id) ON DELETE CASCADE,
+  nome TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  bytes INTEGER NOT NULL,
+  duration_ms INTEGER NOT NULL,
+  ready INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS exercise_video_parts(
+  video_id INTEGER NOT NULL REFERENCES exercise_videos(id) ON DELETE CASCADE,
+  seq INTEGER NOT NULL,
+  data TEXT NOT NULL,
+  PRIMARY KEY (video_id, seq));
+CREATE UNIQUE INDEX IF NOT EXISTS exercise_videos_ready ON exercise_videos(personal_id, nome) WHERE ready = 1;
+CREATE TRIGGER IF NOT EXISTS exercise_videos_personal_del
+AFTER DELETE ON personals
+BEGIN
+  DELETE FROM exercise_video_parts WHERE video_id IN (SELECT id FROM exercise_videos WHERE personal_id = OLD.id);
+  DELETE FROM exercise_videos WHERE personal_id = OLD.id;
+END;
 `;
 // Bancos criados antes destas colunas: o CREATE não altera tabela existente.
 const ALTERS = [

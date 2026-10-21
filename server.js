@@ -1,6 +1,6 @@
 // Shape de Qualidade – servidor (Express + SQLite ou Turso)
 const express = require('express'), cookieParser = require('cookie-parser'), bcrypt = require('bcrypt'), crypto = require('crypto'), path = require('path');
-const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards'), tuition = require('./src/tuition'), publicPage = require('./src/public-page'), ebook = require('./src/ebook'), ownerTest = require('./src/owner-test'), medidas = require('./src/medidas'), aluno = require('./src/aluno'), avaliacao = require('./src/avaliacao');
+const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards'), tuition = require('./src/tuition'), publicPage = require('./src/public-page'), ebook = require('./src/ebook'), ownerTest = require('./src/owner-test'), medidas = require('./src/medidas'), aluno = require('./src/aluno'), avaliacao = require('./src/avaliacao'), videos = require('./src/videos');
 const app = express(); app.set('trust proxy', 1);
 const PROD = process.env.NODE_ENV === 'production', DAY = 864e5;
 app.use(express.json({ limit: '2mb', verify: (req, _r, buf) => { req.rawBody = buf.toString(); } }));
@@ -192,6 +192,36 @@ app.delete('/api/personal/exercises/:id', need('personal'), async (req, res) => 
   const r = await db.prepare('DELETE FROM custom_exercises WHERE id=? AND personal_id=?').run(id, req.sess.user_id);
   if (!r.changes) return res.status(404).json({ error: 'Exercício não encontrado.' });
   res.json({ exercises: await customList(req.sess.user_id) });
+});
+app.get('/api/exercise-videos', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  if (!req.sess || (req.sess.role !== 'personal' && req.sess.role !== 'student')) return res.status(401).json({ error: 'Faça login.' });
+  let pid = req.sess.user_id;
+  if (req.sess.role === 'student') {
+    const s = await db.prepare('SELECT personal_id FROM students WHERE id=?').get(req.sess.user_id);
+    if (!s) return res.status(401).json({ error: 'Faça login.' });
+    pid = s.personal_id;
+  }
+  const j = await videos.lista(pid);
+  if (req.sess.role !== 'personal') delete j.meus;
+  res.json(j);
+});
+app.post('/api/personal/exercise-videos', need('personal'), async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  try { res.json(await videos.receber(req.sess.user_id, req.body || {})); }
+  catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+});
+app.delete('/api/personal/exercise-videos/:id', need('personal'), async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  const ok = await videos.remover(req.sess.user_id, parseInt(req.params.id, 10));
+  if (!ok) return res.status(404).json({ error: 'Vídeo não encontrado.' });
+  res.json({ ok: true });
+});
+app.get('/api/exercise-videos/:id/file', async (req, res) => {
+  if (!req.sess || (req.sess.role !== 'personal' && req.sess.role !== 'student')) return res.status(401).json({ error: 'Faça login.' });
+  const arq = await videos.ler(parseInt(req.params.id, 10), req.sess);
+  if (!arq) return res.status(404).json({ error: 'Vídeo não encontrado.' });
+  videos.enviar(req, res, arq.mime, arq.buf);
 });
 
 // ---------- aluno ----------
