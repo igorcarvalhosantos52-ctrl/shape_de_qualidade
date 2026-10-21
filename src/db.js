@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS assessments(
   kind TEXT NOT NULL,
   peso REAL, gordura REAL, pescoco REAL, ombros REAL, torax REAL, cintura REAL, abdomen REAL, quadril REAL,
   braco_d REAL, braco_e REAL, antebraco_d REAL, antebraco_e REAL, coxa_d REAL, coxa_e REAL, panturrilha_d REAL, panturrilha_e REAL,
+  dobra_tricipital REAL, dobra_bicipital REAL, dobra_abdominal REAL, dobra_subescapular REAL, dobra_coxa REAL, dobra_toracica REAL, dobra_suprailiaca REAL, dobra_axilar REAL,
+  sexo TEXT DEFAULT '',
   photo TEXT DEFAULT '',
   created_at INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS assessments_student ON assessments(student_id, taken_on, id);
@@ -75,6 +77,15 @@ const ALTERS = [
   "ALTER TABLE students ADD COLUMN reset_requested_at INTEGER",
   "ALTER TABLE students ADD COLUMN whatsapp TEXT DEFAULT ''",
   "ALTER TABLE students ADD COLUMN dias_semana TEXT DEFAULT ''",
+  "ALTER TABLE assessments ADD COLUMN dobra_tricipital REAL",
+  "ALTER TABLE assessments ADD COLUMN dobra_bicipital REAL",
+  "ALTER TABLE assessments ADD COLUMN dobra_abdominal REAL",
+  "ALTER TABLE assessments ADD COLUMN dobra_subescapular REAL",
+  "ALTER TABLE assessments ADD COLUMN dobra_coxa REAL",
+  "ALTER TABLE assessments ADD COLUMN dobra_toracica REAL",
+  "ALTER TABLE assessments ADD COLUMN dobra_suprailiaca REAL",
+  "ALTER TABLE assessments ADD COLUMN dobra_axilar REAL",
+  "ALTER TABLE assessments ADD COLUMN sexo TEXT DEFAULT ''",
 ];
 
 const num = v => (typeof v === 'bigint' ? Number(v) : v);

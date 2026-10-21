@@ -46,6 +46,16 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     { id: 2, kind: 'atual', taken_on: '2026-04-15', created_at: 2, peso: 68, cintura: 86, gordura: 24, photo: '' },
   ]);
   ok(cmpEx && cmpEx.tempo === '3 meses' && cmpEx.linhas.some(l => l.k === 'cintura' && l.tom === 'ok' && l.texto === 'Cintura 92 → 86 cm (−6)') && cmpEx.linhas.some(l => l.k === 'peso' && l.tom === '' && l.texto === 'Peso 70,5 → 68 kg (−2,5)'), 'o comparativo marca a cintura que diminuiu e deixa o peso neutro');
+  ok(avalMod.geb(70.5, 175, 19, 'M') === 1709 && avalMod.geb(68, 175, 19, 'M') === 1684 && avalMod.geb(68, 175, 19, 'F') === 1518 && avalMod.geb(68, 175, 19, '') === null && avalMod.geb(null, 175, 19, 'M') === null, 'o gasto basal usa Mifflin-St Jeor e fica vazio sem sexo ou peso');
+  const perfilEx = avalMod.montarPerfil({ nome: 'Pamela Souza', altura_cm: 175, peso_kg: 70.5, dias_semana: '["segunda","quarta"]', ficha: JSON.stringify({ a: { idade: 19, dias: 4, objTxt: 'Ganho de massa muscular', objetivo: 'hipertrofia' } }) }, [
+    { id: 1, kind: 'inicial', taken_on: '2026-01-15', created_at: 1, peso: 70.5, dobra_tricipital: 18, sexo: 'M' },
+    { id: 2, kind: 'atual', taken_on: '2026-04-15', created_at: 2, peso: 68, dobra_tricipital: 12, sexo: 'M' },
+  ]);
+  const dobraEx = avalMod.comparar([
+    { id: 1, kind: 'inicial', taken_on: '2026-01-15', created_at: 1, dobra_tricipital: 18 },
+    { id: 2, kind: 'atual', taken_on: '2026-04-15', created_at: 2, dobra_tricipital: 12 },
+  ]);
+  ok(perfilEx.idade === 19 && perfilEx.frequencia === 4 && perfilEx.objetivo === 'Ganho de massa muscular' && perfilEx.peso_inicial === 70.5 && perfilEx.peso_atual === 68 && perfilEx.geb === 1684 && dobraEx.linhas.some(l => l.k === 'dobra_tricipital' && l.tom === 'ok' && l.texto === 'Tricipital 18 → 12 mm (−6)'), 'o cabeçalho junta anamnese e avaliações, e a dobra que diminui fica verde');
   const voz = require('../public/voz');
   ok(voz.altura('um e setenta e cinco') === 175 && voz.altura('1 e 75') === 175 && voz.altura('um metro e setenta e cinco') === 175 && voz.altura('um e meio') === 150 && voz.altura('cento e setenta e cinco') === 175, 'altura falada vira centímetros');
   ok(voz.peso('setenta quilos') === 70 && voz.peso('setenta e meio') === 70.5 && voz.peso('setenta quilos e meio') === 70.5, 'peso falado entende quilos e meio');
@@ -114,9 +124,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v29/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v30/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v29');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v30');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -446,6 +456,8 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await p.click('#avalOpen');
     await p.waitForSelector('#avalSide.on #avIniSave');
     ok(/Avaliação física/.test(await p.$eval('#avalSide', e => e.textContent)) && /Medida inicial/.test(await p.$eval('#avalSide', e => e.textContent)) && /Pamela Souza/.test(await p.$eval('#avalSide', e => e.textContent)) && !(await p.$('#avalAluno')), 'no celular a ficha abre a avaliação do aluno, sem o seletor');
+    const cabecaVazia = await p.$eval('#avalSide', e => e.textContent);
+    ok(/19 anos/.test(cabecaVazia) && /Ganho de massa muscular/.test(cabecaVazia) && /4 dias\/semana/.test(cabecaVazia) && /complete os dados/.test(await p.$eval('#avGebVal', e => e.textContent)) && /Dobras cutâneas/.test(cabecaVazia) && /Circunferências corporais/.test(cabecaVazia) && !!(await p.$('#avSexo')), 'o cabeçalho puxa a anamnese e o gasto basal pede os dados que faltam');
     const comp = await p.evaluate(async () => {
       const c = document.createElement('canvas'); c.width = 1800; c.height = 1200;
       const g = c.getContext('2d'); g.fillStyle = '#336699'; g.fillRect(0, 0, 1800, 1200);
@@ -456,10 +468,12 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     });
     ok(comp.jpeg && comp.w === 1000 && comp.h === 667 && comp.bytes < 200 * 1024, 'a foto é comprimida no navegador para JPEG menor que 200 KB');
     await p.evaluate(() => {
+      document.querySelector('#avSexo').value = 'M';
       document.querySelector('#avIni .avData').value = '2026-01-15';
       document.querySelector('#avIni [data-k="peso"]').value = '70,5';
       document.querySelector('#avIni [data-k="cintura"]').value = '92';
       document.querySelector('#avIni [data-k="gordura"]').value = '28';
+      document.querySelector('#avIni [data-k="dobra_tricipital"]').value = '18';
       document.querySelector('#avIniSave').click();
     });
     await p.waitForFunction(() => /Salvo/.test((document.querySelector('#avIniMsg') || {}).textContent || ''));
@@ -467,11 +481,22 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await p.waitForFunction(() => (document.querySelector('#avPrevIni').src || '').startsWith('data:image/jpeg'));
     await p.click('#avFotoIniSave');
     await p.waitForFunction(() => /\/photo/.test(document.querySelector('#avPrevIni').getAttribute('src') || '') && /Salvo/.test((document.querySelector('#avFotoIniMsg') || {}).textContent || ''));
+    await p.evaluate(async (u) => {
+      for (const body of [
+        { kind: 'atual', taken_on: '2026-02-15', peso: '69', cintura: '89', dobra_tricipital: '16', sexo: 'M' },
+        { kind: 'atual', taken_on: '2026-03-15', peso: '68,5', cintura: '88', dobra_tricipital: '14', sexo: 'M' },
+      ]) {
+        const r = await fetch('/api/personal/students/' + encodeURIComponent(u) + '/assessments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        if (!r.ok) throw new Error(await r.text());
+      }
+    }, pamU);
     await p.evaluate(() => {
       document.querySelector('#avAtu .avData').value = '2026-04-15';
       document.querySelector('#avAtu [data-k="peso"]').value = '68';
       document.querySelector('#avAtu [data-k="cintura"]').value = '86';
       document.querySelector('#avAtu [data-k="gordura"]').value = '24';
+      document.querySelector('#avAtu [data-k="dobra_tricipital"]').value = '12';
+      document.querySelector('#avSexo').value = 'M';
     });
     await fotoJpg('#avFotoAtuFile', '#15803d');
     await p.waitForFunction(() => (document.querySelector('#avPrevAtu').src || '').startsWith('data:image/jpeg'));
@@ -483,8 +508,16 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       return cintura && cintura.classList.contains('ok') && /92 → 86 cm \(−6\)/.test(cintura.textContent) && peso && !peso.classList.contains('ok') && /70,5 → 68 kg/.test(peso.textContent) && (document.querySelector('#avTempo') || {}).textContent === '3 meses';
     });
     ok(true, 'salvar a medida inicial e a atual mostra o comparativo');
-    const hist = await p.evaluate(() => ({ n: document.querySelectorAll('#avHist .avHistGo').length, fotos: document.querySelectorAll('#avCmp .avFotos img').length }));
-    ok(hist.n >= 2 && hist.fotos === 2, 'o histórico lista as datas e o comparativo mostra as duas fotos');
+    const hist = await p.evaluate(() => {
+      const ths = [...document.querySelectorAll('#avEvo thead th')].map(e => e.textContent.trim());
+      const row = document.querySelector('#avEvo tr[data-k="dobra_tricipital"]');
+      const cells = row ? [...row.querySelectorAll('td')].map(e => e.textContent.trim()) : [];
+      const scroll = document.querySelector('#avEvo .avScroll');
+      const head = document.querySelector('#avHead').textContent;
+      const geb = document.querySelector('#avGebVal').textContent;
+      return { n: document.querySelectorAll('#avHist .avHistGo').length, fotos: document.querySelectorAll('#avAntesDepois .avFotos img').length, ths, cells, wide: scroll.scrollWidth > scroll.clientWidth + 4, head, geb, dobra: /Tricipital 18 → 12 mm/.test(document.querySelector('#avCmp').textContent) };
+    });
+    ok(hist.n >= 4 && hist.fotos === 2 && hist.ths.join(' ') === 'Medida 15/01 15/02 15/03 15/04' && hist.cells.join(' ') === '18 16 14 12' && hist.wide && /70,5 kg/.test(hist.head) && /68 kg/.test(hist.head) && hist.geb === '1.684 kcal' && hist.dobra, 'a tabela lista uma coluna por data, o cabeçalho mostra os pesos e o gasto basal fecha em 1.684 kcal');
     await p.evaluate(() => { const bs = [...document.querySelectorAll('#avHist .avHistGo')]; bs[bs.length - 1].click(); });
     await p.waitForFunction(() => /15\/01\/2026/.test((document.querySelector('#avHistView') || {}).textContent || '') && /Cintura: 92/.test((document.querySelector('#avHistView') || {}).textContent || ''));
     ok(true, 'o histórico abre uma avaliação antiga');
@@ -498,7 +531,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       const s = document.querySelector('#avalSide').getBoundingClientRect();
       const m = document.querySelector('main').getBoundingClientRect();
       const sel = !!document.querySelector('#avalAluno');
-      document.querySelector('#avalSide').scrollTop = Math.max(0, document.querySelector('#avCmp').offsetTop - 8);
+      document.querySelector('#avalSide').scrollTop = 0;
       return { vw: innerWidth, vh: innerHeight, sl: s.left, sr: Math.round(s.right), sw: Math.round(s.width), st: Math.round(s.top), sh: Math.round(s.height), mr: m.right, sel };
     });
     ok(lay.vw >= 1300 && lay.vh >= 700 && lay.st <= 1 && lay.sh >= lay.vh - 2 && lay.sw >= 300 && Math.abs(lay.sr - lay.vw) <= 2 && lay.mr <= lay.sl + 2 && lay.sel, 'no notebook a sidebar fica fixa na lateral e tem o seletor de aluno');

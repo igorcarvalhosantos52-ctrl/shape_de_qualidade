@@ -192,13 +192,56 @@ async function comprimirFoto(file) {
     return data;
   } finally { URL.revokeObjectURL(url); }
 }
-function avCamposHTML(vals) {
+function avKcal(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
+function avCamposHTML(vals, grupo) {
   const campos = (avalDados && avalDados.campos) || [];
-  return campos.map(c => {
+  const lista = grupo ? campos.filter(c => c.grupo === grupo) : campos;
+  return lista.map(c => {
     const rot = c.k === "gordura" ? "% de gordura (opcional)" : c.nome + " (" + c.un + ")";
     const v = !vals || vals[c.k] == null ? "" : avFmt(vals[c.k]);
     return `<label>${esc(rot)}<input data-k="${esc(c.k)}" inputmode="decimal" autocomplete="off" value="${esc(v)}"></label>`;
   }).join("");
+}
+function avFormHTML(vals) {
+  return `<div class="avGrid">${avCamposHTML(vals, "base")}</div><h4>Dobras cutâneas</h4><p class="avMut">Opcionais, em mm.</p><div class="avGrid">${avCamposHTML(vals, "dobra")}</div><h4>Circunferências corporais</h4><div class="avGrid">${avCamposHTML(vals, "circ")}</div>`;
+}
+function avHeadHTML() {
+  const p = (avalDados && avalDados.perfil) || {};
+  const idade = p.idade == null ? "não informado" : (p.idade === 1 ? "1 ano" : p.idade + " anos");
+  const freq = p.frequencia == null ? "não informado" : (p.frequencia === 1 ? "1 dia/semana" : p.frequencia + " dias/semana");
+  const pi = p.peso_inicial == null ? "não informado" : avFmt(p.peso_inicial) + " kg";
+  const pa = p.peso_atual == null ? "não informado" : avFmt(p.peso_atual) + " kg";
+  return `<section class="card avCard" id="avHead"><p class="avNome">${esc(p.nome || nomeAval(avalU))}</p><dl class="avMeta"><div><dt>Idade</dt><dd>${esc(idade)}</dd></div><div><dt>Frequência</dt><dd>${esc(freq)}</dd></div><div class="avLargo"><dt>Objetivo</dt><dd>${esc(p.objetivo || "não informado")}</dd></div><div><dt>Peso inicial</dt><dd>${esc(pi)}</dd></div><div><dt>Peso atual</dt><dd>${esc(pa)}</dd></div></dl></section>`;
+}
+function avGebHTML() {
+  const p = (avalDados && avalDados.perfil) || {};
+  const sexo = p.sexo === "M" || p.sexo === "F" ? p.sexo : "";
+  const val = p.geb == null ? `<p class="avGebFalta" id="avGebVal">complete os dados</p>` : `<p class="avGebNum" id="avGebVal">${esc(avKcal(p.geb))} <small>kcal</small></p>`;
+  return `<section class="card avCard avGeb" id="avGeb"><h3>Gasto energético basal</h3>${val}<p class="avMut">Mifflin-St Jeor</p><label class="avSexoLab">Sexo (M/F)<select id="avSexo"><option value="">Selecione</option><option value="M"${sexo === "M" ? " selected" : ""}>M</option><option value="F"${sexo === "F" ? " selected" : ""}>F</option></select></label></section>`;
+}
+function avColData(iso, items) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+  if (!m) return iso || "";
+  const curta = m[3] + "/" + m[2];
+  const dup = items.filter(x => String(x.taken_on).slice(5, 10) === iso.slice(5, 10)).length > 1;
+  return dup ? curta + "/" + m[1].slice(2) : curta;
+}
+function avTabelaHTML(items) {
+  const campos = (avalDados && avalDados.campos) || [];
+  if (!items.length) return `<section class="card avCard" id="avEvo"><h3>Evolução</h3><p class="avMut">Salve uma medida para ver a evolução.</p></section>`;
+  const head = items.map(it => `<th>${esc(avColData(it.taken_on, items))}</th>`).join("");
+  const linha = c => {
+    const vals = items.map(it => it[c.k] == null ? "" : avFmt(it[c.k]));
+    if (vals.every(v => v === "")) return "";
+    return `<tr data-k="${esc(c.k)}"><th class="avFix">${esc(c.nome)} (${esc(c.un)})</th>${vals.map(v => `<td>${v === "" ? "" : esc(v)}</td>`).join("")}</tr>`;
+  };
+  const bloco = (grupo, titulo) => {
+    const rows = campos.filter(c => c.grupo === grupo).map(linha).join("");
+    if (!rows) return "";
+    return `<tr class="avSec"><th class="avFix">${esc(titulo)}</th>${items.map(() => "<td></td>").join("")}</tr>${rows}`;
+  };
+  const base = campos.filter(c => c.grupo === "base").map(linha).join("");
+  return `<section class="card avCard" id="avEvo"><h3>Evolução</h3><div class="avScroll"><table class="avTab"><thead><tr><th class="avFix">Medida</th>${head}</tr></thead><tbody>${base}${bloco("dobra", "Dobras cutâneas")}${bloco("circ", "Circunferências corporais")}</tbody></table></div></section>`;
 }
 function avFotoHTML(id, alt, item) {
   const src = item && item.has_photo ? "/api/personal/assessments/" + item.id + "/photo" : "";
@@ -216,18 +259,19 @@ function paintAval() {
     const atus = items.filter(x => x.kind === "atual");
     const ult = atus.length ? atus[atus.length - 1] : null;
     const fichaAberta = typeof viewing === "string" && viewing === avalU;
-    const topo = fichaAberta ? `<p class="avQuem">Aluno: <b>${esc(nomeAval(avalU))}</b></p>` : `<label class="avSel">Aluno<select id="avalAluno">${(ME.students || []).map(s => `<option value="${esc(s.u)}"${s.u === avalU ? " selected" : ""}>${esc(s.nome)}</option>`).join("")}</select></label>`;
+    const topo = fichaAberta ? "" : `<label class="avSel">Aluno<select id="avalAluno">${(ME.students || []).map(s => `<option value="${esc(s.u)}"${s.u === avalU ? " selected" : ""}>${esc(s.nome)}</option>`).join("")}</select></label>`;
     const cmp = avalDados && avalDados.compare;
     const linhas = cmp && cmp.linhas && cmp.linhas.length ? cmp.linhas.map(l => `<p class="avLinha${l.tom === "ok" ? " ok" : ""}">${esc(l.texto)}</p>`).join("") : `<p class="avMut">${cmp ? "Sem medidas nos dois lados para comparar." : "Salve uma medida atual para comparar."}</p>`;
     const fig = (id, leg) => id ? `<figure><img alt="${esc(leg)}" src="/api/personal/assessments/${id}/photo"><figcaption>${esc(leg)}</figcaption></figure>` : `<figure><div class="avSem">Sem foto</div><figcaption>${esc(leg)}</figcaption></figure>`;
-    const cmpBox = `<section class="card avCard" id="avCmp"><h3>Comparativo</h3>${cmp ? `<p id="avTempo">${esc(cmp.tempo)}</p>` : ""}${linhas}${cmp ? `<div class="avFotos">${fig(cmp.antes_id, "Antes")}${fig(cmp.depois_id, "Depois")}</div>` : ""}</section>`;
+    const fotos = `<section class="card avCard" id="avAntesDepois"><h3>Antes e depois</h3><div class="avFotos">${cmp ? fig(cmp.antes_id, "Antes") + fig(cmp.depois_id, "Depois") : `<p class="avMut">Salve a medida inicial e uma atual para ver as fotos.</p>`}</div></section>`;
+    const cmpBox = `<section class="card avCard" id="avCmp"><h3>Comparativo</h3>${cmp ? `<p id="avTempo">${esc(cmp.tempo)}</p>` : ""}${linhas}</section>`;
     const hist = items.slice().reverse().map(it => `<li><button type="button" class="btn sm sec avHistGo" data-id="${it.id}">${esc(avDataBr(it.taken_on))} · ${it.kind === "inicial" ? "inicial" : "atual"}</button></li>`).join("");
     const erro = avalDados && avalDados.erro ? `<div class="alert bad">${esc(avalDados.erro)}</div>` : "";
-    side.innerHTML = `<button type="button" class="btn sm sec" id="avalFechar">Fechar</button><h2>Avaliação física</h2>${erro}${topo}
-      <section class="card avCard" id="avIni"><h3>Medida inicial</h3><label>Data<input type="date" class="avData" value="${esc(ini && ini.taken_on || hojeISO())}"></label><div class="avGrid">${avCamposHTML(ini)}</div><button type="button" class="btn sm" id="avIniSave">Salvar</button><p id="avIniMsg">${avalFlash.ini ? `<span class="avOkMsg">${esc(avalFlash.ini)}</span>` : ""}</p></section>
-      <section class="card avCard" id="avFotoIniBox"><h3>Foto inicial</h3>${avFotoHTML("avPrevIni", "Foto inicial", ini)}<label class="btn sm sec avFile">Enviar ou trocar foto<input id="avFotoIniFile" type="file" accept="image/*" capture="environment" hidden></label><button type="button" class="btn sm" id="avFotoIniSave">Salvar</button><p id="avFotoIniMsg">${avalFlash.foto ? `<span class="avOkMsg">${esc(avalFlash.foto)}</span>` : ""}</p></section>
-      <section class="card avCard" id="avAtu"><h3>Medida atual</h3><label>Data<input type="date" class="avData" value="${esc(hojeISO())}"></label><div class="avGrid">${avCamposHTML(ult)}</div><h3>Foto atual</h3>${avFotoHTML("avPrevAtu", "Foto atual", null)}<label class="btn sm sec avFile">Enviar ou trocar foto<input id="avFotoAtuFile" type="file" accept="image/*" capture="environment" hidden></label><button type="button" class="btn sm" id="avAtuSave">Salvar</button><p id="avAtuMsg">${avalFlash.atu ? `<span class="avOkMsg">${esc(avalFlash.atu)}</span>` : ""}</p></section>
+    side.innerHTML = `<button type="button" class="btn sm sec" id="avalFechar">Fechar</button><h2>Avaliação física</h2>${erro}${topo}${avHeadHTML()}${avGebHTML()}${fotos}${avTabelaHTML(items)}
       ${cmpBox}
+      <section class="card avCard" id="avIni"><h3>Medida inicial</h3><label>Data<input type="date" class="avData" value="${esc(ini && ini.taken_on || hojeISO())}"></label>${avFormHTML(ini)}<button type="button" class="btn sm" id="avIniSave">Salvar</button><p id="avIniMsg">${avalFlash.ini ? `<span class="avOkMsg">${esc(avalFlash.ini)}</span>` : ""}</p></section>
+      <section class="card avCard" id="avFotoIniBox"><h3>Foto inicial</h3>${avFotoHTML("avPrevIni", "Foto inicial", ini)}<label class="btn sm sec avFile">Enviar ou trocar foto<input id="avFotoIniFile" type="file" accept="image/*" capture="environment" hidden></label><button type="button" class="btn sm" id="avFotoIniSave">Salvar</button><p id="avFotoIniMsg">${avalFlash.foto ? `<span class="avOkMsg">${esc(avalFlash.foto)}</span>` : ""}</p></section>
+      <section class="card avCard" id="avAtu"><h3>Medida atual</h3><label>Data<input type="date" class="avData" value="${esc(hojeISO())}"></label>${avFormHTML(ult)}<h3>Foto atual</h3>${avFotoHTML("avPrevAtu", "Foto atual", null)}<label class="btn sm sec avFile">Enviar ou trocar foto<input id="avFotoAtuFile" type="file" accept="image/*" capture="environment" hidden></label><button type="button" class="btn sm" id="avAtuSave">Salvar</button><p id="avAtuMsg">${avalFlash.atu ? `<span class="avOkMsg">${esc(avalFlash.atu)}</span>` : ""}</p></section>
       <section class="card avCard" id="avHist"><h3>Histórico</h3>${hist ? `<ul class="avHist">${hist}</ul>` : `<p class="avMut">Nenhuma avaliação salva.</p>`}<div id="avHistView"></div></section>`;
   }
   avalFlash = {};
@@ -239,7 +283,8 @@ function lerAvForm(root) { const o = {}; if (!root) return o; root.querySelector
 function avMsg(id, text, ok) { const el = $(id); if (el) el.innerHTML = `<span class="${ok ? "avOkMsg" : "avErr"}">${esc(text)}</span>`; }
 async function enviarAval(kind, extra) {
   const box = kind === "atual" ? $("#avAtu") : $("#avIni");
-  const body = Object.assign({ kind, taken_on: (box && box.querySelector(".avData") || {}).value || hojeISO() }, lerAvForm(box), extra || {});
+  const sexoEl = $("#avSexo");
+  const body = Object.assign({ kind, taken_on: (box && box.querySelector(".avData") || {}).value || hojeISO(), sexo: sexoEl ? sexoEl.value : "" }, lerAvForm(box), extra || {});
   const j = await api("/api/personal/students/" + encodeURIComponent(avalU) + "/assessments", body);
   avalDados = j;
   return j;
