@@ -150,7 +150,7 @@ function mountWa() {
   });
 }
 /* ---------- Avaliação física (sidebar no notebook, gaveta no celular) ---------- */
-let avalU = "", avalModo = "", avalGen = 0, avalDados = null, avalFlash = {}, avalAtuAberta = false, fotoPend = { inicial: "", atual: "" };
+let avalU = "", avalModo = "", avalGen = 0, avalDados = null, avalFlash = {}, avalIniAberta = true, avalAtuAberta = false, fotoPend = { inicial: "", atual: "" };
 function avalPainel() {
   return !!(ME && ME.role === "personal" && typeof unlocked !== "undefined" && unlocked && ME.sub && ME.sub.active && $("#t-personal") && !$("#t-personal").classList.contains("hide"));
 }
@@ -249,6 +249,8 @@ function avFotoHTML(id, alt, item) {
 }
 function paintAval(opts) {
   const side = $("#avalSide"); if (!side) return;
+  if (opts && opts.iniAberta != null) avalIniAberta = !!opts.iniAberta;
+  else { const iniFold = side.querySelector("#avIni"); if (iniFold && iniFold.tagName === "DETAILS") avalIniAberta = !!iniFold.open; }
   if (opts && opts.atuAberta != null) avalAtuAberta = !!opts.atuAberta;
   else { const fold = side.querySelector("#avAtu"); if (fold) avalAtuAberta = !!fold.open; }
   const y = side.scrollTop;
@@ -271,10 +273,9 @@ function paintAval(opts) {
     const erro = avalDados && avalDados.erro ? `<div class="alert bad">${esc(avalDados.erro)}</div>` : "";
     side.innerHTML = `<button type="button" class="btn sm sec" id="avalFechar">Fechar</button><h2>Avaliação física</h2>${erro}${topo}${avHeadHTML()}${avGebHTML()}${fotos}${avTabelaHTML(items)}
       ${cmpBox}
-      <section class="card avCard" id="avIni"><h3 class="avTit"><span class="btn sm avPill">Medida inicial</span></h3><label>Data<input type="date" class="avData" value="${esc(ini && ini.taken_on || hojeISO())}"></label>${avFormHTML(ini)}<button type="button" class="btn sm" id="avIniSave">Salvar</button><p id="avIniMsg">${avalFlash.ini ? `<span class="avOkMsg">${esc(avalFlash.ini)}</span>` : ""}</p></section>
-      <section class="card avCard" id="avFotoIniBox"><h3>Foto inicial</h3>${avFotoHTML("avPrevIni", "Foto inicial", ini)}<label class="btn sm sec avFile">Enviar ou trocar foto<input id="avFotoIniFile" type="file" accept="image/*" capture="environment" hidden></label><button type="button" class="btn sm" id="avFotoIniSave">Salvar</button><p id="avFotoIniMsg">${avalFlash.foto ? `<span class="avOkMsg">${esc(avalFlash.foto)}</span>` : ""}</p></section>
+      <details class="blk alert ok avCard" id="avIni"${avalIniAberta ? " open" : ""}><summary><span class="btn sm avPill">Medida inicial</span></summary><div class="avFoldCorpo"><label>Data<input type="date" class="avData" value="${esc(ini && ini.taken_on || hojeISO())}"></label>${avFormHTML(ini)}<button type="button" class="btn sm" id="avIniSave">Salvar</button><p id="avIniMsg">${avalFlash.ini ? `<span class="avOkMsg">${esc(avalFlash.ini)}</span>` : ""}</p><h3>Foto inicial</h3>${avFotoHTML("avPrevIni", "Foto inicial", ini)}<label class="btn sm sec avFile">Enviar ou trocar foto<input id="avFotoIniFile" type="file" accept="image/*" capture="environment" hidden></label><button type="button" class="btn sm" id="avFotoIniSave">Salvar</button><p id="avFotoIniMsg">${avalFlash.foto ? `<span class="avOkMsg">${esc(avalFlash.foto)}</span>` : ""}</p></div></details>
       <div class="alert warn" id="avAtuAviso">⚠️ Preencha somente ao concluir o ciclo de treino com o aluno (por exemplo, após 3 meses). Ela serve para comparar com a medida inicial e mostrar a evolução.</div>
-      <details class="blk alert ok avCard" id="avAtu"${avalAtuAberta ? " open" : ""}><summary><span class="btn sm avPill">Medida atual</span></summary><div class="avAtuCorpo"><label>Data<input type="date" class="avData" value="${esc(hojeISO())}"></label>${avFormHTML(ult)}<h3>Foto atual</h3>${avFotoHTML("avPrevAtu", "Foto atual", null)}<label class="btn sm sec avFile">Enviar ou trocar foto<input id="avFotoAtuFile" type="file" accept="image/*" capture="environment" hidden></label><button type="button" class="btn sm" id="avAtuSave">Salvar</button><p id="avAtuMsg">${avalFlash.atu ? `<span class="avOkMsg">${esc(avalFlash.atu)}</span>` : ""}</p></div></details>
+      <details class="blk alert ok avCard" id="avAtu"${avalAtuAberta ? " open" : ""}><summary><span class="btn sm avPill">Medida atual</span></summary><div class="avFoldCorpo"><label>Data<input type="date" class="avData" value="${esc(hojeISO())}"></label>${avFormHTML(ult)}<h3>Foto atual</h3>${avFotoHTML("avPrevAtu", "Foto atual", null)}<label class="btn sm sec avFile">Enviar ou trocar foto<input id="avFotoAtuFile" type="file" accept="image/*" capture="environment" hidden></label><button type="button" class="btn sm" id="avAtuSave">Salvar</button><p id="avAtuMsg">${avalFlash.atu ? `<span class="avOkMsg">${esc(avalFlash.atu)}</span>` : ""}</p></div></details>
       <section class="card avCard" id="avHist"><h3>Histórico</h3>${hist ? `<ul class="avHist">${hist}</ul>` : `<p class="avMut">Nenhuma avaliação salva.</p>`}<div id="avHistView"></div></section>`;
   }
   avalFlash = {};
@@ -313,10 +314,11 @@ function bindAval() {
   const fechar = $("#avalFechar"); if (fechar) fechar.onclick = () => { const s = $("#avalSide"); if (s) s.classList.remove("on"); };
   const sel = $("#avalAluno"); if (sel) sel.onchange = () => {
     try { window.localStorage.setItem("sq_aval_u", sel.value); } catch (e) {}
-    if (sel.value !== avalU) { avalU = sel.value; avalAtuAberta = false; fotoPend = { inicial: "", atual: "" }; carregarAval(); }
+    if (sel.value !== avalU) { avalU = sel.value; avalIniAberta = true; avalAtuAberta = false; fotoPend = { inicial: "", atual: "" }; carregarAval(); }
   };
   ligarFoto("#avFotoIniFile", "#avPrevIni", "inicial");
   ligarFoto("#avFotoAtuFile", "#avPrevAtu", "atual");
+  const iniFold = $("#avIni"); if (iniFold && iniFold.tagName === "DETAILS") iniFold.ontoggle = () => { avalIniAberta = iniFold.open; };
   const fold = $("#avAtu"); if (fold) fold.ontoggle = () => { avalAtuAberta = fold.open; };
   const iniB = $("#avIniSave"); if (iniB) iniB.onclick = async () => {
     iniB.disabled = true;
@@ -342,7 +344,7 @@ function bindAval() {
 }
 async function carregarAval() {
   const u = avalU, gen = ++avalGen;
-  if (!u) { avalDados = { items: [], compare: null, campos: [] }; paintAval({ atuAberta: false }); return; }
+  if (!u) { avalDados = { items: [], compare: null, campos: [] }; paintAval({ iniAberta: true, atuAberta: false }); return; }
   try {
     const j = await api("/api/personal/students/" + encodeURIComponent(u) + "/assessments");
     if (gen !== avalGen || u !== avalU) return;
@@ -351,7 +353,7 @@ async function carregarAval() {
     if (gen !== avalGen || u !== avalU) return;
     avalDados = { items: [], compare: null, campos: [], erro: e.message };
   }
-  paintAval({ atuAberta: false });
+  paintAval({ iniAberta: true, atuAberta: false });
 }
 function placeAvalBtn() {
   const topo = $("#fichaTopo");
