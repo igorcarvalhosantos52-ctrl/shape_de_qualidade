@@ -5,6 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('./db');
+const { exNome, EX_ALIAS } = require('../public/aliases');
 
 const DIR = path.join(__dirname, '..', 'public', 'videos');
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -82,11 +83,18 @@ async function lista(personalId) {
     custom[r.nome] = '/api/exercise-videos/' + r.id + '/file';
     meus.push({ id: r.id, nome: r.nome, bytes: r.bytes, duration_ms: r.duration_ms });
   }
-  return { defaults: padroes(), custom, meus };
+  return { defaults: comChaveAntiga(padroes()), custom: comChaveAntiga(custom), meus };
+}
+
+function comChaveAntiga(out) {
+  for (const [antigo, novo] of Object.entries(EX_ALIAS)) {
+    if (out[novo]) out[antigo] = out[novo];
+  }
+  return out;
 }
 
 async function receber(personalId, body) {
-  const nome = String(body.nome || '');
+  const nome = exNome(String(body.nome || ''));
   if (!catalogo().includes(nome)) throw fail('Escolha um exercício do catálogo.');
   const mime = String(body.mime || '');
   if (!MIMES.has(mime)) throw fail('Envie um vídeo MP4 ou WebM.');

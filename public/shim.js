@@ -40,6 +40,6 @@ function __load(src) { return new Promise((ok, err) => { const s = document.crea
     localStorage._set("sq_personal", JSON.stringify({ ...me.personal, hash: "server" }));
     sessionStorage._set("sq_personal_sessao", me.personal.email);
   }
-  await __load("/voz.js"); await __load("/audio/clips.js").catch(() => {}); await __load("/app.js"); await __load("/glue.js");
+  await __load("/aliases.js"); await __load("/voz.js"); await __load("/audio/clips.js").catch(() => {}); await __load("/app.js"); await __load("/glue.js");
 })();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});

@@ -288,10 +288,10 @@
     "file": "remada-com-halteres-no-banco-inclinado.mp4"
   },
   {
-    "n": "Serrote com halter",
+    "n": "Remada serrote com halter",
     "g": "costas",
-    "slug": "serrote-com-halter",
-    "file": "serrote-com-halter.mp4"
+    "slug": "remada-serrote-com-halter",
+    "file": "remada-serrote-com-halter.mp4"
   },
   {
     "n": "Hiperextensão lombar no banco romano",
@@ -414,10 +414,10 @@
     "file": "elevacao-frontal-com-anilha.mp4"
   },
   {
-    "n": "Crucifixo invertido no peck deck",
+    "n": "Crucifixo invertido no voador",
     "g": "ombro",
-    "slug": "crucifixo-invertido-no-peck-deck",
-    "file": "crucifixo-invertido-no-peck-deck.mp4"
+    "slug": "crucifixo-invertido-no-voador",
+    "file": "crucifixo-invertido-no-voador.mp4"
   },
   {
     "n": "Crucifixo invertido na polia",
@@ -714,10 +714,10 @@
     "file": "pegada-de-pinca-com-anilhas.mp4"
   },
   {
-    "n": "Pendurar na barra (dead hang)",
+    "n": "Suspensão na barra (dead hang)",
     "g": "antebraco",
-    "slug": "pendurar-na-barra-dead-hang",
-    "file": "pendurar-na-barra-dead-hang.mp4"
+    "slug": "suspensao-na-barra-dead-hang",
+    "file": "suspensao-na-barra-dead-hang.mp4"
   },
   {
     "n": "Agachamento livre com barra",
@@ -768,10 +768,10 @@
     "file": "agachamento-parcial-no-banco-box-squat.mp4"
   },
   {
-    "n": "Isometria na parede (wall sit) em ângulo confortável",
+    "n": "Agachamento isométrico na parede (cadeirinha)",
     "g": "quad",
-    "slug": "isometria-na-parede-wall-sit-em-angulo-confortavel",
-    "file": "isometria-na-parede-wall-sit-em-angulo-confortavel.mp4"
+    "slug": "agachamento-isometrico-na-parede-cadeirinha",
+    "file": "agachamento-isometrico-na-parede-cadeirinha.mp4"
   },
   {
     "n": "Agachamento com elástico",
@@ -942,10 +942,10 @@
     "file": "stiff-unilateral-com-halter.mp4"
   },
   {
-    "n": "Bom dia com barra",
+    "n": "Good morning com barra",
     "g": "post",
-    "slug": "bom-dia-com-barra",
-    "file": "bom-dia-com-barra.mp4"
+    "slug": "good-morning-com-barra",
+    "file": "good-morning-com-barra.mp4"
   },
   {
     "n": "Stiff no Smith",
@@ -1056,10 +1056,10 @@
     "file": "abducao-deitado-de-lado.mp4"
   },
   {
-    "n": "Concha (clamshell) com elástico",
+    "n": "Ostra com elástico",
     "g": "gluteo",
-    "slug": "concha-clamshell-com-elastico",
-    "file": "concha-clamshell-com-elastico.mp4"
+    "slug": "ostra-com-elastico",
+    "file": "ostra-com-elastico.mp4"
   },
   {
     "n": "Agachamento sumô com kettlebell",
@@ -1068,10 +1068,10 @@
     "file": "agachamento-sumo-com-kettlebell.mp4"
   },
   {
-    "n": "Passada lateral com miniband",
+    "n": "Caminhada lateral com miniband",
     "g": "gluteo",
-    "slug": "passada-lateral-com-miniband",
-    "file": "passada-lateral-com-miniband.mp4"
+    "slug": "caminhada-lateral-com-miniband",
+    "file": "caminhada-lateral-com-miniband.mp4"
   },
   {
     "n": "Recuo (afundo reverso) no Smith",
@@ -1158,10 +1158,10 @@
     "file": "prancha-abdominal.mp4"
   },
   {
-    "n": "Abdominal crunch no colchonete",
+    "n": "Abdominal supra no colchonete",
     "g": "abdomen",
-    "slug": "abdominal-crunch-no-colchonete",
-    "file": "abdominal-crunch-no-colchonete.mp4"
+    "slug": "abdominal-supra-no-colchonete",
+    "file": "abdominal-supra-no-colchonete.mp4"
   },
   {
     "n": "Elevação de pernas deitado",
@@ -1278,10 +1278,10 @@
     "file": "remo-ergometro.mp4"
   },
   {
-    "n": "Escada (simulador)",
+    "n": "Simulador de escada",
     "g": "cardio",
-    "slug": "escada-simulador",
-    "file": "escada-simulador.mp4"
+    "slug": "simulador-de-escada",
+    "file": "simulador-de-escada.mp4"
   },
   {
     "n": "Bicicleta horizontal",
@@ -1332,10 +1332,10 @@
     "file": "alongamento-de-posterior-de-coxa-em-pe.mp4"
   },
   {
-    "n": "World's greatest stretch (passo longo com rotação)",
+    "n": "World's greatest stretch (afundo com rotação)",
     "g": "mobilidade",
-    "slug": "world-s-greatest-stretch-passo-longo-com-rotacao",
-    "file": "world-s-greatest-stretch-passo-longo-com-rotacao.mp4"
+    "slug": "world-s-greatest-stretch-afundo-com-rotacao",
+    "file": "world-s-greatest-stretch-afundo-com-rotacao.mp4"
   },
   {
     "n": "Mobilidade de ombro com elástico",

@@ -1,6 +1,7 @@
 // Shape de Qualidade – servidor (Express + SQLite ou Turso)
 const express = require('express'), cookieParser = require('cookie-parser'), bcrypt = require('bcrypt'), crypto = require('crypto'), path = require('path');
 const db = require('./src/db'), pay = require('./src/payments'), cards = require('./src/cards'), tuition = require('./src/tuition'), publicPage = require('./src/public-page'), ebook = require('./src/ebook'), ownerTest = require('./src/owner-test'), medidas = require('./src/medidas'), aluno = require('./src/aluno'), avaliacao = require('./src/avaliacao'), videos = require('./src/videos');
+const { normalizarFicha } = require('./public/aliases');
 const app = express(); app.set('trust proxy', 1);
 const PROD = process.env.NODE_ENV === 'production', DAY = 864e5;
 app.use(express.json({ limit: '2mb', verify: (req, _r, buf) => { req.rawBody = buf.toString(); } }));
@@ -376,6 +377,7 @@ app.put('/api/ficha/:u', async (req, res) => {
     if (!(await pay.subscriptionOf(s.personal_id)).active) return res.status(402).json({ error: 'Assinatura inativa.' });
     if (F.status === 'aprovado') await tuition.clearGateOnApprove(s.id);
   } else return res.status(403).json({ error: 'proibido' });
+  normalizarFicha(F);
   await db.prepare('UPDATE students SET ficha=?,updated_at=? WHERE id=?').run(JSON.stringify(F), Date.now(), s.id); res.json({ ok: true });
 });
 

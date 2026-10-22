@@ -191,6 +191,35 @@ async function migrate() {
     try { await db.exec(sql); } catch (e) { if (!dupCol(e)) throw e; }
   }
   await db.exec('CREATE UNIQUE INDEX IF NOT EXISTS students_email_uq ON students(email) WHERE email IS NOT NULL');
+  await renomearBr();
+}
+
+async function renomearBr() {
+  const { EX_ALIAS, normalizarFicha } = require('../public/aliases');
+  const flag = await db.prepare("SELECT value FROM settings WHERE key='rename_br_v1'").get();
+  if (flag && flag.value === '1') return;
+  for (const [de, para] of Object.entries(EX_ALIAS)) {
+    const drafts = await db.prepare('SELECT id FROM exercise_videos WHERE nome=? AND ready=0').all(de);
+    for (const d of drafts) {
+      await db.prepare('DELETE FROM exercise_video_parts WHERE video_id=?').run(d.id);
+      await db.prepare('DELETE FROM exercise_videos WHERE id=?').run(d.id);
+    }
+    await db.prepare('UPDATE exercise_videos SET nome=? WHERE nome=? AND NOT EXISTS (SELECT 1 FROM exercise_videos v2 WHERE v2.personal_id=exercise_videos.personal_id AND v2.nome=? AND v2.ready=1)').run(para, de, para);
+  }
+  let last = 0;
+  for (;;) {
+    const rows = await db.prepare('SELECT id, ficha FROM students WHERE ficha IS NOT NULL AND id>? ORDER BY id LIMIT 100').all(last);
+    if (!rows.length) break;
+    for (const row of rows) {
+      last = Number(row.id);
+      let f = null;
+      try { f = JSON.parse(row.ficha); } catch (e) { continue; }
+      if (!f || typeof f !== 'object' || Array.isArray(f)) continue;
+      if (normalizarFicha(f)) await db.prepare('UPDATE students SET ficha=? WHERE id=?').run(JSON.stringify(f), row.id);
+    }
+    if (rows.length < 100) break;
+  }
+  await db.prepare("INSERT INTO settings(key, value) VALUES('rename_br_v1', '1') ON CONFLICT(key) DO UPDATE SET value=excluded.value").run();
 }
 
 db.migrate = migrate;

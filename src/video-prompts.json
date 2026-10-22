@@ -240,7 +240,7 @@
     "video_prompt": "Side view, person lying face-down on incline bench holding dumbbells, chest-supported row pulling elbows back. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
   {
-    "n": "Serrote com halter",
+    "n": "Remada serrote com halter",
     "g": "costas",
     "video_prompt": "Side view, person standing in staggered stance with one hand on bench, single-arm dumbbell row pulling dumbbell to hip. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
@@ -345,7 +345,7 @@
     "video_prompt": "Front 3/4 view, person standing holding weight plate with both hands, raising it straight to shoulder height. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
   {
-    "n": "Crucifixo invertido no peck deck",
+    "n": "Crucifixo invertido no voador",
     "g": "ombro",
     "video_prompt": "Rear 3/4 view, person seated facing pec deck pad doing reverse fly, opening arms back to body line. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
@@ -595,7 +595,7 @@
     "video_prompt": "Front view, person standing holding two weight plates pinched together at the rims with fingertips. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
   {
-    "n": "Pendurar na barra (dead hang)",
+    "n": "Suspensão na barra (dead hang)",
     "g": "antebraco",
     "video_prompt": "Side view, person hanging from pull-up bar with overhand grip, feet off floor. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
@@ -640,7 +640,7 @@
     "video_prompt": "Side view, person squatting back to touch a bench and standing up. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
   {
-    "n": "Isometria na parede (wall sit) em ângulo confortável",
+    "n": "Agachamento isométrico na parede (cadeirinha)",
     "g": "quad",
     "video_prompt": "Side view, person holding wall sit with back flat on wall, knees at comfortable angle. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
@@ -785,7 +785,7 @@
     "video_prompt": "Side view, person doing single-leg Romanian deadlift with one dumbbell, free leg extending behind. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
   {
-    "n": "Bom dia com barra",
+    "n": "Good morning com barra",
     "g": "post",
     "video_prompt": "Side view, person with light barbell on back performing good morning hip hinge. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
@@ -880,7 +880,7 @@
     "video_prompt": "Side view, person lying on side on mat lifting top leg. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
   {
-    "n": "Concha (clamshell) com elástico",
+    "n": "Ostra com elástico",
     "g": "gluteo",
     "video_prompt": "Side view, person lying on side with mini band above knees doing clamshell. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
@@ -890,7 +890,7 @@
     "video_prompt": "Front 3/4 view, person doing wide-stance sumo squat holding kettlebell. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
   {
-    "n": "Passada lateral com miniband",
+    "n": "Caminhada lateral com miniband",
     "g": "gluteo",
     "video_prompt": "Front view, person in half-squat with mini band walking sideways. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
@@ -965,7 +965,7 @@
     "video_prompt": "Side view, person holding forearm plank on mat with straight body. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
   {
-    "n": "Abdominal crunch no colchonete",
+    "n": "Abdominal supra no colchonete",
     "g": "abdomen",
     "video_prompt": "Side view, person lying on mat curling shoulders off floor in a crunch. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
@@ -1065,7 +1065,7 @@
     "video_prompt": "Side view, person on rowing machine performing full stroke: legs, torso, then arms. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
   {
-    "n": "Escada (simulador)",
+    "n": "Simulador de escada",
     "g": "cardio",
     "video_prompt": "Side view, person climbing steadily on stair climber machine. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
@@ -1110,7 +1110,7 @@
     "video_prompt": "Side view, person with heel on low bench hinging forward with flat back. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },
   {
-    "n": "World's greatest stretch (passo longo com rotação)",
+    "n": "World's greatest stretch (afundo com rotação)",
     "g": "mobilidade",
     "video_prompt": "Side 3/4 view, person in deep lunge with hands on floor rotating torso, arm reaching to ceiling. Vertical 9:16, clean bright gym, fit adult in plain dark athletic wear, smooth controlled tempo, 2-3 full reps, seamless loop, no text."
   },

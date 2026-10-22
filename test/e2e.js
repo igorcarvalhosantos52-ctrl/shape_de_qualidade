@@ -75,7 +75,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   ok(!ownerTest.config().on && !ownerTest.allows('dono@teste.com', 1), 'OWNER_TEST_EMAILS=off desliga o teste do dono');
   const videosMod = require('../src/videos');
   ok(videosMod.slug('Tríceps na polia (corda)') === 'triceps-na-polia-corda' && videosMod.slug('Agachamento livre com barra') === 'agachamento-livre-com-barra', 'o slug do vídeo tira acento, parêntese e vira o nome do arquivo');
-  ok(videosMod.catalogo().includes('Prancha abdominal') && videosMod.catalogo().includes("World's greatest stretch (passo longo com rotação)") && !videosMod.catalogo().includes('Remada cavalinho'), 'o catálogo de vídeos é o da ficha, sem exercício livre');
+  ok(videosMod.catalogo().includes('Prancha abdominal') && videosMod.catalogo().includes("World's greatest stretch (afundo com rotação)") && !videosMod.catalogo().includes('Remada cavalinho'), 'o catálogo de vídeos é o da ficha, sem exercício livre');
   const slugsCat = require('../src/video-slugs.json'), promptsCat = require('../src/video-prompts.json');
   const nomesCat = videosMod.catalogo();
   ok(nomesCat.length === 225 && nomesCat.includes('Remada cavalinho (T-bar)') && nomesCat.includes('Puxada frontal pegada neutra no pulley') && nomesCat.includes('Rosca punho na polia'), 'a biblioteca passa a ter as variações novas, sem mudar o nome livre');
@@ -85,7 +85,47 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   ok(nomesCat.every(n => mapaVid[n] === videosMod.slug(n) + '.mp4'), 'o mapa de vídeos aponta o slug de cada exercício');
   const gravados = Object.entries(mapaVid).filter(([, file]) => fs.existsSync(path.join(__dirname, '..', 'public', 'videos', file)));
   const padrao = videosMod.padroes();
-  ok(gravados.length === 40 && Object.keys(padrao).length === 40 && gravados.every(([n, file]) => padrao[n] === '/videos/' + file) && padrao['Puxada frontal no pulley'] === '/videos/puxada-frontal-no-pulley.mp4' && padrao['Leg press 45°'] === '/videos/leg-press-45.mp4' && padrao['Isometria na parede (wall sit) em ângulo confortável'] === '/videos/isometria-na-parede-wall-sit-em-angulo-confortavel.mp4' && !padrao['Prancha abdominal'], 'o mapa só mostra o vídeo quando o arquivo existe');
+  ok(gravados.length === 40 && Object.keys(padrao).length === 40 && gravados.every(([n, file]) => padrao[n] === '/videos/' + file) && padrao['Puxada frontal no pulley'] === '/videos/puxada-frontal-no-pulley.mp4' && padrao['Leg press 45°'] === '/videos/leg-press-45.mp4' && padrao['Agachamento isométrico na parede (cadeirinha)'] === '/videos/agachamento-isometrico-na-parede-cadeirinha.mp4' && padrao['Remada serrote com halter'] === '/videos/remada-serrote-com-halter.mp4' && !padrao['Prancha abdominal'], 'o mapa só mostra o vídeo quando o arquivo existe');
+  ok(promptsCat.every(x => nomesCat.includes(x.n)) && !fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8').includes('Barra livre') && /\{n:"Flexora em pé unilateral",e:"Máquinas articuladas"\}/.test(fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8')), 'os prompts usam o nome novo e a flexora em pé fica na máquina articulada');
+  const aliases = require('../public/aliases');
+  const fichaVelha = {
+    equip: ['Barra livre', 'Barra e anilhas', 'Halteres', 'Hack/Agachamento máquina', 'Escada (simulador)', 'Máquinas articuladas'],
+    adj: ['Troquei Serrote com halter por outro'],
+    plan: {
+      treinos: [{ nome: 'Costas', blocos: [{ g: 'costas', ex: [
+        { n: 'Serrote com halter', s: 3, r: '8–10', d: '60s', j: 'nota', sub: 'Troquei Serrote com halter' },
+        { n: 'Supino reto com barra', s: 4, r: '8', d: '90s', j: 'fica' },
+        { n: 'Prancha abdominal', s: 2, r: '30s', d: '30s', j: 'ok' },
+      ] }] }],
+      swapHoje: { dk: 'x', blocos: [{ g: 'post', ex: [{ n: 'Bom dia com barra', s: 2, r: '10', d: '60s', j: 'gm' }] }] },
+    },
+  };
+  const copia = JSON.parse(JSON.stringify(fichaVelha));
+  ok(aliases.normalizarFicha(copia) && !aliases.normalizarFicha(copia), 'normalizar a ficha antiga é idempotente');
+  ok(copia.equip.filter(e => e === 'Barra e anilhas').length === 1 && !copia.equip.includes('Barra livre') && copia.equip.includes('Hack machine') && copia.equip.includes('Simulador de escada') && copia.plan.treinos[0].blocos[0].ex.length === 3 && copia.plan.treinos[0].blocos[0].ex[0].n === 'Remada serrote com halter' && copia.plan.treinos[0].blocos[0].ex[0].s === 3 && copia.plan.treinos[0].blocos[0].ex[0].sub === 'Troquei Serrote com halter' && copia.plan.treinos[0].blocos[0].ex[1].n === 'Supino reto com barra' && copia.plan.treinos[0].blocos[0].ex[2].n === 'Prancha abdominal' && copia.plan.swapHoje.blocos[0].ex[0].n === 'Good morning com barra' && copia.adj[0] === 'Troquei Serrote com halter por outro', 'a ficha antiga troca aparelho e exercício e mantém séries, texto livre e o que já tinha nome novo');
+  await sql.prepare("DELETE FROM settings WHERE key='rename_br_v1'").run();
+  const pidRename = (await sql.prepare('INSERT INTO personals(nome,email,hash,invite_code,created_at) VALUES(?,?,?,?,?)').run('Rename BR', 'rename.br@teste.com', 'x', 'RENAMEBR1', Date.now())).lastInsertRowid;
+  const sidRename = (await sql.prepare('INSERT INTO students(personal_id,username,nome,hash,ficha,created_at) VALUES(?,?,?,?,?,?)').run(pidRename, 'renamebr', 'Ana Rename', 'x', JSON.stringify(fichaVelha), Date.now())).lastInsertRowid;
+  const vidRename = (await sql.prepare('INSERT INTO exercise_videos(personal_id,nome,mime,bytes,duration_ms,ready,created_at) VALUES(?,?,?,?,?,?,?)').run(pidRename, 'Serrote com halter', 'video/mp4', 8, 1000, 1, Date.now())).lastInsertRowid;
+  await sql.prepare('INSERT INTO exercise_video_parts(video_id,seq,data) VALUES(?,?,?)').run(vidRename, 0, 'QQ==');
+  const draftRename = (await sql.prepare('INSERT INTO exercise_videos(personal_id,nome,mime,bytes,duration_ms,ready,created_at) VALUES(?,?,?,?,?,?,?)').run(pidRename, 'Bom dia com barra', 'video/mp4', 8, 1000, 0, Date.now())).lastInsertRowid;
+  await sql.prepare('INSERT INTO exercise_video_parts(video_id,seq,data) VALUES(?,?,?)').run(draftRename, 0, 'QQ==');
+  await sql.prepare('INSERT INTO exercise_videos(personal_id,nome,mime,bytes,duration_ms,ready,created_at) VALUES(?,?,?,?,?,?,?)').run(pidRename, 'Abdominal crunch no colchonete', 'video/mp4', 8, 1000, 1, Date.now());
+  await sql.prepare('INSERT INTO exercise_videos(personal_id,nome,mime,bytes,duration_ms,ready,created_at) VALUES(?,?,?,?,?,?,?)').run(pidRename, 'Abdominal supra no colchonete', 'video/mp4', 8, 1000, 1, Date.now());
+  await sql.migrate();
+  const fichaMigrada = JSON.parse((await sql.prepare('SELECT ficha FROM students WHERE id=?').get(sidRename)).ficha);
+  ok(fichaMigrada.plan.treinos[0].blocos[0].ex[0].n === 'Remada serrote com halter' && fichaMigrada.plan.treinos[0].blocos[0].ex[0].s === 3 && fichaMigrada.plan.swapHoje.blocos[0].ex[0].n === 'Good morning com barra' && fichaMigrada.equip.includes('Barra e anilhas') && !fichaMigrada.equip.includes('Barra livre'), 'a migração grava a ficha do aluno com os nomes novos, sem perder o exercício');
+  ok((await sql.prepare('SELECT nome FROM exercise_videos WHERE id=?').get(vidRename)).nome === 'Remada serrote com halter' && !(await sql.prepare('SELECT id FROM exercise_videos WHERE id=?').get(draftRename)) && !(await sql.prepare('SELECT video_id FROM exercise_video_parts WHERE video_id=?').get(draftRename)), 'a migração renomeia o vídeo do personal e apaga o rascunho antigo');
+  const conflitos = await sql.prepare('SELECT nome FROM exercise_videos WHERE personal_id=? AND ready=1 AND nome IN (?,?) ORDER BY nome').all(pidRename, 'Abdominal crunch no colchonete', 'Abdominal supra no colchonete');
+  ok(conflitos.map(r => r.nome).join('|') === 'Abdominal crunch no colchonete|Abdominal supra no colchonete', 'se o nome novo já existe, o índice único do vídeo fica intacto');
+  const listaRename = await videosMod.lista(pidRename);
+  ok(listaRename.custom['Remada serrote com halter'] && listaRename.custom['Serrote com halter'] === listaRename.custom['Remada serrote com halter'] && listaRename.defaults['Remada serrote com halter'] === '/videos/remada-serrote-com-halter.mp4' && listaRename.defaults['Serrote com halter'] === listaRename.defaults['Remada serrote com halter'], 'a lista entrega o vídeo no nome novo e no antigo');
+  await sql.migrate();
+  ok((await sql.prepare("SELECT value FROM settings WHERE key='rename_br_v1'").get()).value === '1' && (await sql.prepare('SELECT nome FROM exercise_videos WHERE id=?').get(vidRename)).nome === 'Remada serrote com halter', 'rodar a migração de novo não duplica o vídeo');
+  await sql.prepare('DELETE FROM exercise_video_parts WHERE video_id IN (SELECT id FROM exercise_videos WHERE personal_id=?)').run(pidRename);
+  await sql.prepare('DELETE FROM exercise_videos WHERE personal_id=?').run(pidRename);
+  await sql.prepare('DELETE FROM students WHERE id=?').run(sidRename);
+  await sql.prepare('DELETE FROM personals WHERE id=?').run(pidRename);
   if (savedOwner === undefined) delete process.env.OWNER_TEST_EMAILS; else process.env.OWNER_TEST_EMAILS = savedOwner;
   if (savedAdmin === undefined) delete process.env.ADMIN_EMAIL; else process.env.ADMIN_EMAIL = savedAdmin;
   const srv = spawn('node', ['server.js'], { cwd: path.join(__dirname, '..'), env: { ...process.env, PORT, TURSO_DATABASE_URL: 'file:' + LIB, TURSO_AUTH_TOKEN: '', ADMIN_EMAIL: 'dono@teste.com', ADMIN_PASSWORD: 'admin123', MP_ACCESS_TOKEN: '', STRIPE_SECRET_KEY: '' }, stdio: 'inherit' });
@@ -110,6 +150,45 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }, true);
     });
     await p.goto(URL, { waitUntil: 'networkidle0' });
+    await p.addScriptTag({ content: `window.__aliasFicha = (function () {
+      const f = fixF({
+        equip: ["Barra livre", "Halteres", "Colchonete", "Voador (peck deck)", "Hack/Agachamento máquina", "Escada (simulador)", "Elásticos", "Barra fixa/Paralelas", "Máquinas articuladas"],
+        plan: { treinos: [{ nome: "Costas", blocos: [{ g: "costas", ex: [
+          { n: "Serrote com halter", s: 3, r: "8–10", d: "60s", j: "nota", sub: "Troquei Serrote com halter" },
+          { n: "Supino reto com barra", s: 4, r: "8", d: "90s", j: "fica" },
+          { n: "Abdominal crunch no colchonete", s: 3, r: "15", d: "45s", j: "abd" },
+          { n: "Escada (simulador)", s: 1, r: "15 min", d: "—", j: "cardio" },
+          { n: "Crucifixo invertido no peck deck", s: 3, r: "12", d: "45s", j: "ombro" },
+          { n: "Concha (clamshell) com elástico", s: 3, r: "15", d: "30s", j: "glu" },
+          { n: "Passada lateral com miniband", s: 3, r: "12", d: "30s", j: "glu" },
+          { n: "Isometria na parede (wall sit) em ângulo confortável", s: 1, r: "30 s", d: "—", j: "iso" },
+          { n: "Pendurar na barra (dead hang)", s: 2, r: "20 s", d: "45s", j: "peg" },
+          { n: "Bom dia com barra", s: 2, r: "10", d: "60s", j: "gm" },
+          { n: "World's greatest stretch (passo longo com rotação)", s: 1, r: "30 s", d: "—", j: "mob" },
+          { n: "Prancha abdominal", s: 2, r: "30s", d: "30s", j: "ok" }
+        ] }] }], swapHoje: { dk: "x", blocos: [{ ex: [{ n: "Bom dia com barra", s: 2, r: "10", d: "60s", j: "gm" }] }] } },
+        adj: ["Troquei Serrote com halter por outro"], status: "aprovado"
+      });
+      const exs = f.plan.treinos[0].blocos[0].ex;
+      const salvo = S.equip.slice();
+      S.equip = ["Barra livre"];
+      const semBarra = alts("peito").some(x => x.n === "Supino reto com barra");
+      S.equip = f.equip;
+      const comBarra = alts("peito").some(x => x.n === "Supino reto com barra");
+      const comHack = alts("quad").some(x => x.n === "Hack machine");
+      const comEscada = alts("cardio").some(x => x.n === "Simulador de escada");
+      const comFlex = alts("post").some(x => x.n === "Flexora em pé unilateral");
+      const how = howOf("Serrote com halter", "costas");
+      const prev = window.__EXVID;
+      window.__EXVID = { defaults: { "Remada serrote com halter": "/videos/remada-serrote-com-halter.mp4" }, custom: { "Abdominal supra no colchonete": "/api/exercise-videos/9/file" } };
+      const vidPadrao = videoDoExercicio("Serrote com halter");
+      const vidCustom = videoDoExercicio("Abdominal crunch no colchonete");
+      window.__EXVID = prev;
+      S.equip = salvo;
+      return { n: exs.length, nomes: exs.map(e => e.n), series: exs.map(e => e.s), sub: exs[0].sub, swap: f.plan.swapHoje.blocos[0].ex[0].n, adj: f.adj[0], equip: f.equip, semBarra, comBarra, comHack, comEscada, comFlex, how: how.exec, vidPadrao, vidCustom, noCatalogo: (EX.costas || []).some(x => x.n === "Remada serrote com halter") };
+    })();` });
+    const aliasUi = await p.evaluate(() => window.__aliasFicha);
+    ok(aliasUi && aliasUi.n === 12 && aliasUi.series.join(',') === '3,4,3,1,3,3,3,1,2,2,1,2' && aliasUi.nomes[0] === 'Remada serrote com halter' && aliasUi.nomes.includes('Abdominal supra no colchonete') && aliasUi.nomes.includes('Simulador de escada') && aliasUi.nomes.includes('Crucifixo invertido no voador') && aliasUi.nomes.includes('Ostra com elástico') && aliasUi.nomes.includes('Caminhada lateral com miniband') && aliasUi.nomes.includes('Agachamento isométrico na parede (cadeirinha)') && aliasUi.nomes.includes('Suspensão na barra (dead hang)') && aliasUi.nomes.includes('Good morning com barra') && aliasUi.nomes.includes("World's greatest stretch (afundo com rotação)") && aliasUi.nomes.includes('Supino reto com barra') && aliasUi.nomes.includes('Prancha abdominal') && aliasUi.sub === 'Troquei Serrote com halter' && aliasUi.swap === 'Good morning com barra' && aliasUi.adj === 'Troquei Serrote com halter por outro' && aliasUi.equip.includes('Barra e anilhas') && !aliasUi.equip.includes('Barra livre') && aliasUi.equip.includes('Hack machine') && aliasUi.equip.includes('Simulador de escada') && !aliasUi.semBarra && aliasUi.comBarra && aliasUi.comHack && aliasUi.comEscada && aliasUi.comFlex && /Puxe o halter/.test(aliasUi.how) && aliasUi.vidPadrao === '/videos/remada-serrote-com-halter.mp4' && aliasUi.vidCustom === '/api/exercise-videos/9/file' && aliasUi.noCatalogo, 'ficha com nomes antigos carrega aparelho, exercício, vídeo e passo a passo, sem sumir nada');
     await p.screenshot({ path: SHOTS + '/01-login-aluno.png' });
     await p.waitForSelector('#baixarApp');
     const baixarLogin = await p.evaluate(() => {
@@ -145,9 +224,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v38/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), fora: /pathname\.startsWith\("\/videos\/"\)/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v39/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), fora: /pathname\.startsWith\("\/videos\/"\)/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.fora && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v38 sem pré-cache de vídeo');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.fora && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v39 sem pré-cache de vídeo');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -752,7 +831,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const pedaco = fs.readFileSync(videoTeste).toString('base64');
     const sobe = await fetch(URL + '/api/personal/exercise-videos', { method: 'POST', headers: { 'Content-Type': 'application/json', cookie: cookieOutro }, body: JSON.stringify({ nome: 'Abdominal crunch no colchonete', mime: 'video/mp4', duration_ms: 2000, bytes: fs.statSync(videoTeste).size, seq: 0, total: 1, data: pedaco }) });
     const sobeJ = await sobe.json();
-    ok(sobe.status === 200 && sobeJ.pronto && sobeJ.id, 'o outro personal grava o vídeo dele no banco');
+    ok(sobe.status === 200 && sobeJ.pronto && sobeJ.id && (await sql.prepare('SELECT nome FROM exercise_videos WHERE id=?').get(sobeJ.id)).nome === 'Abdominal supra no colchonete', 'upload com o nome antigo grava o vídeo no nome novo');
+    const listaOutro = await (await fetch(URL + '/api/exercise-videos', { headers: { cookie: cookieOutro } })).json();
+    ok(listaOutro.custom['Abdominal supra no colchonete'] && listaOutro.custom['Abdominal crunch no colchonete'] === listaOutro.custom['Abdominal supra no colchonete'], 'a lista do personal responde pelo nome antigo e pelo novo');
     const oid = (await sql.prepare("SELECT id FROM personals WHERE email='video.outro@teste.com'").get()).id;
     await sql.prepare('DELETE FROM personals WHERE id=?').run(oid);
     ok(!(await sql.prepare('SELECT id FROM exercise_videos WHERE personal_id=?').get(oid)) && !(await sql.prepare('SELECT video_id FROM exercise_video_parts WHERE video_id=?').get(sobeJ.id)), 'apagar a conta do personal apaga os vídeos');
