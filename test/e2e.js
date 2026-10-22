@@ -83,15 +83,24 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   ok(promptsCat.length === 229 && promptsCat.every(x => typeof x.video_prompt === 'string' && x.video_prompt.length > 20) && !fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8').includes('video_prompt'), 'os prompts de vídeo ficam fora do app do aluno');
   const mapaVid = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'public', 'videos', 'index.json'), 'utf8'));
   ok(nomesCat.every(n => mapaVid[n] === videosMod.slug(n) + '.mp4'), 'o mapa de vídeos aponta o slug de cada exercício');
-  ok(Object.keys(videosMod.padroes()).length === 0, 'sem mp4 gravado, nenhum vídeo padrão aparece');
+  const gravados = Object.entries(mapaVid).filter(([, file]) => fs.existsSync(path.join(__dirname, '..', 'public', 'videos', file)));
+  const padrao = videosMod.padroes();
+  ok(gravados.length === 30 && Object.keys(padrao).length === 30 && gravados.every(([n, file]) => padrao[n] === '/videos/' + file) && padrao['Puxada frontal no pulley'] === '/videos/puxada-frontal-no-pulley.mp4' && !padrao['Prancha abdominal'], 'o mapa só mostra o vídeo quando o arquivo existe');
   if (savedOwner === undefined) delete process.env.OWNER_TEST_EMAILS; else process.env.OWNER_TEST_EMAILS = savedOwner;
   if (savedAdmin === undefined) delete process.env.ADMIN_EMAIL; else process.env.ADMIN_EMAIL = savedAdmin;
   const srv = spawn('node', ['server.js'], { cwd: path.join(__dirname, '..'), env: { ...process.env, PORT, TURSO_DATABASE_URL: 'file:' + LIB, TURSO_AUTH_TOKEN: '', ADMIN_EMAIL: 'dono@teste.com', ADMIN_PASSWORD: 'admin123', MP_ACCESS_TOKEN: '', STRIPE_SECRET_KEY: '' }, stdio: 'inherit' });
   await sleep(1200);
   let videoTeste = '';
+  let videoTesteNovo = false;
     const browser = await puppeteer.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
   const phone = { width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
   try {
+    const faixa = await fetch(URL + '/videos/puxada-frontal-no-pulley.mp4', { headers: { Range: 'bytes=0-1023' } });
+    const tipoVid = faixa.headers.get('content-type') || '';
+    const recorte = faixa.headers.get('content-range') || '';
+    const aceita = (faixa.headers.get('accept-ranges') || '').toLowerCase();
+    const pedacoVid = Buffer.from(await faixa.arrayBuffer());
+    ok(faixa.status === 206 && tipoVid.startsWith('video/mp4') && recorte.startsWith('bytes 0-1023/') && aceita === 'bytes' && pedacoVid.length === 1024, 'o vídeo padrão sai como video/mp4 e responde Range');
     // ---- personal
     const ctxP = await browser.createBrowserContext(), p = await ctxP.newPage(); await p.setViewport(phone);
     p.on('pageerror', e => console.error('erro na página (personal):', e.message));
@@ -136,9 +145,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v35/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v36/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), fora: /pathname\.startsWith\("\/videos\/"\)/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v35 sem pré-cache de vídeo');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.fora && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v36 sem pré-cache de vídeo');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -647,6 +656,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(!(await a.$('#detDrawer .dvidBox')), 'sem vídeo pronto a gaveta não deixa espaço vazio');
     const nomeVid = await a.$eval('#detDrawer h3', e => e.textContent.trim());
     videoTeste = path.join(__dirname, '..', 'public', 'videos', videosMod.slug(nomeVid) + '.mp4');
+    videoTesteNovo = !fs.existsSync(videoTeste);
     const ff = spawnSync('ffmpeg', ['-y', '-f', 'lavfi', '-i', 'testsrc=size=270x480:rate=12:duration=2', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-movflags', '+faststart', videoTeste], { encoding: 'utf8' });
     if (ff.status !== 0) throw new Error('ffmpeg: ' + String(ff.stderr || ff.stdout || '').slice(-500));
     const mapa0 = await a.evaluate(() => loadExVid());
@@ -823,6 +833,31 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       });
       if (vp) await p.setViewport(vp);
     }
+    await p.evaluate(async () => {
+      if (typeof loadExVid === 'function') await loadExVid();
+      const ex = [...document.querySelectorAll('#persCard .ex')].find(e => (e.querySelector('b') || {}).textContent === 'Puxada frontal no pulley');
+      if (!ex) throw new Error('sem puxada na ficha');
+      const d = ex.closest('details');
+      if (d) d.open = true;
+      ex.querySelector('.detBtn').click();
+    });
+    await p.waitForSelector('#detDrawer.open video');
+    await p.waitForFunction(() => {
+      const v = document.querySelector('#detDrawer video');
+      if (!v) return false;
+      v.muted = true;
+      const play = v.play();
+      if (play && play.catch) play.catch(() => {});
+      return v.readyState >= 2 && !v.paused && v.currentTime > 0 && /\/videos\/puxada-frontal-no-pulley\.mp4$/.test(v.getAttribute('src') || '');
+    });
+    ok(/Puxada frontal no pulley/.test(await p.$eval('#detDrawer h3', e => e.textContent)) && /\/videos\/puxada-frontal-no-pulley\.mp4$/.test(await p.$eval('#detDrawer video', v => v.getAttribute('src'))) && await p.$eval('#detDrawer video', v => v.muted && !v.paused), 'a gaveta de Detalhes toca o vídeo da Puxada frontal no pulley');
+    if (fs.existsSync('/opt/cursor/artifacts')) {
+      await p.evaluate(() => { const v = document.querySelector('#detDrawer video'); if (v) v.scrollIntoView({ block: 'center' }); });
+      await sleep(300);
+      await p.screenshot({ path: '/opt/cursor/artifacts/gaveta_puxada.png' });
+    }
+    await p.evaluate(() => { const ov = document.querySelector('#detOv'); if (ov) ov.click(); document.querySelectorAll('#persCard details.blk').forEach(d => { d.open = false; }); });
+    await p.waitForFunction(() => !document.querySelector('#detDrawer.open'));
 
     // ---- exercício livre do personal (a lista da biblioteca continua igual)
     const libSnap = await p.evaluate(() => {
@@ -1437,5 +1472,5 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(/inativa/.test(htmlParado) && !/Quero ser aluno/.test(htmlParado), 'link público avisa quando a assinatura do personal está inativa');
 
     console.log('\nTODOS OS TESTES PASSARAM');
-  } catch (e) { console.error(e); process.exitCode = 1; } finally { if (videoTeste) fs.rmSync(videoTeste, { force: true }); await browser.close(); srv.kill(); }
+  } catch (e) { console.error(e); process.exitCode = 1; } finally { if (videoTeste && videoTesteNovo) fs.rmSync(videoTeste, { force: true }); await browser.close(); srv.kill(); }
 })();
