@@ -56,6 +56,19 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     { id: 2, kind: 'atual', taken_on: '2026-04-15', created_at: 2, dobra_tricipital: 12 },
   ]);
   ok(perfilEx.idade === 19 && perfilEx.frequencia === 4 && perfilEx.objetivo === 'Ganho de massa muscular' && perfilEx.peso_inicial === 70.5 && perfilEx.peso_atual === 68 && perfilEx.geb === 1684 && dobraEx.linhas.some(l => l.k === 'dobra_tricipital' && l.tom === 'ok' && l.texto === 'Tricipital 18 → 12 mm (−6)'), 'o cabeçalho junta anamnese e avaliações, e a dobra que diminui fica verde');
+  const b64Foto = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  await sql.prepare('INSERT INTO assessments(student_id,personal_id,taken_on,kind,photo,created_at) VALUES(?,?,?,?,?,?)').run(909001, 909001, '2026-01-01', 'inicial', 'data:png;base64,' + b64Foto, Date.now());
+  await sql.prepare('INSERT INTO assessments(student_id,personal_id,taken_on,kind,photo,created_at) VALUES(?,?,?,?,?,?)').run(909001, 909001, '2026-04-01', 'atual', 'data:jpeg;base64,' + b64Foto, Date.now());
+  const idFotoRuim = (await sql.prepare('SELECT id FROM assessments WHERE student_id=? AND kind=?').get(909001, 'inicial')).id;
+  const lidaRuim = await avalMod.lerFoto(909001, idFotoRuim);
+  ok(lidaRuim && lidaRuim.type === 'image/png' && lidaRuim.buf[0] === 137, 'foto salva como data:png ainda abre na rota');
+  await sql.prepare("DELETE FROM settings WHERE key='foto_mime_v1'").run();
+  await sql.migrate();
+  const fotosCorrigidas = await sql.prepare('SELECT kind, photo FROM assessments WHERE student_id=? ORDER BY kind').all(909001);
+  ok(fotosCorrigidas.length === 2 && fotosCorrigidas.every(r => /^data:image\/(png|jpeg);base64,/.test(r.photo)) && (await avalMod.lerFoto(909001, idFotoRuim)).type === 'image/png', 'a migração coloca image/ no prefixo e a leitura continua');
+  await sql.migrate();
+  ok(/^data:image\/png;base64,/.test((await sql.prepare('SELECT photo FROM assessments WHERE id=?').get(idFotoRuim)).photo), 'migrar a foto de novo não altera o que já foi corrigido');
+  await sql.prepare('DELETE FROM assessments WHERE student_id=?').run(909001);
   const voz = require('../public/voz');
   ok(voz.altura('um e setenta e cinco') === 175 && voz.altura('1 e 75') === 175 && voz.altura('um metro e setenta e cinco') === 175 && voz.altura('um e meio') === 150 && voz.altura('cento e setenta e cinco') === 175, 'altura falada vira centímetros');
   ok(voz.peso('setenta quilos') === 70 && voz.peso('setenta e meio') === 70.5 && voz.peso('setenta quilos e meio') === 70.5, 'peso falado entende quilos e meio');
@@ -224,9 +237,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v39/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), fora: /pathname\.startsWith\("\/videos\/"\)/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v40/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), fora: /pathname\.startsWith\("\/videos\/"\)/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.fora && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v39 sem pré-cache de vídeo');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.fora && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v40 sem pré-cache de vídeo');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -454,6 +467,20 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const ficha = await p.evaluate(() => ({ txt: document.querySelector('#persCard').textContent + document.querySelector('#repCard').textContent, a: S.a, blocos: S.plan.treinos[0].blocos.map(b => ({ g: b.g, n: b.ex.length, s: b.ex[0].s })), exp: dayExp(S.plan.treinos[0]) }));
     ok(/Pamela Souza/.test(ficha.txt) && /2\. OBJETIVOS E EXPECTATIVAS/.test(ficha.txt) && /Ganho de massa muscular/.test(ficha.txt) && !/Resultados que deseja alcançar/.test(ficha.txt) && !ficha.a.resultados && /peito/i.test(ficha.txt) && /3 meses/.test(ficha.txt) && /Como vamos medir o progresso/.test(ficha.txt) && /realista/.test(ficha.txt) && ficha.a.med === 'não tenho' && /Orientação médica/.test(ficha.txt) && /não tenho/.test(ficha.txt), 'ficha mostra o nome completo, objetivo, prioridade, prazo e a orientação médica');
     ok(/Dias disponíveis: Segunda, Quarta/.test(ficha.txt) && ficha.a.dias === 4 && JSON.stringify(ficha.a.diasSemana) === '["segunda","quarta"]', 'ficha mostra os dias disponíveis e mantém 4 treinos na semana');
+    await p.addScriptTag({ content: `window.__diasAuto = (function () {
+      const dias = S.a.dias, sem = (S.a.diasSemana || []).slice();
+      S.a.dias = 4;
+      S.a.diasSemana = ["segunda", "terca", "quinta", "sexta"];
+      const certo = weekPlan(new Date(2026, 9, 22));
+      S.a.diasSemana = ["segunda", "quarta"];
+      const incompleto = weekPlan(new Date(2026, 9, 22));
+      S.a.dias = dias;
+      S.a.diasSemana = sem;
+      const nomes = xs => xs.filter(x => x.t != null).map(x => x.dia).join(",");
+      return { certo: nomes(certo), quarta: certo.find(x => x.w === 3).t, incompleto: nomes(incompleto) };
+    })();` });
+    const diasAuto = await p.evaluate(() => window.__diasAuto);
+    ok(diasAuto.certo === 'Segunda,Terça,Quinta,Sexta' && diasAuto.quarta == null && diasAuto.incompleto === 'Segunda,Terça,Quarta,Quinta', 'a semana automática de segunda, terça, quinta e sexta não inclui a quarta');
     const waAluno = await p.$eval('#waAluno', e => e.getAttribute('href') || '');
     ok(waAluno.startsWith('https://wa.me/5511987654321?text=') && decodeURIComponent(waAluno.split('text=')[1]) === 'Oi Pamela Souza, aqui é o seu personal do Shape de Qualidade.', 'botão verde abre o WhatsApp do aluno com o nome completo');
     const pamMed = await sql.prepare('SELECT altura_cm a, peso_kg p FROM students WHERE username=?').get(pamU);
@@ -670,6 +697,17 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       return { n: document.querySelectorAll('#avHist .avHistGo').length, fotos: document.querySelectorAll('#avAntesDepois .avFotos img').length, ths, cells, wide: scroll.scrollWidth > scroll.clientWidth + 4, head, geb, dobra: /Tricipital 18 → 12 mm/.test(document.querySelector('#avCmp').textContent) };
     });
     ok(hist.n >= 4 && hist.fotos === 2 && hist.ths.join(' ') === 'Medida 15/01 15/02 15/03 15/04' && hist.cells.join(' ') === '18 16 14 12' && hist.wide && /70,5 kg/.test(hist.head) && /68 kg/.test(hist.head) && hist.geb === '1.684 kcal' && hist.dobra, 'a tabela lista uma coluna por data, o cabeçalho mostra os pesos e o gasto basal fecha em 1.684 kcal');
+    const fotosAd = await p.evaluate(async () => {
+      const imgs = [...document.querySelectorAll('#avAntesDepois .avFotos img')];
+      const out = [];
+      for (const img of imgs) {
+        const r = await fetch(img.getAttribute('src'));
+        const b = new Uint8Array(await r.arrayBuffer());
+        out.push({ st: r.status, t: r.headers.get('content-type') || '', n: b.length, jpeg: b[0] === 0xff && b[1] === 0xd8 });
+      }
+      return out;
+    });
+    ok(fotosAd.length === 2 && fotosAd.every(f => f.st === 200 && f.t === 'image/jpeg' && f.jpeg && f.n > 32), 'as fotos inicial e atual carregam no Antes e depois');
     await p.evaluate(() => { const bs = [...document.querySelectorAll('#avHist .avHistGo')]; bs[bs.length - 1].click(); });
     await p.waitForFunction(() => /15\/01\/2026/.test((document.querySelector('#avHistView') || {}).textContent || '') && /Cintura: 92/.test((document.querySelector('#avHistView') || {}).textContent || ''));
     ok(true, 'o histórico abre uma avaliação antiga');

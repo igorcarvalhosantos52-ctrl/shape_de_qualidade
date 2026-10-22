@@ -525,6 +525,12 @@ const TREINOS=[{nome:"Treino 1",titulo:"Peito + Tríceps + Antebraço",gs:["peit
 const NOW=()=>window.__fakeNow?new Date(window.__fakeNow):new Date();const dayKey=d=>d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
 const WKF=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 const DAYSETS={2:[1,4],3:[1,3,5],4:[1,2,3,4],5:[1,2,3,4,5],6:[1,2,3,4,5,6]};
+const DIAW={segunda:1,terca:2,quarta:3,quinta:4,sexta:5,sabado:6,domingo:0};
+function diasAuto(){const N=S.a.dias||3,ids=Array.isArray(S.a.diasSemana)?S.a.diasSemana:[],ordem=[1,2,3,4,5,6,0],ws=[];
+ ids.forEach(id=>{const w=DIAW[id];if(w!=null&&!ws.includes(w))ws.push(w)});
+ ws.sort((a,b)=>ordem.indexOf(a)-ordem.indexOf(b));
+ if(ws.length===N&&N>=2&&N<=6)return ws;
+ return (DAYSETS[N]||DAYSETS[3]).slice()}
 function params_old(){const o=S.a.objetivo,l=S.a.nivel;let p={hipertrofia:{s:4,r:"8–12",d:"60–90s"},emagrecimento:{s:3,r:"12–15",d:"30–45s"},condicionamento:{s:3,r:"15–20",d:"30s"},saude:{s:3,r:"10–15",d:"60s"}}[o]||{s:3,r:"10–12",d:"60s"};p={...p};if(l==="iniciante")p.s=Math.min(p.s,3);if(l==="avancado")p.s++;const m=S.a.medInfo;if(m&&m.low){p.s=Math.max(2,p.s-1);p.r="12–15 (carga leve)";p.d="90s"}return p}
 function params(){const gs=goalSet(),m=S.a.medInfo;const p={s:4,r:"10–12",d:"60s",circuit:false,cardio:false,mobility:false};
  if(gs.includes("forca")&&gs.includes("hipertrofia")){p.r="6–8";p.d="2 min"}
@@ -552,7 +558,7 @@ function planStart(){return S.aprov&&S.aprov.ts?S.aprov.ts:(S.plan&&S.plan.criad
 function isCustomSplit(){return !!(S.plan&&S.plan.split&&S.plan.split.custom&&Array.isArray(S.plan.split.days)&&S.plan.split.days.length)}
 function gsClean(gs){const ids=SPLIT_GS.map(g=>g.id),out=[];(gs||[]).forEach(g=>{if(ids.includes(g)&&g!=="descanso"&&EX[g]&&!out.includes(g))out.push(g)});return out}
 function weekPlan(ref){if(isCustomSplit()){const by={};let i=0;S.plan.split.days.forEach(d=>{if(gsClean(d.gs).length)by[d.w]=i++});return[1,2,3,4,5,6,0].map(w=>({w,dia:WKF[w],t:by[w]==null?null:by[w]}))}
- const N=S.a.dias,days=DAYSETS[N]||DAYSETS[3],T=S.plan.treinos.length;const wk=Math.max(0,Math.round((mondayOf(ref)-mondayOf(planStart()))/6048e5));
+ const days=diasAuto(),N=days.length,T=S.plan.treinos.length;const wk=Math.max(0,Math.round((mondayOf(ref)-mondayOf(planStart()))/6048e5));
  return[1,2,3,4,5,6,0].map(w=>{const pos=days.indexOf(w);return{w,dia:WKF[w],t:pos<0?null:(wk*N+pos)%T}})}
 function activeSwap(){const sw=S.plan&&S.plan.swapHoje;if(!sw||sw.dk!==dayKey(NOW()))return null;if(sw.rest)return sw;if(!sw.blocos||!sw.blocos.length)return null;return sw}
 function todayTreino(){const now=NOW(),w=now.getDay(),wp=weekPlan(now),order=[1,2,3,4,5,6,0];const ti=order.indexOf(w);const sw=activeSwap();
@@ -577,7 +583,7 @@ function generate(quiet){const P=params(),restr=curRestr();
 function treinoFromGs(label,gs){const groups=gsClean(gs);if(!groups.length)return null;const P=params(),restr=curRestr();
  const nome=(label||"").trim()||groups.map(g=>GN[g]||g).join(" + ");
  return{nome,titulo:groups.map(g=>GN[g]||g).join(" + "),gs:groups,blocos:groups.map(g=>buildBlock(g,restr,P,g==="cardio"?Math.min(perGroup(),3):perGroup()))}}
-function autoSeed(){const N=S.a.dias||3,days=DAYSETS[N]||DAYSETS[3],ids=SPLIT_GS.map(g=>g.id);
+function autoSeed(){const days=diasAuto(),ids=SPLIT_GS.map(g=>g.id);
  return days.map((w,pos)=>{const tr=TREINOS[pos%TREINOS.length];return{w,label:tr.titulo,gs:tr.gs.filter(g=>ids.includes(g))}})}
 function applySplit(days){if(!S.plan)return;grpOpen=null;const prev={};(S.plan.treinos||[]).forEach(t=>{if(t&&t.w!=null)prev[t.w]=t});
  const train=days.filter(d=>gsClean(d.gs).length);if(!train.length){alert("Escolha pelo menos um grupo muscular em algum dia.");render();return}

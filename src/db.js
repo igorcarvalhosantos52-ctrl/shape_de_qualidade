@@ -192,6 +192,7 @@ async function migrate() {
   }
   await db.exec('CREATE UNIQUE INDEX IF NOT EXISTS students_email_uq ON students(email) WHERE email IS NOT NULL');
   await renomearBr();
+  await corrigirFotos();
 }
 
 async function renomearBr() {
@@ -220,6 +221,26 @@ async function renomearBr() {
     if (rows.length < 100) break;
   }
   await db.prepare("INSERT INTO settings(key, value) VALUES('rename_br_v1', '1') ON CONFLICT(key) DO UPDATE SET value=excluded.value").run();
+}
+
+async function corrigirFotos() {
+  const flag = await db.prepare("SELECT value FROM settings WHERE key='foto_mime_v1'").get();
+  if (flag && flag.value === '1') return;
+  let last = 0;
+  for (;;) {
+    const rows = await db.prepare("SELECT id, photo FROM assessments WHERE photo IS NOT NULL AND photo<>'' AND id>? ORDER BY id LIMIT 100").all(last);
+    if (!rows.length) break;
+    for (const row of rows) {
+      last = Number(row.id);
+      const s = String(row.photo || '');
+      const m = /^data:(jpeg|png|webp);base64,/i.exec(s);
+      if (!m || /^data:image\//i.test(s)) continue;
+      const novo = 'data:image/' + m[1].toLowerCase() + ';base64,' + s.slice(m[0].length);
+      await db.prepare('UPDATE assessments SET photo=? WHERE id=?').run(novo, row.id);
+    }
+    if (rows.length < 100) break;
+  }
+  await db.prepare("INSERT INTO settings(key, value) VALUES('foto_mime_v1', '1') ON CONFLICT(key) DO UPDATE SET value=excluded.value").run();
 }
 
 db.migrate = migrate;

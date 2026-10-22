@@ -56,7 +56,7 @@ function fotoOk(foto) {
   if (!m) return null;
   const bytes = Math.floor(m[2].length * 3 / 4);
   if (bytes < 32 || bytes > FOTO_MAX) return null;
-  return 'data:' + m[1].toLowerCase() + ';base64,' + m[2];
+  return 'data:image/' + m[1].toLowerCase() + ';base64,' + m[2];
 }
 
 function fmtNum(n) {
@@ -282,9 +282,10 @@ async function lerFoto(personalId, id) {
   if (!n) return null;
   const row = await db.prepare('SELECT photo FROM assessments WHERE id=? AND personal_id=?').get(n, personalId);
   if (!row || !row.photo) return null;
-  const m = /^data:(image\/(?:jpeg|png|webp));base64,([a-z0-9+/=]+)$/i.exec(String(row.photo).replace(/\s/g, ''));
+  const s = String(row.photo).replace(/\s/g, '');
+  const m = /^data:(?:image\/)?(jpeg|png|webp);base64,([a-z0-9+/=]+)$/i.exec(s);
   if (!m) return null;
-  return { type: m[1].toLowerCase(), buf: Buffer.from(m[2], 'base64') };
+  return { type: 'image/' + m[1].toLowerCase(), buf: Buffer.from(m[2], 'base64') };
 }
 
 async function apagar(studentId) {
