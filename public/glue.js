@@ -507,34 +507,31 @@ const TUTO_TEXTO = {
 function tutoBox() {
   return `<details class="alert ok noprint" id="tutoBox"><summary><b>🎬 Como usar o app</b></summary>
   <div class="tutoList">${TUTOS.map(([id, t]) => `<button type="button" class="btn sm sec tutoItem" data-tuto="${id}">${esc(t)}</button>`).join("")}</div>
-  <div id="tutoNota" hidden></div>
-  <video id="tutoPlayer" controls playsinline preload="none" hidden></video></details>`;
+  <video id="tutoPlayer" controls playsinline preload="none" hidden></video>
+  <div id="tutoNota" hidden></div></details>`;
 }
 function bindTuto(prev) {
   const box = $("#tutoBox"); if (!box) return;
   const player = $("#tutoPlayer");
   const nota = $("#tutoNota");
-  const pararVideo = () => { try { player.pause(); } catch (e) {} player.hidden = true; player.removeAttribute("src"); try { player.load(); } catch (e) {} };
+  const texto = id => {
+    if (TUTO_TEXTO[id]) { if (nota) { nota.hidden = false; nota.innerHTML = TUTO_TEXTO[id]; } }
+    else if (nota) { nota.hidden = true; nota.innerHTML = ""; }
+  };
   const show = id => {
     box.querySelectorAll("[data-tuto]").forEach(b => b.classList.toggle("on", b.dataset.tuto === id));
-    if (TUTO_TEXTO[id]) {
-      pararVideo();
-      if (nota) { nota.hidden = false; nota.innerHTML = TUTO_TEXTO[id]; }
-      return;
-    }
-    if (nota) { nota.hidden = true; nota.innerHTML = ""; }
     const url = "/api/tutoriais/" + encodeURIComponent(id);
     player.hidden = false;
     if (player.getAttribute("src") !== url) player.setAttribute("src", url);
+    texto(id);
     const go = player.play(); if (go && go.catch) go.catch(() => {});
   };
   box.querySelectorAll("[data-tuto]").forEach(b => { b.onclick = () => show(b.dataset.tuto); });
   if (!prev || !prev.id) return;
-  if (TUTO_TEXTO[prev.id]) { show(prev.id); return; }
-  if (nota) { nota.hidden = true; nota.innerHTML = ""; }
+  box.querySelectorAll("[data-tuto]").forEach(b => b.classList.toggle("on", b.dataset.tuto === prev.id));
   player.hidden = false;
   player.setAttribute("src", "/api/tutoriais/" + encodeURIComponent(prev.id));
-  box.querySelectorAll("[data-tuto]").forEach(b => b.classList.toggle("on", b.dataset.tuto === prev.id));
+  texto(prev.id);
   const resume = () => {
     if (prev.t > 0.2) { try { player.currentTime = prev.t; } catch (e) {} }
     if (prev.playing) { const go = player.play(); if (go && go.catch) go.catch(() => {}); }
@@ -717,7 +714,7 @@ renderPanel = function () { _renderPanel2(); paintFeeDots(); if (!unlocked || ME
   const o = $("#pwdBox") && $("#pwdBox").open, zo = $("#zapBox") && $("#zapBox").open, po = $("#pixBox") && $("#pixBox").open, to = $("#tutoBox") && $("#tutoBox").open;
   const tv = $("#tutoPlayer"), itemOn = $("#tutoBox .tutoItem.on");
   const notaAberta = $("#tutoNota") && !$("#tutoNota").hidden && itemOn;
-  const prev = notaAberta ? { id: itemOn.getAttribute("data-tuto"), t: 0, playing: false } : (tv && tv.getAttribute("src") ? { id: tv.getAttribute("src").split("/").pop(), t: tv.currentTime || 0, playing: !tv.paused && !tv.ended } : null);
+  const prev = tv && tv.getAttribute("src") ? { id: tv.getAttribute("src").split("/").pop(), t: tv.currentTime || 0, playing: !tv.paused && !tv.ended } : (notaAberta ? { id: itemOn.getAttribute("data-tuto"), t: 0, playing: false } : null);
   $("#planBox").insertAdjacentHTML("afterend", zapBox() + pixBox() + senhaBox() + tutoBox()); if (o) $("#pwdBox").open = true; if (zo) $("#zapBox").open = true; if (po) $("#pixBox").open = true; if (to) $("#tutoBox").open = true;
   bindTuto(prev);
   bindPix();

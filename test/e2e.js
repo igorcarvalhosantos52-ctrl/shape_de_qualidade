@@ -145,9 +145,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v37/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), fora: /pathname\.startsWith\("\/videos\/"\)/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v38/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), fora: /pathname\.startsWith\("\/videos\/"\)/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.fora && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v37 sem pré-cache de vídeo');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.fora && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v38 sem pré-cache de vídeo');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -441,13 +441,24 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(await p.evaluate(async () => (await fetch('/api/tutoriais/nao-existe')).status) === 404, 'vídeo desconhecido responde 404');
     await p.evaluate(() => document.querySelector('[data-tuto="medidas"]').click());
     await p.waitForFunction(() => {
-      const n = document.querySelector('#tutoNota');
-      return n && !n.hidden && /📏 Medidas/.test(n.textContent) && /Enviar ou trocar foto/.test(n.textContent) && /após 3 meses/.test(n.textContent) && /complete os dados/.test(n.textContent) && /Apagar aluno/.test(n.textContent) && document.querySelector('#tutoPlayer').hidden && !document.querySelector('#tutoPlayer').getAttribute('src');
+      const n = document.querySelector('#tutoNota'), v = document.querySelector('#tutoPlayer');
+      if (!n || n.hidden || !v || v.hidden || v.getAttribute('src') !== '/api/tutoriais/medidas') return false;
+      if (!(v.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+      const t = n.textContent || '';
+      return /📏 Medidas/.test(t) && /Enviar ou trocar foto/.test(t) && /após 3 meses/.test(t) && /complete os dados/.test(t) && /Apagar aluno/.test(t);
     });
-    ok(true, 'o item Avaliação física explica a sidebar, a medida atual fechada e a privacidade das fotos');
+    const medVid = await p.evaluate(async () => { const r = await fetch('/api/tutoriais/medidas', { headers: { Range: 'bytes=0-1' } }); return { s: r.status, t: r.headers.get('content-type') || '' }; });
+    ok((medVid.s === 206 || medVid.s === 200) && /mp4/.test(medVid.t), 'o item Avaliação física toca o vídeo e mantém o passo a passo abaixo');
     await p.evaluate(() => document.querySelector('[data-tuto="videos"]').click());
-    await p.waitForFunction(() => { const n = document.querySelector('#tutoNota'); return n && !n.hidden && /Vídeos seus/.test(n.textContent) && /30 segundos/.test(n.textContent) && /sem espaço vazio/.test(n.textContent) && document.querySelector('#tutoPlayer').hidden; });
-    ok(true, 'o item Vídeos dos exercícios explica a gaveta e o vídeo do personal');
+    await p.waitForFunction(() => {
+      const n = document.querySelector('#tutoNota'), v = document.querySelector('#tutoPlayer');
+      if (!n || n.hidden || !v || v.hidden || v.getAttribute('src') !== '/api/tutoriais/videos') return false;
+      if (!(v.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+      const t = n.textContent || '';
+      return /Vídeos seus/.test(t) && /30 segundos/.test(t) && /sem espaço vazio/.test(t);
+    });
+    const exVidTut = await p.evaluate(async () => { const r = await fetch('/api/tutoriais/videos', { headers: { Range: 'bytes=0-1' } }); return { s: r.status, t: r.headers.get('content-type') || '' }; });
+    ok((exVidTut.s === 206 || exVidTut.s === 200) && /mp4/.test(exVidTut.t), 'o item Vídeos dos exercícios toca o vídeo e mantém o passo a passo abaixo');
     if (fs.existsSync('/opt/cursor/artifacts')) {
       const guia = await ctxP.newPage();
       await guia.setViewport({ width: 420, height: 1400, deviceScaleFactor: 2 });
