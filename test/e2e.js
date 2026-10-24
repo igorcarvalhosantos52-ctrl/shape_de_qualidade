@@ -97,10 +97,11 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   const mapaVid = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'public', 'videos', 'index.json'), 'utf8'));
   const lote3a = ['Desenvolvimento com halteres', 'Elevação lateral com halteres', 'Elevação frontal com halteres', 'Rosca alternada com halteres', 'Rosca direta com barra', 'Rosca martelo com halteres', 'Rosca concentrada', 'Stiff com halteres', 'Tríceps na polia (corda)', 'Prancha abdominal'];
   const lote3b = ['Rosca na polia', 'Levantamento terra romeno com barra', 'Afundo reverso com halteres', 'Agachamento sumô com halter', 'Elevação de pernas deitado', 'Crucifixo invertido com halteres', 'Tríceps testa com halteres', 'Face pull na polia (carga leve)', 'Rosca scott com halter', 'Tríceps francês com halter'];
-  ok(Object.keys(mapaVid).length === 60 && Object.entries(mapaVid).every(([n, file]) => nomesCat.includes(n) && file === videosMod.slug(n) + '.mp4') && lote3a.every(n => mapaVid[n] === videosMod.slug(n) + '.mp4') && lote3b.every(n => mapaVid[n] === videosMod.slug(n) + '.mp4'), 'o mapa de vídeos aponta o slug de cada exercício gravado, inclusive os lotes 3a e 3b');
+  const lote4a = ['Abdominal supra no colchonete', 'Crucifixo com halteres', 'Supino fechado', 'Tríceps coice com halter', 'Agachamento no Smith', 'Mesa flexora', 'Elevação pélvica no banco', 'Agachamento parcial no banco (box squat)', 'Elevação lateral na polia', 'Rosca inversa na polia'];
+  ok(Object.keys(mapaVid).length === 70 && Object.entries(mapaVid).every(([n, file]) => nomesCat.includes(n) && file === videosMod.slug(n) + '.mp4') && lote3a.every(n => mapaVid[n] === videosMod.slug(n) + '.mp4') && lote3b.every(n => mapaVid[n] === videosMod.slug(n) + '.mp4') && lote4a.every(n => mapaVid[n] === videosMod.slug(n) + '.mp4'), 'o mapa de vídeos aponta o slug de cada exercício gravado, inclusive os lotes 3a, 3b e 4a');
   const gravados = Object.entries(mapaVid).filter(([, file]) => fs.existsSync(path.join(__dirname, '..', 'public', 'videos', file)));
   const padrao = videosMod.padroes();
-  ok(gravados.length === 60 && Object.keys(padrao).length === 60 && gravados.every(([n, file]) => padrao[n] === '/videos/' + file) && padrao['Puxada frontal no pulley'] === '/videos/puxada-frontal-no-pulley.mp4' && padrao['Leg press 45°'] === '/videos/leg-press-45.mp4' && padrao['Agachamento isométrico na parede (cadeirinha)'] === '/videos/agachamento-isometrico-na-parede-cadeirinha.mp4' && padrao['Remada serrote com halter'] === '/videos/remada-serrote-com-halter.mp4' && padrao['Prancha abdominal'] === '/videos/prancha-abdominal.mp4' && padrao['Tríceps na polia (corda)'] === '/videos/triceps-na-polia-corda.mp4' && padrao['Rosca na polia'] === '/videos/rosca-na-polia.mp4' && padrao['Face pull na polia (carga leve)'] === '/videos/face-pull-na-polia-carga-leve.mp4', 'o mapa só mostra o vídeo quando o arquivo existe');
+  ok(gravados.length === 70 && Object.keys(padrao).length === 70 && gravados.every(([n, file]) => padrao[n] === '/videos/' + file) && padrao['Puxada frontal no pulley'] === '/videos/puxada-frontal-no-pulley.mp4' && padrao['Leg press 45°'] === '/videos/leg-press-45.mp4' && padrao['Agachamento isométrico na parede (cadeirinha)'] === '/videos/agachamento-isometrico-na-parede-cadeirinha.mp4' && padrao['Remada serrote com halter'] === '/videos/remada-serrote-com-halter.mp4' && padrao['Prancha abdominal'] === '/videos/prancha-abdominal.mp4' && padrao['Tríceps na polia (corda)'] === '/videos/triceps-na-polia-corda.mp4' && padrao['Rosca na polia'] === '/videos/rosca-na-polia.mp4' && padrao['Face pull na polia (carga leve)'] === '/videos/face-pull-na-polia-carga-leve.mp4' && padrao['Mesa flexora'] === '/videos/mesa-flexora.mp4' && padrao['Crucifixo com halteres'] === '/videos/crucifixo-com-halteres.mp4', 'o mapa só mostra o vídeo quando o arquivo existe');
   ok(promptsCat.every(x => nomesCat.includes(x.n)) && !fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8').includes('Barra livre') && /\{n:"Flexora em pé unilateral",e:"Máquinas articuladas"\}/.test(fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8')), 'os prompts usam o nome novo e a flexora em pé fica na máquina articulada');
   const aliases = require('../public/aliases');
   const fichaVelha = {
@@ -239,9 +240,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v42/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), fora: /pathname\.startsWith\("\/videos\/"\)/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v43/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), fora: /pathname\.startsWith\("\/videos\/"\)/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.fora && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v42 sem pré-cache de vídeo');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.fora && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v43 sem pré-cache de vídeo');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -783,12 +784,31 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     ok(/Core de segunda/.test(await a.$eval('#statusCard', e => e.innerText)) && /Core de segunda/.test(await a.$eval('#hdrDia', e => e.textContent)) && /6 série/.test(await a.$eval('#statusCard', e => e.innerText)) && !/Cardio de sábado/.test(await a.$eval('#statusCard', e => e.innerText)), 'aba Dia do aluno mostra o treino personalizado de hoje');
     await a.click('.detBtn'); await a.waitForSelector('#detDrawer.open');
     ok(/Como fazer/.test(await a.$eval('#detDrawer', e => e.innerText)) && !/YouTube|Ver vídeo/.test(await a.$eval('#detDrawer', e => e.innerText)), 'Detalhes abre no exercício do dia personalizado, sem busca no YouTube');
-    ok(!(await a.$('#detDrawer .dvidBox')), 'sem vídeo pronto a gaveta não deixa espaço vazio');
     const nomeVid = await a.$eval('#detDrawer h3', e => e.textContent.trim());
+    const semNome = await a.evaluate(async () => {
+      if (typeof loadExVid === 'function') await loadExVid();
+      const defs = (window.__EXVID && window.__EXVID.defaults) || {};
+      const nomes = [...document.querySelectorAll('#statusCard .ex b')].map(b => b.textContent.trim()).filter(Boolean);
+      return nomes.find(n => !defs[n]) || '';
+    });
+    await a.evaluate(() => closeDet());
+    await a.evaluate(nome => {
+      const b = [...document.querySelectorAll('#statusCard .detBtn')].find(btn => {
+        const ex = btn.closest('.ex');
+        return ex && ex.querySelector('b') && ex.querySelector('b').textContent.trim() === nome;
+      });
+      if (!b) throw new Error('sem exercício sem vídeo');
+      b.click();
+    }, semNome);
+    await a.waitForSelector('#detDrawer.open');
+    ok(!!semNome && semNome !== nomeVid && !(await a.$('#detDrawer .dvidBox')), 'sem vídeo pronto a gaveta não deixa espaço vazio');
+    await a.evaluate(() => closeDet());
     videoTeste = path.join(__dirname, '..', 'public', 'videos', videosMod.slug(nomeVid) + '.mp4');
     videoTesteNovo = !fs.existsSync(videoTeste);
-    const ff = spawnSync('ffmpeg', ['-y', '-f', 'lavfi', '-i', 'testsrc=size=270x480:rate=12:duration=2', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-movflags', '+faststart', videoTeste], { encoding: 'utf8' });
-    if (ff.status !== 0) throw new Error('ffmpeg: ' + String(ff.stderr || ff.stdout || '').slice(-500));
+    if (videoTesteNovo) {
+      const ff = spawnSync('ffmpeg', ['-y', '-f', 'lavfi', '-i', 'testsrc=size=270x480:rate=12:duration=2', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-movflags', '+faststart', videoTeste], { encoding: 'utf8' });
+      if (ff.status !== 0) throw new Error('ffmpeg: ' + String(ff.stderr || ff.stdout || '').slice(-500));
+    }
     const mapa0 = await a.evaluate(() => loadExVid());
     ok(!!(mapa0 && mapa0.defaults && mapa0.defaults[nomeVid]), 'o arquivo em public/videos entra no mapa do exercício');
     await a.evaluate(() => closeDet());
