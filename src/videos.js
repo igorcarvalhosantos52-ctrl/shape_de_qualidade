@@ -1,13 +1,11 @@
 // Vídeos de exercício.
-// O padrão é um mp4 em public/videos, servido como arquivo estático.
-// O vídeo do personal substitui o padrão só para os alunos dele e fica no Turso,
-// em partes, porque o disco do Render some a cada deploy.
+// O vídeo do personal fica no Turso, em partes, porque o disco do Render some a cada deploy.
+// Os mp4 de demonstração em public/videos ficam no repositório e não entram na gaveta.
 const fs = require('fs');
 const path = require('path');
 const db = require('./db');
 const { exNome, EX_ALIAS } = require('../public/aliases');
 
-const DIR = path.join(__dirname, '..', 'public', 'videos');
 const MAX_BYTES = 4 * 1024 * 1024;
 const MAX_PART = 300 * 1024;
 const MAX_MS = 30000;
@@ -36,30 +34,8 @@ function catalogo() {
   return nomes;
 }
 
-function arquivoSeguro(file) {
-  const base = path.basename(String(file || ''));
-  if (!/^[a-z0-9.-]+\.mp4$/i.test(base)) return '';
-  const full = path.join(DIR, base);
-  if (!full.startsWith(DIR)) return '';
-  return fs.existsSync(full) ? base : '';
-}
-
 function padroes() {
-  let map = {};
-  try { map = JSON.parse(fs.readFileSync(path.join(DIR, 'index.json'), 'utf8')); } catch (e) { map = {}; }
-  if (!map || typeof map !== 'object' || Array.isArray(map)) map = {};
-  const out = {};
-  for (const [nome, file] of Object.entries(map)) {
-    if (!catalogo().includes(nome)) continue;
-    const base = arquivoSeguro(file);
-    if (base) out[nome] = '/videos/' + base;
-  }
-  for (const nome of catalogo()) {
-    if (out[nome]) continue;
-    const base = arquivoSeguro(slug(nome) + '.mp4');
-    if (base) out[nome] = '/videos/' + base;
-  }
-  return out;
+  return {};
 }
 
 function dec64(data) {

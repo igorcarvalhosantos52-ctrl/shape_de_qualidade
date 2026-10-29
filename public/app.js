@@ -906,17 +906,19 @@ const GAIN={hipertrofia:"o estímulo de tensão com carga desafiadora faz esse m
 function howOf(n,g){const h=HOW[typeof exNome==="function"?exNome(n):n];if(h)return{setup:h[0],exec:h[1],err:h[2],seg:h[3],mus:h[4]};return{setup:"Ajuste o equipamento ao seu corpo e fique numa posição firme e estável antes de começar.",exec:"Faça o movimento de forma lenta e controlada em toda a amplitude confortável, sem usar impulso.",err:"Usar carga alta demais, fazer rápido, perder a postura.",seg:"Se não souber executar, peça ao seu personal para demonstrar. Pare se sentir dor.",mus:GN[g]||"Músculos do treino de hoje"}}
 let detOpen=null;
 function nomesCatalogo(){const s=[];Object.keys(EX).forEach(g=>(EX[g]||[]).forEach(x=>{if(x&&x.n&&!s.includes(x.n))s.push(x.n)}));return s.sort((a,b)=>a.localeCompare(b,"pt"))}
-function videoDoExercicio(nome){const v=window.__EXVID||{},n=typeof exNome==="function"?exNome(nome):nome;if(v.custom&&(v.custom[n]||v.custom[nome]))return v.custom[n]||v.custom[nome];if(v.defaults&&(v.defaults[n]||v.defaults[nome]))return v.defaults[n]||v.defaults[nome];return ""}
+function videoDoExercicio(nome){const v=window.__EXVID||{},n=typeof exNome==="function"?exNome(nome):nome;if(v.custom&&(v.custom[n]||v.custom[nome]))return v.custom[n]||v.custom[nome];return ""}
 function detHTML(e){const h=howOf(e.n,e.g),A=S.a,cat=/forc/.test(norm(A.objTxt||""))&&A.objetivo==="hipertrofia"?"forca":A.objetivo,light=/leve/.test(e.r+" "+(e.sub||""))||/90/.test(e.d)||(S.a.medInfo&&S.a.medInfo.low);
  const src=videoDoExercicio(e.n);
- const vid=src?`<div class="dvidBox"><video src="${esc(src)}" muted autoplay loop playsinline preload="metadata"></video><span class="dvidMarca">Shape de Qualidade</span></div>`:"";
+ const vid=src?`<div class="dvidBox"><video src="${esc(src)}" muted autoplay loop playsinline preload="metadata"></video></div>`:"";
+ const q=encodeURIComponent(String(e.n||"").trim()+" execução");
  return `<div class="dhead"><button class="dback" id="detBack" aria-label="Voltar">←</button><h3>${esc(e.n)}</h3></div>
  ${vid}
  <p class="dmeta">${e.s} série(s) × ${esc(e.r)} · descanso ${esc(e.d)}</p>
  <h4>Como fazer</h4><ol><li><b>Posição inicial:</b> ${esc(h.setup)}</li><li><b>Execução:</b> ${esc(h.exec)}</li><li><b>Respiração:</b> ${esc(BREATH[e.g]||"Solte o ar no esforço e puxe na volta, sem prender a respiração.")}</li></ol>
  <h4>Erros comuns</h4><p>${esc(h.err)}</p><h4>Segurança</h4><p>${esc(h.seg)}${light?" Hoje: carga leve, amplitude controlada e foco na técnica.":""} Se sentir dor, pare e fale com seu personal.</p>
  <h4>Músculos trabalhados</h4><p>${esc(h.mus)}</p>
- <h4>O que você ganha</h4><p><b>${esc(objShow())}:</b> ${esc(GAIN[cat]||GAIN.saude)}.</p>`}
+ <h4>O que você ganha</h4><p><b>${esc(objShow())}:</b> ${esc(GAIN[cat]||GAIN.saude)}.</p>
+ <a class="btn sec dvid" href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener">▶ Ver vídeo (busca no YouTube)</a>`}
 function openDet(key,e){if(!e||e.manual)return;const d=$("#detDrawer"),o=$("#detOv");if(detOpen===key){closeDet();return}
  const paint=()=>{detOpen=key;d.innerHTML=detHTML(e);d.classList.add("open");o.classList.add("open");$("#detBack").onclick=closeDet;document.querySelectorAll(".detBtn").forEach(b=>b.classList.toggle("on",b.dataset.k===key));const vid=d.querySelector("video");if(vid){vid.muted=true;vid.playsInline=true;const p=vid.play();if(p&&p.catch)p.catch(()=>{})}};
  paint();if(!window.__EXVID&&typeof loadExVid==="function")loadExVid().then(()=>{if(detOpen===key)paint()})}

@@ -94,15 +94,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   ok(nomesCat.length === 225 && nomesCat.includes('Remada cavalinho (T-bar)') && nomesCat.includes('Puxada frontal pegada neutra no pulley') && nomesCat.includes('Rosca punho na polia'), 'a biblioteca passa a ter as variações novas, sem mudar o nome livre');
   ok(slugsCat.length === 229 && new Set(slugsCat.map(x => x.slug)).size === 225 && slugsCat.every(x => videosMod.slug(x.n) === x.slug && nomesCat.includes(x.n)), 'o arquivo de slugs cobre as 229 entradas do catálogo');
   ok(promptsCat.length === 229 && promptsCat.every(x => typeof x.video_prompt === 'string' && x.video_prompt.length > 20) && !fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8').includes('video_prompt'), 'os prompts de vídeo ficam fora do app do aluno');
-  const mapaVid = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'public', 'videos', 'index.json'), 'utf8'));
-  const lote3a = ['Desenvolvimento com halteres', 'Elevação lateral com halteres', 'Elevação frontal com halteres', 'Rosca alternada com halteres', 'Rosca direta com barra', 'Rosca martelo com halteres', 'Rosca concentrada', 'Stiff com halteres', 'Tríceps na polia (corda)', 'Prancha abdominal'];
-  const lote3b = ['Rosca na polia', 'Levantamento terra romeno com barra', 'Afundo reverso com halteres', 'Agachamento sumô com halter', 'Elevação de pernas deitado', 'Crucifixo invertido com halteres', 'Tríceps testa com halteres', 'Face pull na polia (carga leve)', 'Rosca scott com halter', 'Tríceps francês com halter'];
-  const lote4a = ['Abdominal supra no colchonete', 'Crucifixo com halteres', 'Supino fechado', 'Tríceps coice com halter', 'Agachamento no Smith', 'Mesa flexora', 'Elevação pélvica no banco', 'Agachamento parcial no banco (box squat)', 'Elevação lateral na polia', 'Rosca inversa na polia'];
-  const lote4b = ['Desenvolvimento no Smith', 'Rosca com elástico', 'Bicicleta ergométrica', 'Caminhada ou trote leve na esteira', 'Gato-camelo no colchonete', 'Abdominal na polia', 'Agachamento com elástico', 'Caminhada do fazendeiro (farmer walk)', 'Caminhada (esteira ou ao ar livre)', 'Pegada isométrica com halter'];
-  ok(Object.keys(mapaVid).length === 80 && Object.entries(mapaVid).every(([n, file]) => nomesCat.includes(n) && file === videosMod.slug(n) + '.mp4') && lote3a.every(n => mapaVid[n] === videosMod.slug(n) + '.mp4') && lote3b.every(n => mapaVid[n] === videosMod.slug(n) + '.mp4') && lote4a.every(n => mapaVid[n] === videosMod.slug(n) + '.mp4') && lote4b.every(n => mapaVid[n] === videosMod.slug(n) + '.mp4'), 'o mapa de vídeos aponta o slug de cada exercício gravado, inclusive os lotes 3a, 3b, 4a e 4b');
-  const gravados = Object.entries(mapaVid).filter(([, file]) => fs.existsSync(path.join(__dirname, '..', 'public', 'videos', file)));
-  const padrao = videosMod.padroes();
-  ok(gravados.length === 80 && Object.keys(padrao).length === 80 && gravados.every(([n, file]) => padrao[n] === '/videos/' + file) && padrao['Puxada frontal no pulley'] === '/videos/puxada-frontal-no-pulley.mp4' && padrao['Leg press 45°'] === '/videos/leg-press-45.mp4' && padrao['Agachamento isométrico na parede (cadeirinha)'] === '/videos/agachamento-isometrico-na-parede-cadeirinha.mp4' && padrao['Remada serrote com halter'] === '/videos/remada-serrote-com-halter.mp4' && padrao['Prancha abdominal'] === '/videos/prancha-abdominal.mp4' && padrao['Tríceps na polia (corda)'] === '/videos/triceps-na-polia-corda.mp4' && padrao['Rosca na polia'] === '/videos/rosca-na-polia.mp4' && padrao['Face pull na polia (carga leve)'] === '/videos/face-pull-na-polia-carga-leve.mp4' && padrao['Mesa flexora'] === '/videos/mesa-flexora.mp4' && padrao['Crucifixo com halteres'] === '/videos/crucifixo-com-halteres.mp4' && padrao['Abdominal na polia'] === '/videos/abdominal-na-polia.mp4' && padrao['Gato-camelo no colchonete'] === '/videos/gato-camelo-no-colchonete.mp4', 'o mapa só mostra o vídeo quando o arquivo existe');
+  ok(Object.keys(videosMod.padroes()).length === 0 && fs.existsSync(path.join(__dirname, '..', 'public', 'videos', 'prancha-abdominal.mp4')) && fs.existsSync(path.join(__dirname, '..', 'public', 'videos', 'index.json')), 'os mp4 de demonstração ficam no repositório e o app não os entrega');
   ok(promptsCat.every(x => nomesCat.includes(x.n)) && !fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8').includes('Barra livre') && /\{n:"Flexora em pé unilateral",e:"Máquinas articuladas"\}/.test(fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8')), 'os prompts usam o nome novo e a flexora em pé fica na máquina articulada');
   const aliases = require('../public/aliases');
   const fichaVelha = {
@@ -136,7 +128,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   const conflitos = await sql.prepare('SELECT nome FROM exercise_videos WHERE personal_id=? AND ready=1 AND nome IN (?,?) ORDER BY nome').all(pidRename, 'Abdominal crunch no colchonete', 'Abdominal supra no colchonete');
   ok(conflitos.map(r => r.nome).join('|') === 'Abdominal crunch no colchonete|Abdominal supra no colchonete', 'se o nome novo já existe, o índice único do vídeo fica intacto');
   const listaRename = await videosMod.lista(pidRename);
-  ok(listaRename.custom['Remada serrote com halter'] && listaRename.custom['Serrote com halter'] === listaRename.custom['Remada serrote com halter'] && listaRename.defaults['Remada serrote com halter'] === '/videos/remada-serrote-com-halter.mp4' && listaRename.defaults['Serrote com halter'] === listaRename.defaults['Remada serrote com halter'], 'a lista entrega o vídeo no nome novo e no antigo');
+  ok(listaRename.custom['Remada serrote com halter'] && listaRename.custom['Serrote com halter'] === listaRename.custom['Remada serrote com halter'] && Object.keys(listaRename.defaults).length === 0, 'a lista entrega o vídeo do personal no nome novo e no antigo, sem o de demonstração');
   await sql.migrate();
   ok((await sql.prepare("SELECT value FROM settings WHERE key='rename_br_v1'").get()).value === '1' && (await sql.prepare('SELECT nome FROM exercise_videos WHERE id=?').get(vidRename)).nome === 'Remada serrote com halter', 'rodar a migração de novo não duplica o vídeo');
   await sql.prepare('DELETE FROM exercise_video_parts WHERE video_id IN (SELECT id FROM exercise_videos WHERE personal_id=?)').run(pidRename);
@@ -157,7 +149,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const recorte = faixa.headers.get('content-range') || '';
     const aceita = (faixa.headers.get('accept-ranges') || '').toLowerCase();
     const pedacoVid = Buffer.from(await faixa.arrayBuffer());
-    ok(faixa.status === 206 && tipoVid.startsWith('video/mp4') && recorte.startsWith('bytes 0-1023/') && aceita === 'bytes' && pedacoVid.length === 1024, 'o vídeo padrão sai como video/mp4 e responde Range');
+    ok(faixa.status === 206 && tipoVid.startsWith('video/mp4') && recorte.startsWith('bytes 0-1023/') && aceita === 'bytes' && pedacoVid.length === 1024, 'o mp4 de demonstração continua no disco e responde Range');
     // ---- personal
     const ctxP = await browser.createBrowserContext(), p = await ctxP.newPage(); await p.setViewport(phone);
     p.on('pageerror', e => console.error('erro na página (personal):', e.message));
@@ -205,7 +197,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       return { n: exs.length, nomes: exs.map(e => e.n), series: exs.map(e => e.s), sub: exs[0].sub, swap: f.plan.swapHoje.blocos[0].ex[0].n, adj: f.adj[0], equip: f.equip, semBarra, comBarra, comHack, comEscada, comFlex, how: how.exec, vidPadrao, vidCustom, noCatalogo: (EX.costas || []).some(x => x.n === "Remada serrote com halter") };
     })();` });
     const aliasUi = await p.evaluate(() => window.__aliasFicha);
-    ok(aliasUi && aliasUi.n === 12 && aliasUi.series.join(',') === '3,4,3,1,3,3,3,1,2,2,1,2' && aliasUi.nomes[0] === 'Remada serrote com halter' && aliasUi.nomes.includes('Abdominal supra no colchonete') && aliasUi.nomes.includes('Simulador de escada') && aliasUi.nomes.includes('Crucifixo invertido no voador') && aliasUi.nomes.includes('Ostra com elástico') && aliasUi.nomes.includes('Caminhada lateral com miniband') && aliasUi.nomes.includes('Agachamento isométrico na parede (cadeirinha)') && aliasUi.nomes.includes('Suspensão na barra (dead hang)') && aliasUi.nomes.includes('Good morning com barra') && aliasUi.nomes.includes("World's greatest stretch (afundo com rotação)") && aliasUi.nomes.includes('Supino reto com barra') && aliasUi.nomes.includes('Prancha abdominal') && aliasUi.sub === 'Troquei Serrote com halter' && aliasUi.swap === 'Good morning com barra' && aliasUi.adj === 'Troquei Serrote com halter por outro' && aliasUi.equip.includes('Barra e anilhas') && !aliasUi.equip.includes('Barra livre') && aliasUi.equip.includes('Hack machine') && aliasUi.equip.includes('Simulador de escada') && !aliasUi.semBarra && aliasUi.comBarra && aliasUi.comHack && aliasUi.comEscada && aliasUi.comFlex && /Puxe o halter/.test(aliasUi.how) && aliasUi.vidPadrao === '/videos/remada-serrote-com-halter.mp4' && aliasUi.vidCustom === '/api/exercise-videos/9/file' && aliasUi.noCatalogo, 'ficha com nomes antigos carrega aparelho, exercício, vídeo e passo a passo, sem sumir nada');
+    ok(aliasUi && aliasUi.n === 12 && aliasUi.series.join(',') === '3,4,3,1,3,3,3,1,2,2,1,2' && aliasUi.nomes[0] === 'Remada serrote com halter' && aliasUi.nomes.includes('Abdominal supra no colchonete') && aliasUi.nomes.includes('Simulador de escada') && aliasUi.nomes.includes('Crucifixo invertido no voador') && aliasUi.nomes.includes('Ostra com elástico') && aliasUi.nomes.includes('Caminhada lateral com miniband') && aliasUi.nomes.includes('Agachamento isométrico na parede (cadeirinha)') && aliasUi.nomes.includes('Suspensão na barra (dead hang)') && aliasUi.nomes.includes('Good morning com barra') && aliasUi.nomes.includes("World's greatest stretch (afundo com rotação)") && aliasUi.nomes.includes('Supino reto com barra') && aliasUi.nomes.includes('Prancha abdominal') && aliasUi.sub === 'Troquei Serrote com halter' && aliasUi.swap === 'Good morning com barra' && aliasUi.adj === 'Troquei Serrote com halter por outro' && aliasUi.equip.includes('Barra e anilhas') && !aliasUi.equip.includes('Barra livre') && aliasUi.equip.includes('Hack machine') && aliasUi.equip.includes('Simulador de escada') && !aliasUi.semBarra && aliasUi.comBarra && aliasUi.comHack && aliasUi.comEscada && aliasUi.comFlex && /Puxe o halter/.test(aliasUi.how) && aliasUi.vidPadrao === '' && aliasUi.vidCustom === '/api/exercise-videos/9/file' && aliasUi.noCatalogo, 'ficha com nomes antigos carrega aparelho, exercício, vídeo e passo a passo, sem sumir nada');
     await p.screenshot({ path: SHOTS + '/01-login-aluno.png' });
     await p.waitForSelector('#baixarApp');
     const baixarLogin = await p.evaluate(() => {
@@ -241,9 +233,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v44/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), fora: /pathname\.startsWith\("\/videos\/"\)/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v45/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), fora: /pathname\.startsWith\("\/videos\/"\)/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.fora && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v44 sem pré-cache de vídeo');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.fora && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v45 sem pré-cache de vídeo');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -565,7 +557,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       if (!n || n.hidden || !v || v.hidden || v.getAttribute('src') !== '/api/tutoriais/videos') return false;
       if (!(v.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
       const t = n.textContent || '';
-      return /Vídeos seus/.test(t) && /30 segundos/.test(t) && /sem espaço vazio/.test(t);
+      return /Vídeos seus/.test(t) && /30 segundos/.test(t) && /YouTube/.test(t) && /execução/.test(t) && !/vídeo padrão|sem espaço vazio/.test(t);
     });
     const exVidTut = await p.evaluate(async () => { const r = await fetch('/api/tutoriais/videos', { headers: { Range: 'bytes=0-1' } }); return { s: r.status, t: r.headers.get('content-type') || '' }; });
     ok((exVidTut.s === 206 || exVidTut.s === 200) && /mp4/.test(exVidTut.t), 'o item Vídeos dos exercícios toca o vídeo e mantém o passo a passo abaixo');
@@ -783,44 +775,19 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const see = async () => { await a.reload({ waitUntil: 'networkidle0' }); await a.waitForFunction(() => typeof S !== 'undefined' && S && S.plan && S.status === 'aprovado'); await a.evaluate(t => { window.__fakeNow = t; render(); }, MON); await a.waitForSelector('#statusCard'); };
     await see();
     ok(/Core de segunda/.test(await a.$eval('#statusCard', e => e.innerText)) && /Core de segunda/.test(await a.$eval('#hdrDia', e => e.textContent)) && /6 série/.test(await a.$eval('#statusCard', e => e.innerText)) && !/Cardio de sábado/.test(await a.$eval('#statusCard', e => e.innerText)), 'aba Dia do aluno mostra o treino personalizado de hoje');
-    await a.click('.detBtn'); await a.waitForSelector('#detDrawer.open');
-    ok(/Como fazer/.test(await a.$eval('#detDrawer', e => e.innerText)) && !/YouTube|Ver vídeo/.test(await a.$eval('#detDrawer', e => e.innerText)), 'Detalhes abre no exercício do dia personalizado, sem busca no YouTube');
+    await a.click('.detBtn'); await a.waitForSelector('#detDrawer.open a.dvid');
     const nomeVid = await a.$eval('#detDrawer h3', e => e.textContent.trim());
-    const semNome = await a.evaluate(async () => {
-      if (typeof loadExVid === 'function') await loadExVid();
-      const defs = (window.__EXVID && window.__EXVID.defaults) || {};
-      const nomes = [...document.querySelectorAll('#statusCard .ex b')].map(b => b.textContent.trim()).filter(Boolean);
-      return nomes.find(n => !defs[n]) || '';
-    });
-    await a.evaluate(() => closeDet());
-    await a.evaluate(nome => {
-      const b = [...document.querySelectorAll('#statusCard .detBtn')].find(btn => {
-        const ex = btn.closest('.ex');
-        return ex && ex.querySelector('b') && ex.querySelector('b').textContent.trim() === nome;
+    const yt0 = await a.$eval('#detDrawer a.dvid', el => el.getAttribute('href'));
+    const ytTodos = await a.evaluate(() => {
+      const nomes = [];
+      Object.keys(EX).forEach(g => (EX[g] || []).forEach(x => { if (x && x.n && !nomes.includes(x.n)) nomes.push(x.n); }));
+      return nomes.length >= 200 && nomes.every(n => {
+        const html = detHTML({ n, g: 'peito', s: 3, r: '10', d: '60s' });
+        const q = encodeURIComponent(String(n).trim() + ' execução');
+        return html.includes('https://www.youtube.com/results?search_query=' + q) && !html.includes('/videos/');
       });
-      if (!b) throw new Error('sem exercício sem vídeo');
-      b.click();
-    }, semNome);
-    await a.waitForSelector('#detDrawer.open');
-    ok(!!semNome && semNome !== nomeVid && !(await a.$('#detDrawer .dvidBox')), 'sem vídeo pronto a gaveta não deixa espaço vazio');
-    await a.evaluate(() => closeDet());
-    videoTeste = path.join(__dirname, '..', 'public', 'videos', videosMod.slug(nomeVid) + '.mp4');
-    videoTesteNovo = !fs.existsSync(videoTeste);
-    if (videoTesteNovo) {
-      const ff = spawnSync('ffmpeg', ['-y', '-f', 'lavfi', '-i', 'testsrc=size=270x480:rate=12:duration=2', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-movflags', '+faststart', videoTeste], { encoding: 'utf8' });
-      if (ff.status !== 0) throw new Error('ffmpeg: ' + String(ff.stderr || ff.stdout || '').slice(-500));
-    }
-    const mapa0 = await a.evaluate(() => loadExVid());
-    ok(!!(mapa0 && mapa0.defaults && mapa0.defaults[nomeVid]), 'o arquivo em public/videos entra no mapa do exercício');
-    await a.evaluate(() => closeDet());
-    await a.evaluate(() => document.querySelector('.detBtn').click());
-    await a.waitForSelector('#detDrawer .dvidBox video', { timeout: 8000 });
-    await a.waitForFunction(() => { const v = document.querySelector('#detDrawer video'); return v && v.readyState >= 2; });
-    const vidInfo = await a.evaluate(() => {
-      const v = document.querySelector('#detDrawer video'), r = v.getBoundingClientRect();
-      return { muted: v.muted, loop: v.loop, inline: v.hasAttribute('playsinline'), pre: v.getAttribute('preload'), auto: v.autoplay, src: v.getAttribute('src'), w: r.width, h: r.height, marca: document.querySelector('.dvidMarca').textContent, yt: !!document.querySelector('#detDrawer a[href*="youtube"]') };
     });
-    ok(vidInfo.muted && vidInfo.loop && vidInfo.inline && vidInfo.pre === 'metadata' && vidInfo.auto && /\/videos\/.+\.mp4$/.test(vidInfo.src) && vidInfo.w >= 160 && vidInfo.w <= 230 && vidInfo.h > vidInfo.w * 1.5 && vidInfo.marca === 'Shape de Qualidade' && !vidInfo.yt, 'o vídeo padrão entra mudo, em loop, vertical e com a marca, sem ocupar a gaveta toda');
+    ok(/Como fazer/.test(await a.$eval('#detDrawer', e => e.innerText)) && ytTodos && yt0 === 'https://www.youtube.com/results?search_query=' + encodeURIComponent(nomeVid + ' execução') && !(await a.$('#detDrawer video')) && !(await a.$('#detDrawer .dvidBox')), 'Detalhes abre a busca no YouTube em todo o catálogo e não toca o vídeo de demonstração');
     if (fs.existsSync('/opt/cursor/artifacts')) {
       const dv = await ctxA.newPage();
       await dv.setViewport({ width: 1100, height: 800, deviceScaleFactor: 1 });
@@ -828,20 +795,19 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       await dv.waitForFunction(() => typeof S !== 'undefined' && S && S.plan && S.status === 'aprovado');
       await dv.evaluate(t => { window.__fakeNow = t; render(); }, MON);
       await dv.waitForSelector('.detBtn');
-      await dv.evaluate(() => loadExVid());
       await dv.evaluate(() => document.querySelector('.detBtn').click());
-      await dv.waitForFunction(() => {
-        const v = document.querySelector('#detDrawer .dvidBox video');
-        if (!v || v.readyState < 2) return false;
-        v.muted = true; const p = v.play(); if (p && p.catch) p.catch(() => {});
-        const r = v.getBoundingClientRect();
-        return r.width >= 160 && r.height > r.width && r.left >= 0 && r.right <= window.innerWidth + 1;
-      });
+      await dv.waitForSelector('#detDrawer a.dvid');
       await sleep(400);
       await dv.screenshot({ path: '/opt/cursor/artifacts/detalhe_video.png' });
       await dv.close();
     }
     await a.evaluate(() => closeDet());
+    videoTeste = path.join('/tmp', 'sq-e2e-exercicio.mp4');
+    videoTesteNovo = true;
+    if (!fs.existsSync(videoTeste)) {
+      const ff = spawnSync('ffmpeg', ['-y', '-f', 'lavfi', '-i', 'testsrc=size=270x480:rate=12:duration=2', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-movflags', '+faststart', videoTeste], { encoding: 'utf8' });
+      if (ff.status !== 0) throw new Error('ffmpeg: ' + String(ff.stderr || ff.stdout || '').slice(-500));
+    }
     await p.evaluate(() => { const s = document.querySelector('#vidSec'); s.open = true; });
     await p.waitForSelector('#vidBusca');
     await p.evaluate(nome => { const el = document.querySelector('#vidBusca'); el.value = nome; el.dispatchEvent(new Event('input', { bubbles: true })); }, nomeVid);
@@ -851,7 +817,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await (await p.$('#vidFile')).uploadFile(videoTeste);
     await p.click('#vidGo');
     await p.waitForFunction(() => /Enviado/.test((document.querySelector('#vidMsg') || {}).textContent || ''), { timeout: 20000 });
-    ok(/no lugar do padrão/.test(await p.$eval('#vidSec', e => e.innerText)), 'Vídeos seus lista o vídeo que substitui o padrão');
+    ok(/YouTube/.test(await p.$eval('#vidSec', e => e.innerText)) && !/vídeo padrão|no lugar do padrão/.test(await p.$eval('#vidSec', e => e.innerText)), 'Vídeos seus lista o vídeo do personal, sem o de demonstração');
     if (fs.existsSync('/opt/cursor/artifacts')) {
       const gv = await ctxP.newPage();
       await gv.setViewport({ width: 420, height: 1100, deviceScaleFactor: 2 });
@@ -870,14 +836,15 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       await gv.close();
     }
     const mapa = await a.evaluate(() => loadExVid());
-    ok(mapa.custom[nomeVid] && /\/api\/exercise-videos\/\d+\/file$/.test(mapa.custom[nomeVid]) && mapa.defaults[nomeVid] && /\/videos\//.test(mapa.defaults[nomeVid]) && (!mapa.meus || mapa.meus.length === 0), 'o aluno recebe o vídeo do personal e o padrão, sem a lista de edição');
+    ok(mapa.custom[nomeVid] && /\/api\/exercise-videos\/\d+\/file$/.test(mapa.custom[nomeVid]) && !mapa.defaults[nomeVid] && (!mapa.meus || mapa.meus.length === 0), 'o aluno recebe o vídeo do personal, sem o de demonstração e sem a lista de edição');
     await a.evaluate(() => document.querySelector('.detBtn').click());
-    await a.waitForFunction(() => /\/api\/exercise-videos\//.test((document.querySelector('#detDrawer video') || {}).getAttribute ? document.querySelector('#detDrawer video').getAttribute('src') : ''));
-    ok(true, 'na ficha do aluno o vídeo do personal substitui o padrão');
+    await a.waitForFunction(() => /\/api\/exercise-videos\//.test((document.querySelector('#detDrawer video') || {}).getAttribute ? document.querySelector('#detDrawer video').getAttribute('src') : '') && /youtube\.com\/results\?search_query=/.test((document.querySelector('#detDrawer a.dvid') || {}).getAttribute ? document.querySelector('#detDrawer a.dvid').getAttribute('href') : ''));
+    ok(true, 'na ficha do aluno o vídeo do personal aparece junto com a busca no YouTube');
     await a.evaluate(() => closeDet());
     await p.evaluate(nome => { const b = [...document.querySelectorAll('#persCard .detBtn')].find(btn => { const ex = btn.closest('.ex'); return ex && ex.querySelector('b') && ex.querySelector('b').textContent === nome; }); if (!b) throw new Error('sem detalhes'); b.click(); }, nomeVid);
     await p.waitForSelector('#detDrawer.open video');
-    ok(/\/api\/exercise-videos\//.test(await p.$eval('#detDrawer video', v => v.getAttribute('src'))), 'o personal vê o mesmo vídeo ao abrir Detalhes na ficha');
+    const detPers = await p.evaluate(() => ({ src: document.querySelector('#detDrawer video').getAttribute('src'), href: document.querySelector('#detDrawer a.dvid').getAttribute('href') }));
+    ok(/\/api\/exercise-videos\//.test(detPers.src) && /youtube\.com\/results\?search_query=/.test(detPers.href), 'o personal vê o mesmo vídeo e a busca no YouTube');
     await p.evaluate(() => closeDet());
     const idVid = mapa.custom[nomeVid].match(/(\d+)\/file$/)[1];
     const longo = await p.evaluate(async (nome) => { const r = await fetch('/api/personal/exercise-videos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, mime: 'video/mp4', duration_ms: 31000, bytes: 8, seq: 0, total: 1, data: 'AAAA' }) }); return { st: r.status, j: await r.json() }; }, nomeVid);
@@ -899,22 +866,19 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     await sql.prepare('DELETE FROM personals WHERE id=?').run(oid);
     ok(!(await sql.prepare('SELECT id FROM exercise_videos WHERE personal_id=?').get(oid)) && !(await sql.prepare('SELECT video_id FROM exercise_video_parts WHERE video_id=?').get(sobeJ.id)), 'apagar a conta do personal apaga os vídeos');
     const nome2 = nomeVid === 'Prancha abdominal' ? 'Elevação de pernas deitado' : 'Prancha abdominal';
-    const segundo = await p.evaluate(async (nome, origem) => {
-      const src = (window.__EXVID && window.__EXVID.defaults && window.__EXVID.defaults[origem]) || '';
-      const buf = await (await fetch(src)).arrayBuffer();
-      const bytes = new Uint8Array(buf);
-      let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
-      const r = await fetch('/api/personal/exercise-videos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, mime: 'video/mp4', duration_ms: 2000, bytes: bytes.length, seq: 0, total: 1, data: btoa(s) }) });
+    const pedaco2 = fs.readFileSync(videoTeste).toString('base64');
+    const segundo = await p.evaluate(async (nome, data, n) => {
+      const r = await fetch('/api/personal/exercise-videos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, mime: 'video/mp4', duration_ms: 2000, bytes: n, seq: 0, total: 1, data }) });
       const j = await r.json();
-      return { st: r.status, id: j.id, erro: j.error || '', n: bytes.length, src: !!src };
-    }, nome2, nomeVid);
+      return { st: r.status, id: j.id, erro: j.error || '', n };
+    }, nome2, pedaco2, fs.statSync(videoTeste).size);
     ok(segundo.st === 200 && segundo.id && segundo.n > 0 && segundo.n <= 300 * 1024, 'dá para enviar um segundo vídeo');
     await p.evaluate(() => { const s = document.querySelector('#vidSec'); if (s) s.open = true; });
     await p.evaluate(() => loadExVid());
     await p.waitForFunction(() => [...document.querySelectorAll('[data-vidrm]')].length >= 2);
     await p.evaluate(id => { const b = [...document.querySelectorAll('[data-vidrm]')].find(x => x.getAttribute('data-vidrm') === String(id)); b.click(); }, segundo.id);
     await p.waitForFunction(() => /Removido/.test((document.querySelector('#vidMsg') || {}).textContent || ''));
-    ok(!(await sql.prepare('SELECT id FROM exercise_videos WHERE id=?').get(segundo.id)) && !!(await sql.prepare('SELECT id FROM exercise_videos WHERE id=? AND ready=1').get(idVid)), 'remover volta aquele exercício ao padrão e mantém os outros vídeos');
+    ok(!(await sql.prepare('SELECT id FROM exercise_videos WHERE id=?').get(segundo.id)) && !!(await sql.prepare('SELECT id FROM exercise_videos WHERE id=? AND ready=1').get(idVid)), 'remover tira o vídeo do personal e mantém o outro');
     await a.evaluate(() => document.querySelector('#detOv').click());
     const hack = await a.evaluate(async (u) => { const F = await (await fetch('/api/me')).json(); F.ficha.plan.split = { custom: true, days: [{ w: 1, label: 'HACK', gs: ['peito'] }] }; F.ficha.plan.treinos[0].nome = 'HACK'; await fetch('/api/ficha/' + u, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(F.ficha) }); return (await (await fetch('/api/me')).json()).ficha.plan.treinos[0].nome; }, pamU);
     ok(hack === 'Core de segunda', 'aluno não consegue trocar a divisão gravada pelo personal');
@@ -994,18 +958,11 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       if (d) d.open = true;
       ex.querySelector('.detBtn').click();
     });
-    await p.waitForSelector('#detDrawer.open video');
-    await p.waitForFunction(() => {
-      const v = document.querySelector('#detDrawer video');
-      if (!v) return false;
-      v.muted = true;
-      const play = v.play();
-      if (play && play.catch) play.catch(() => {});
-      return v.readyState >= 2 && !v.paused && v.currentTime > 0 && /\/videos\/puxada-frontal-no-pulley\.mp4$/.test(v.getAttribute('src') || '');
-    });
-    ok(/Puxada frontal no pulley/.test(await p.$eval('#detDrawer h3', e => e.textContent)) && /\/videos\/puxada-frontal-no-pulley\.mp4$/.test(await p.$eval('#detDrawer video', v => v.getAttribute('src'))) && await p.$eval('#detDrawer video', v => v.muted && !v.paused), 'a gaveta de Detalhes toca o vídeo da Puxada frontal no pulley');
+    await p.waitForSelector('#detDrawer.open a.dvid');
+    const ytPuxada = await p.$eval('#detDrawer a.dvid', el => el.getAttribute('href'));
+    ok(/Puxada frontal no pulley/.test(await p.$eval('#detDrawer h3', e => e.textContent)) && ytPuxada === 'https://www.youtube.com/results?search_query=' + encodeURIComponent('Puxada frontal no pulley execução') && !(await p.$('#detDrawer video')), 'a gaveta de Detalhes abre a busca no YouTube da Puxada frontal no pulley');
     if (fs.existsSync('/opt/cursor/artifacts')) {
-      await p.evaluate(() => { const v = document.querySelector('#detDrawer video'); if (v) v.scrollIntoView({ block: 'center' }); });
+      await p.evaluate(() => { const a = document.querySelector('#detDrawer a.dvid'); if (a) a.scrollIntoView({ block: 'center' }); });
       await sleep(300);
       await p.screenshot({ path: '/opt/cursor/artifacts/gaveta_puxada.png' });
     }

@@ -500,8 +500,8 @@ const TUTO_TEXTO = {
 <li><b>Privacidade.</b> Só você, o personal desse aluno, vê as fotos. Apagar aluno também apaga as avaliações e as fotos.</li>
 </ol>`,
   videos: `<ol>
-<li><b>Ver o movimento.</b> Em Detalhes, o vídeo fica logo abaixo do título, sem som, e fica repetindo. Se o exercício ainda não tem vídeo, a gaveta continua igual, sem espaço vazio.</li>
-<li><b>Vídeos seus.</b> No painel, abra Vídeos seus, busque o exercício e envie um vídeo de até 30 segundos. Ele substitui o padrão só para os seus alunos. Remover volta ao vídeo padrão. Apagar um aluno não apaga esses vídeos.</li>
+<li><b>Ver o movimento.</b> Em Detalhes, toque em Ver vídeo. Abre uma busca no YouTube com o nome do exercício e a palavra execução.</li>
+<li><b>Vídeos seus.</b> No painel, abra Vídeos seus, busque o exercício e envie um vídeo de até 30 segundos. Ele aparece para os seus alunos, junto com o botão do YouTube. Remover tira só o seu vídeo. Apagar um aluno não apaga esses vídeos.</li>
 </ol>`,
 };
 function tutoBox() {
@@ -816,8 +816,8 @@ function paintVid() {
   const hits = nomes.filter(n => !q || norm(n).includes(q)).slice(0, 8);
   const v = window.__EXVID || {};
   const meus = v.meus || [];
-  const lista = meus.length ? meus.map(it => `<div class="viditem"><span><b>${esc(it.nome)}</b><small> · ${Math.max(1, Math.round(it.duration_ms / 1000))} s${v.defaults && v.defaults[it.nome] ? " · no lugar do padrão" : ""}</small></span><button type="button" class="btn sm sec" data-vidrm="${it.id}">Remover</button></div>`).join("") : `<p class="avMut">Nenhum vídeo seu ainda. Os alunos veem o padrão, quando houver.</p>`;
-  body.innerHTML = `<p>O vídeo padrão vale para todo mundo. O seu aparece só para os seus alunos.</p>
+  const lista = meus.length ? meus.map(it => `<div class="viditem"><span><b>${esc(it.nome)}</b><small> · ${Math.max(1, Math.round(it.duration_ms / 1000))} s</small></span><button type="button" class="btn sm sec" data-vidrm="${it.id}">Remover</button></div>`).join("") : `<p class="avMut">Nenhum vídeo seu ainda. Os alunos veem a busca no YouTube.</p>`;
+  body.innerHTML = `<p>O seu vídeo aparece só para os seus alunos, junto com o botão do YouTube.</p>
   <input id="vidBusca" type="search" placeholder="Buscar exercício" value="${esc(vidQ)}">
   <div class="vidhits">${hits.length ? hits.map(n => `<button type="button" class="btn sm sec${n === vidSel ? " on" : ""}" data-vidn="${esc(n)}">${esc(n)}</button>`).join("") : `<p>Nenhum exercício com esse nome.</p>`}</div>
   <p id="vidEscolha">${vidSel ? "Exercício: <b>" + esc(vidSel) + "</b>" : "Escolha um exercício."}</p>
@@ -836,13 +836,13 @@ function paintVid() {
     if (!vidSel) return msg("Escolha um exercício.");
     if (!file) return msg("Escolha um vídeo.");
     go.disabled = true;
-    try { await enviarVideoPersonal(vidSel, file); msg("Enviado. Seus alunos veem este vídeo no lugar do padrão.", 1); }
+    try { await enviarVideoPersonal(vidSel, file); msg("Enviado. Seus alunos veem este vídeo em Detalhes.", 1); }
     catch (e) { msg(e.message); if (go) go.disabled = false; }
   };
   body.querySelectorAll("[data-vidrm]").forEach(b => { b.onclick = async () => {
     const msg = (t, ok) => { const el = $("#vidMsg"); if (el) el.innerHTML = `<span class="${ok ? "avOkMsg" : "avErr"}">${esc(t)}</span>`; };
     b.disabled = true;
-    try { await api("/api/personal/exercise-videos/" + b.getAttribute("data-vidrm"), null, "DELETE"); await loadExVid(); msg("Removido. Volta o vídeo padrão, se houver.", 1); }
+    try { await api("/api/personal/exercise-videos/" + b.getAttribute("data-vidrm"), null, "DELETE"); await loadExVid(); msg("Removido. Em Detalhes fica a busca no YouTube.", 1); }
     catch (e) { msg(e.message); b.disabled = false; }
   }; });
 }
