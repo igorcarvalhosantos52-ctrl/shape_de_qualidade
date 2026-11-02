@@ -3,7 +3,7 @@
 const $=s=>document.querySelector(s);
 const KEY="coachvoz_v1";
 const AKEY="sq_alunos",SESS="sq_sessao";let curUser=localStorage.getItem(SESS)||null,viewing=null,CK=null;
-const EQUIP=["Halteres","Barra e anilhas","Banco","Leg press","Cadeira extensora","Mesa flexora","Polia/Crossover","Máquina de supino","Puxador (pulley)","Smith","Esteira","Bicicleta ergométrica","Elásticos","Kettlebell","Colchonete","Máquinas articuladas","Barra fixa/Paralelas","Cadeira abdutora/adutora","Voador (peck deck)","Hack machine","Banco romano","Cadeira flexora","Bola suíça","Elíptico","Remo ergômetro","Simulador de escada","Corda de pular"];
+const EQUIP=["Halteres","Barra e anilhas","Banco","Leg press","Cadeira extensora","Mesa flexora","Polia/Crossover","Máquina de supino","Puxador (pulley)","Smith","Esteira","Bicicleta ergométrica","Elásticos","Kettlebell","Colchonete","Máquinas articuladas","Barra fixa/Paralelas","Cadeira abdutora/adutora","Voador (peck deck)","Hack machine","Banco romano","Cadeira flexora","Bola suíça","Elíptico","Remo ergômetro","Simulador de escada","Corda de pular","Hand grip","Roda abdominal"];
 // Dicionário de gírias / regionalismos -> termo normalizado
 const SLANG=[
  [/\b(joei|joelio|juelho|jueio)\b/g,"joelho"],[/\b(ombrinho|omb)\b/g,"ombro"],[/\b(lombar|cacunda|costa baixa|espinhela|coluna)\b/g,"lombar"],
@@ -284,7 +284,8 @@ const EX={
   {n:"Flexão de braço inclinada (mãos no banco)",e:"Banco",t:"punho"},
   {n:"Flexão de braço declinada (pés elevados)",e:"Banco",t:"punho ombro"},
   {n:"Mergulho nas paralelas (peito)",e:"Barra fixa/Paralelas",t:"ombro"},
-  {n:"Supino reto com halteres pegada neutra",e:"Halteres"}
+  {n:"Supino reto com halteres pegada neutra",e:"Halteres"},
+  {n:"Pullover com halter",e:"Halteres",t:"ombro"}
  ],
  triceps:[
   {n:"Tríceps na polia (corda)",e:"Polia/Crossover",j:"Baixo estresse no cotovelo"},
@@ -304,7 +305,8 @@ const EX={
   {n:"Tríceps na máquina",e:"Máquinas articuladas"},
   {n:"Mergulho nas paralelas (tríceps)",e:"Barra fixa/Paralelas",t:"ombro"},
   {n:"Flexão de braço fechada (diamante)",e:null,t:"punho"},
-  {n:"Tríceps coice na polia",e:"Polia/Crossover"}
+  {n:"Tríceps coice na polia",e:"Polia/Crossover"},
+  {n:"Tríceps francês com barra W",e:"Barra e anilhas",t:"ombro cotovelo"}
  ],
  antebraco:[
   {n:"Rosca punho com halter",e:"Halteres",t:"punho"},
@@ -317,7 +319,12 @@ const EX={
   {n:"Rosca punho na polia",e:"Polia/Crossover",t:"punho"},
   {n:"Rolo de punho (wrist roller)",e:null,t:"punho ombro"},
   {n:"Pegada de pinça com anilhas",e:"Barra e anilhas"},
-  {n:"Suspensão na barra (dead hang)",e:"Barra fixa/Paralelas",t:"ombro"}
+  {n:"Suspensão na barra (dead hang)",e:"Barra fixa/Paralelas",t:"ombro"},
+  {n:"Rosca inversa com barra",e:"Barra e anilhas",t:"punho cotovelo"},
+  {n:"Rosca inversa com halteres",e:"Halteres",t:"cotovelo"},
+  {n:"Rosca punho invertida com barra",e:"Barra e anilhas",t:"punho"},
+  {n:"Rosca punho por trás do corpo com barra",e:"Barra e anilhas",t:"punho"},
+  {n:"Hand grip",e:"Hand grip",t:"punho"}
  ],
  costas:[
   {n:"Puxada frontal no pulley",e:"Puxador (pulley)"},
@@ -348,7 +355,10 @@ const EX={
   {n:"Remada com halteres no banco inclinado",e:"Halteres"},
   {n:"Remada serrote com halter",e:"Halteres"},
   {n:"Hiperextensão lombar no banco romano",e:"Banco romano",t:"lombar"},
-  {n:"Encolhimento com halteres",e:"Halteres",t:"pescoco"}
+  {n:"Encolhimento com halteres",e:"Halteres",t:"pescoco"},
+  {n:"Levantamento terra com barra",e:"Barra e anilhas",t:"lombar pesado"},
+  {n:"Encolhimento com barra",e:"Barra e anilhas",t:"pescoco"},
+  {n:"Superman (extensão lombar no solo)",e:"Colchonete",t:"lombar"}
  ],
  biceps:[
   {n:"Rosca alternada com halteres",e:"Halteres"},
@@ -392,7 +402,9 @@ const EX={
   {n:"Crucifixo invertido no voador",e:"Voador (peck deck)",t:"ombro"},
   {n:"Crucifixo invertido na polia",e:"Polia/Crossover",t:"ombro"},
   {n:"Remada alta na polia (pegada aberta)",e:"Polia/Crossover",t:"ombro"},
-  {n:"Rotação externa na polia",e:"Polia/Crossover"}
+  {n:"Rotação externa na polia",e:"Polia/Crossover"},
+  {n:"Desenvolvimento militar com barra em pé",e:"Barra e anilhas",t:"ombro lombar pesado"},
+  {n:"Remada alta com barra",e:"Barra e anilhas",t:"ombro punho"}
  ],
  quad:[
   {n:"Agachamento livre com barra",e:"Barra e anilhas",t:"joelho lombar pesado"},
@@ -431,7 +443,12 @@ const EX={
   {n:"Panturrilha em pé na máquina",e:"Máquinas articuladas"},
   {n:"Panturrilha no hack",e:"Hack machine"},
   {n:"Elevação das pontas dos pés (tibial anterior)",e:null},
-  {n:"Panturrilha unilateral no degrau",e:null,t:"tornozelo"}
+  {n:"Panturrilha unilateral no degrau",e:null,t:"tornozelo"},
+  {n:"Panturrilha em pé com barra",e:"Barra e anilhas",t:"lombar"},
+  {n:"Panturrilha em pé com halteres",e:"Halteres"},
+  {n:"Panturrilha burrinho",e:"Máquinas articuladas",t:"lombar"},
+  {n:"Panturrilha sentado no Smith",e:"Smith"},
+  {n:"Panturrilha unilateral no leg press",e:"Leg press"}
  ],
  post:[
   {n:"Mesa flexora",e:"Mesa flexora"},
@@ -451,7 +468,9 @@ const EX={
   {n:"Stiff no Smith",e:"Smith",t:"lombar"},
   {n:"Levantamento terra com kettlebell",e:"Kettlebell",t:"lombar"},
   {n:"Flexão de joelho na bola suíça",e:"Bola suíça"},
-  {n:"Mesa flexora unilateral",e:"Mesa flexora"}
+  {n:"Mesa flexora unilateral",e:"Mesa flexora"},
+  {n:"Cadeira flexora unilateral",e:"Cadeira flexora"},
+  {n:"Flexão nórdica",e:"Colchonete",t:"joelho"}
  ],
  gluteo:[
   {n:"Elevação pélvica no banco",e:"Banco",j:"Glúteo forte estabiliza joelho e lombar"},
@@ -472,7 +491,9 @@ const EX={
   {n:"Agachamento sumô com kettlebell",e:"Kettlebell",t:"joelho"},
   {n:"Caminhada lateral com miniband",e:"Elásticos"},
   {n:"Recuo (afundo reverso) no Smith",e:"Smith",t:"joelho"},
-  {n:"Frog pump (elevação pélvica sapo)",e:"Colchonete"}
+  {n:"Frog pump (elevação pélvica sapo)",e:"Colchonete"},
+  {n:"Elevação pélvica no Smith",e:"Smith"},
+  {n:"Levantamento terra sumô",e:"Barra e anilhas",t:"lombar pesado"}
  ],
  abdomen:[
   {n:"Prancha abdominal",e:"Colchonete",j:"Estabiliza o tronco sem flexão repetida da lombar"},
@@ -490,7 +511,12 @@ const EX={
   {n:"Rotação de tronco na polia (lenhador)",e:"Polia/Crossover",t:"lombar"},
   {n:"Pallof press na polia",e:"Polia/Crossover"},
   {n:"Prancha com toque no ombro",e:"Colchonete",t:"punho ombro"},
-  {n:"Abdominal remador",e:"Colchonete",t:"lombar"}
+  {n:"Abdominal remador",e:"Colchonete",t:"lombar"},
+  {n:"Abdominal oblíquo no colchonete",e:"Colchonete",t:"pescoco"},
+  {n:"Abdominal no banco declinado",e:"Banco",t:"lombar"},
+  {n:"Abdominal com rodinha",e:"Roda abdominal",t:"lombar ombro"},
+  {n:"Perdigueiro (quatro apoios)",e:"Colchonete"},
+  {n:"Abdominal supra na bola suíça",e:"Bola suíça"}
  ],
  cardio:[
   {n:"Caminhada (esteira ou ao ar livre)",e:null,min:"20–40"},
@@ -502,7 +528,14 @@ const EX={
   {n:"Bicicleta horizontal",e:"Bicicleta ergométrica"},
   {n:"Caminhada inclinada na esteira",e:"Esteira"},
   {n:"Corda de pular",e:"Corda de pular",t:"impacto tornozelo joelho"},
-  {n:"Polichinelo",e:null,t:"impacto"}
+  {n:"Polichinelo",e:null,t:"impacto"},
+  {n:"Corrida na esteira",e:"Esteira",t:"impacto joelho tornozelo",min:"15–30"},
+  {n:"Corrida ao ar livre",e:null,t:"impacto joelho tornozelo",min:"20–40"},
+  {n:"Tiros na esteira (intervalado)",e:"Esteira",t:"impacto joelho tornozelo",min:"15–20"},
+  {n:"Spinning (bike indoor)",e:"Bicicleta ergométrica",min:"20–45"},
+  {n:"Burpee",e:null,t:"impacto joelho punho ombro"},
+  {n:"Skipping (corrida parada)",e:null,t:"impacto joelho"},
+  {n:"Escalador (mountain climber)",e:"Colchonete",t:"punho ombro"}
  ],
  mobilidade:[
   {n:"Gato-camelo no colchonete",e:"Colchonete",j:"Mobiliza a coluna com controle"},
@@ -515,7 +548,17 @@ const EX={
   {n:"Rotação torácica em quatro apoios",e:"Colchonete"},
   {n:"Mobilidade de tornozelo na parede",e:null},
   {n:"Alongamento de glúteo deitado (figura 4)",e:"Colchonete"},
-  {n:"Postura da criança (alongamento de costas)",e:"Colchonete",t:"joelho"}
+  {n:"Postura da criança (alongamento de costas)",e:"Colchonete",t:"joelho"},
+  {n:"Alongamento de quadríceps em pé",e:null,t:"joelho"},
+  {n:"Alongamento de panturrilha na parede",e:null},
+  {n:"Alongamento de tríceps (braço atrás da cabeça)",e:null,t:"ombro"},
+  {n:"Alongamento de ombro (braço cruzado à frente)",e:null},
+  {n:"Alongamento borboleta (adutores)",e:"Colchonete"},
+  {n:"Alongamento cervical (lateral do pescoço)",e:null,t:"pescoco"},
+  {n:"Alongamento joelhos ao peito (lombar)",e:"Colchonete"},
+  {n:"Circundução de ombros",e:null},
+  {n:"Alongamento de punho e antebraço",e:null},
+  {n:"Alongamento cobra (abdômen e lombar)",e:"Colchonete",t:"lombar"}
  ]
 };
 const GN={peito:"Peito",triceps:"Tríceps",antebraco:"Antebraço",costas:"Costas",biceps:"Bíceps",ombro:"Ombro",quad:"Quadríceps (anterior de coxa)",post:"Posterior de coxa e glúteo",pant:"Panturrilha",caminhada:"Caminhada",gluteo:"Glúteos",abdomen:"Abdômen",cardio:"Cardio",mobilidade:"Mobilidade",descanso:"Descanso"};
@@ -899,7 +942,50 @@ const HOW={
 "Rotação torácica em quatro apoios":["Em quatro apoios no colchonete, mãos abaixo dos ombros e joelhos abaixo do quadril, uma mão atrás da cabeça.","Leve o cotovelo em direção ao braço de apoio e depois gire o tronco abrindo o cotovelo para o teto; faça 8 a 10 de cada lado.","Girar o quadril junto, fazer rápido.","Movimento lento e sem forçar.","Coluna torácica e ombros"],
 "Mobilidade de tornozelo na parede":["De frente para a parede, pé da frente a cerca de um palmo dela, mãos apoiadas na parede.","Leve o joelho à frente até tocar a parede sem tirar o calcanhar do chão e volte; faça 10 de cada lado.","Tirar o calcanhar do chão, deixar o joelho cair para dentro.","Afaste o pé aos poucos conforme melhorar.","Tornozelo e panturrilha"],
 "Alongamento de glúteo deitado (figura 4)":["Deitado de costas, cruze um tornozelo sobre o joelho da outra perna.","Puxe a coxa de baixo em direção ao peito até sentir alongar o glúteo; segure 20 a 30 s e troque.","Tirar a cabeça e a lombar do chão, forçar o joelho.","Sem dor no joelho.","Glúteos e rotadores do quadril"],
-"Postura da criança (alongamento de costas)":["Ajoelhado no colchonete, sente sobre os calcanhares com os joelhos um pouco afastados.","Leve o tronco à frente estendendo os braços no chão e respire fundo por 20 a 30 s.","Forçar os joelhos, prender a respiração.","Coloque uma almofada se os joelhos incomodarem.","Dorsais, lombar e quadril"]
+"Postura da criança (alongamento de costas)":["Ajoelhado no colchonete, sente sobre os calcanhares com os joelhos um pouco afastados.","Leve o tronco à frente estendendo os braços no chão e respire fundo por 20 a 30 s.","Forçar os joelhos, prender a respiração.","Coloque uma almofada se os joelhos incomodarem.","Dorsais, lombar e quadril"],
+"Rosca inversa com barra":["Em pé, barra com pegada pronada (palmas para baixo) na largura dos ombros, cotovelos colados ao corpo.","Flexione os cotovelos subindo a barra até a altura do peito e desça devagar.","Balançar o tronco, abrir os cotovelos, deixar o punho dobrar.","Carga moderada; a barra W alivia o punho.","Braquiorradial, extensores do antebraço e bíceps"],
+"Rosca inversa com halteres":["Em pé, um halter em cada mão com as palmas para baixo, cotovelos ao lado do corpo.","Suba os halteres flexionando os cotovelos e desça devagar.","Usar impulso, girar o punho durante o movimento.","Carga leve a moderada; pare se o cotovelo doer.","Braquiorradial, extensores do antebraço e bíceps"],
+"Rosca punho invertida com barra":["Sentado, antebraços apoiados nas coxas ou no banco, barra com as palmas para baixo e punhos para fora do apoio.","Estenda os punhos levantando a barra e desça devagar.","Carga pesada demais, movimento curto e rápido.","Comece bem leve; evite se tiver dor no punho.","Extensores do antebraço"],
+"Rosca punho por trás do corpo com barra":["Em pé, barra atrás do corpo na altura do quadril, palmas viradas para trás, braços estendidos.","Flexione os punhos subindo a barra alguns centímetros e desça devagar, deixando a barra rolar até os dedos se quiser.","Dobrar os cotovelos, inclinar o tronco.","Carga moderada; evite se tiver dor no punho.","Flexores do antebraço"],
+"Hand grip":["Segure o hand grip com a mão toda, braço relaxado ao lado do corpo ou apoiado.","Feche a mão apertando as duas hastes até encostarem e abra devagar; faça as repetições e troque de mão.","Soltar de uma vez, usar mola forte demais no início.","Comece com mola leve; pare se o punho ou os dedos doerem.","Flexores dos dedos e do antebraço"],
+"Panturrilha em pé com barra":["Em pé, barra apoiada no trapézio, pés na largura do quadril, pontas dos pés num degrau ou anilha se quiser mais amplitude.","Suba na ponta dos pés o máximo possível, segure 1 s e desça devagar até alongar.","Dobrar os joelhos, quicar embaixo, movimento curto.","Carga moderada; use o Smith se tiver pouco equilíbrio.","Gastrocnêmio e sóleo"],
+"Panturrilha em pé com halteres":["Em pé, um halter em cada mão ao lado do corpo, pés na largura do quadril (pode usar um degrau).","Suba na ponta dos pés, segure 1 s no topo e desça devagar.","Balançar o tronco, quicar, não descer o calcanhar até o fim.","Apoie uma mão na parede se precisar de equilíbrio (use um halter só).","Gastrocnêmio e sóleo"],
+"Panturrilha burrinho":["Na máquina burrinho, quadril encaixado na almofada, tronco inclinado à frente com as mãos no apoio e pontas dos pés na plataforma.","Suba nas pontas dos pés o máximo possível e desça devagar até alongar bem a panturrilha.","Dobrar os joelhos, quicar embaixo, arredondar a lombar.","Carga moderada; mantenha o abdômen firme.","Gastrocnêmio e sóleo"],
+"Panturrilha sentado no Smith":["Sentado num banco sob o Smith, barra (com proteção/toalha) sobre as coxas perto dos joelhos, pontas dos pés num step.","Suba os calcanhares o máximo possível e desça devagar até alongar.","Movimento curto, quicar, tirar os pés do step.","Use uma espuma para proteger as coxas.","Sóleo e gastrocnêmio"],
+"Panturrilha unilateral no leg press":["Sentado no leg press, apenas a ponta de um pé na borda baixa da plataforma, joelho estendido sem travar.","Empurre a plataforma com a ponta do pé e volte devagar até alongar; troque de perna.","Dobrar o joelho, deixar o pé escorregar, soltar as travas de segurança.","Carga leve; mantenha as travas de segurança à mão.","Gastrocnêmio e sóleo"],
+"Corrida na esteira":["Suba na esteira parada, prenda a chave de segurança e comece caminhando para aquecer.","Aumente a velocidade até correr num ritmo em que ainda dá para falar frases curtas; mantenha pelo tempo indicado e desacelere no final.","Segurar nas laterais, passadas longas demais batendo o calcanhar.","Evite se tiver dor no joelho ou tornozelo; prefira bicicleta ou elíptico.","Condicionamento cardiovascular, pernas e glúteos"],
+"Corrida ao ar livre":["Use tênis adequado, aqueça caminhando 5 minutos.","Corra num ritmo confortável pelo tempo indicado e termine caminhando para desacelerar.","Começar rápido demais, correr em piso irregular sem atenção.","Hidrate-se e evite os horários mais quentes; pare se sentir dor.","Condicionamento cardiovascular, pernas e glúteos"],
+"Tiros na esteira (intervalado)":["Aqueça caminhando ou trotando 5 minutos na esteira com a chave de segurança presa.","Alterne tiros rápidos (ex.: 30 s) com recuperação caminhando (ex.: 1 min) pelo número de rodadas indicado.","Pular da esteira em movimento, tiros longos demais para o nível.","Exige bom condicionamento; iniciantes devem começar pela caminhada.","Condicionamento cardiovascular e gasto calórico"],
+"Spinning (bike indoor)":["Ajuste o banco na altura do quadril e o guidão; os pés presos no pedal.","Pedale alternando ritmo e carga (subidas e sprints) pelo tempo indicado.","Banco baixo demais, carga zero pedalando solto, joelho abrindo.","Comece com intensidade moderada; hidrate-se.","Condicionamento cardiovascular, quadríceps e glúteos"],
+"Burpee":["Em pé, pés na largura dos ombros.","Agache, apoie as mãos no chão, jogue os pés para trás em prancha, volte os pés e suba com um pequeno salto.","Deixar o quadril cair na prancha, aterrissar com o joelho travado.","Versão sem salto e sem flexão para iniciantes ou se tiver dor no joelho.","Corpo inteiro e condicionamento"],
+"Skipping (corrida parada)":["Em pé, tronco ereto, braços dobrados.","Corra no lugar elevando os joelhos até a altura do quadril, alternando rápido, pelo tempo indicado.","Inclinar o tronco para trás, pisar com o calcanhar.","Versão sem saltar (marcha) se tiver dor no joelho.","Condicionamento, flexores do quadril e panturrilhas"],
+"Escalador (mountain climber)":["Em posição de prancha alta, mãos abaixo dos ombros e corpo reto.","Leve um joelho em direção ao peito e troque rápido as pernas, alternando pelo tempo indicado.","Subir o quadril, deixar a lombar afundar.","Faça devagar se tiver dor no punho ou ombro.","Abdômen, ombros e condicionamento"],
+"Alongamento de quadríceps em pé":["Em pé, apoie uma mão na parede.","Dobre um joelho e segure o pé, levando o calcanhar em direção ao glúteo, joelhos alinhados; segure 20 a 30 s e troque.","Abrir o joelho para fora, arquear a lombar.","Não force se o joelho doer.","Quadríceps e flexores do quadril"],
+"Alongamento de panturrilha na parede":["De frente para a parede, mãos apoiadas, uma perna à frente dobrada e a outra estendida atrás.","Mantenha o calcanhar de trás no chão e leve o quadril à frente até alongar; segure 20 a 30 s e troque.","Tirar o calcanhar do chão, pé de trás virado para fora.","Leve e sem dor.","Gastrocnêmio e sóleo"],
+"Alongamento de tríceps (braço atrás da cabeça)":["Em pé ou sentado, eleve um braço e dobre o cotovelo, levando a mão para as costas.","Com a outra mão, puxe o cotovelo suavemente para trás da cabeça; segure 20 a 30 s e troque.","Forçar demais, inclinar o tronco.","Evite se tiver dor no ombro ao elevar o braço.","Tríceps e ombro"],
+"Alongamento de ombro (braço cruzado à frente)":["Em pé, leve um braço estendido à frente do peito.","Com a outra mão, puxe o braço em direção ao peito sem girar o tronco; segure 20 a 30 s e troque.","Subir o ombro, girar o tronco.","Leve e sem dor.","Deltoide posterior e parte de trás do ombro"],
+"Alongamento borboleta (adutores)":["Sentado no colchonete, junte as solas dos pés e segure-os com as mãos, coluna reta.","Deixe os joelhos caírem para os lados e incline levemente o tronco à frente; segure 20 a 30 s.","Empurrar os joelhos com força, curvar as costas.","Pare se sentir dor no quadril ou na virilha.","Adutores e quadril"],
+"Alongamento cervical (lateral do pescoço)":["Sentado ou em pé, coluna ereta, ombros relaxados.","Incline a cabeça levando a orelha em direção ao ombro, com a mão ajudando de leve; segure 20 a 30 s e troque.","Puxar com força, subir o ombro.","Movimento suave; pare se causar tontura ou formigamento.","Trapézio superior e músculos laterais do pescoço"],
+"Alongamento joelhos ao peito (lombar)":["Deitado de costas no colchonete.","Abrace os dois joelhos e traga-os em direção ao peito, mantendo a cabeça no chão; segure 20 a 30 s.","Tirar a cabeça do chão, puxar com tranco.","Pode fazer uma perna por vez se for mais confortável.","Lombar e glúteos"],
+"Circundução de ombros":["Em pé, braços estendidos ao lado do corpo ou abertos.","Faça círculos com os braços, começando pequenos e aumentando, para frente e depois para trás.","Movimento rápido e descontrolado.","Amplitude sem dor.","Ombros e escápulas"],
+"Alongamento de punho e antebraço":["Em pé, braço estendido à frente.","Com a outra mão, puxe os dedos para trás (palma para frente) por 20 s e depois para baixo (dorso para frente) por 20 s; troque.","Travar o cotovelo com força, puxar com tranco.","Leve; pare se sentir formigamento.","Flexores e extensores do antebraço"],
+"Alongamento cobra (abdômen e lombar)":["Deitado de barriga para baixo, mãos no chão ao lado do peito.","Estenda os cotovelos aos poucos, subindo o tronco e mantendo o quadril no chão; segure 15 a 20 s.","Subir o quadril, encolher os ombros, forçar a extensão.","Suba só até onde não houver dor; evite em crise de dor lombar.","Abdômen, flexores do quadril e coluna"],
+"Pullover com halter":["Deitado no banco, um halter seguro com as duas mãos acima do peito, cotovelos levemente dobrados.","Leve o halter para trás da cabeça até alongar o peito e as costas e volte à posição inicial.","Dobrar demais os cotovelos, descer além do confortável, arquear a lombar.","Carga moderada; evite se tiver dor no ombro.","Peitoral, grande dorsal e serrátil"],
+"Tríceps francês com barra W":["Sentado com apoio nas costas, barra W acima da cabeça com pegada fechada, braços estendidos.","Dobre os cotovelos levando a barra atrás da cabeça e estenda de volta.","Abrir os cotovelos, arquear a lombar.","Carga moderada; evite se tiver dor no ombro.","Tríceps (principalmente a cabeça longa)"],
+"Levantamento terra com barra":["Em pé, barra no chão sobre o meio dos pés, pés na largura do quadril, pegada logo por fora das pernas, coluna neutra e peito aberto.","Empurre o chão com as pernas e estenda o quadril levando a barra rente ao corpo até ficar em pé; desça controlando o mesmo caminho.","Arredondar a lombar, afastar a barra do corpo, puxar com os braços.","Técnica antes da carga; evite com dor lombar.","Eretores da coluna, glúteos, posteriores de coxa, dorsais e trapézio"],
+"Encolhimento com barra":["Em pé, barra à frente das coxas com pegada pronada na largura dos ombros, braços estendidos.","Eleve os ombros em direção às orelhas, segure 1 s e desça devagar.","Girar os ombros, dobrar os cotovelos.","Carga moderada; evite com dor no pescoço.","Trapézio superior"],
+"Superman (extensão lombar no solo)":["Deitado de barriga para baixo, braços estendidos à frente.","Eleve braços, peito e pernas do chão ao mesmo tempo, segure 2 s e desça devagar.","Subir com tranco, jogar a cabeça para trás.","Amplitude pequena; evite em crise de dor lombar.","Eretores da coluna, glúteos e posteriores"],
+"Desenvolvimento militar com barra em pé":["Em pé, barra apoiada à frente dos ombros, pegada um pouco mais aberta que os ombros, abdômen e glúteos firmes.","Empurre a barra acima da cabeça até estender os braços e desça devagar até a frente dos ombros.","Arquear a lombar, jogar o quadril à frente.","Carga moderada; prefira sentado se tiver dor lombar.","Deltoides, tríceps e trapézio"],
+"Remada alta com barra":["Em pé, barra à frente das coxas com pegada pronada um pouco mais aberta que os ombros.","Puxe a barra rente ao corpo até a altura do peito, cotovelos subindo para os lados, e desça devagar.","Pegada muito fechada, subir acima do peito, usar impulso.","Pegada aberta e carga leve; evite com dor no ombro.","Deltoides e trapézio"],
+"Cadeira flexora unilateral":["Sentado na cadeira flexora, ajuste o rolo acima do calcanhar e prenda a coxa com o apoio; apenas uma perna no rolo.","Flexione o joelho levando o rolo para baixo e volte devagar; troque de perna.","Tirar o quadril do banco, voltar soltando o peso.","Carga leve a moderada.","Posteriores de coxa"],
+"Flexão nórdica":["Ajoelhado no colchonete, tornozelos presos por um parceiro ou apoio, corpo reto dos joelhos à cabeça.","Incline o corpo à frente o mais devagar possível, segure com as mãos no chão e volte empurrando de leve.","Dobrar o quadril, cair rápido.","Exercício avançado; comece com pouca amplitude.","Posteriores de coxa"],
+"Elevação pélvica no Smith":["Costas apoiadas no banco, barra do Smith com proteção sobre o quadril, pés firmes no chão.","Eleve o quadril até alinhar tronco e coxas, contraia o glúteo e desça devagar.","Arquear a lombar no topo, pés longe demais.","Use espuma na barra para proteger o quadril.","Glúteo máximo e posteriores"],
+"Levantamento terra sumô":["Pés bem afastados com as pontas para fora, barra no chão próxima às canelas, pegada por dentro das pernas, coluna neutra.","Empurre o chão abrindo os joelhos e estenda o quadril até ficar em pé; desça controlando.","Arredondar a lombar, joelhos caindo para dentro.","Técnica antes da carga; evite com dor lombar.","Glúteos, adutores, quadríceps e eretores"],
+"Abdominal oblíquo no colchonete":["Deitado de costas, joelhos dobrados, mãos atrás da cabeça sem puxar o pescoço.","Suba o tronco girando e levando o cotovelo em direção ao joelho oposto; desça e alterne.","Puxar a cabeça com as mãos, subir com impulso.","Movimento controlado; olhe para cima.","Oblíquos e reto abdominal"],
+"Abdominal no banco declinado":["Deitado no banco declinado com os pés presos no apoio, mãos no peito ou atrás da cabeça.","Suba o tronco enrolando a coluna até perto da vertical e desça devagar.","Puxar o pescoço, descer soltando.","Pouca inclinação no início; evite com dor lombar.","Reto abdominal e flexores do quadril"],
+"Abdominal com rodinha":["Ajoelhado no colchonete, mãos na rodinha abaixo dos ombros, abdômen firme.","Role a rodinha à frente estendendo o corpo até onde conseguir sem afundar a lombar e volte puxando com o abdômen.","Deixar a lombar afundar, ir longe demais.","Comece com pouca amplitude; evite com dor lombar.","Reto abdominal, transverso e ombros"],
+"Perdigueiro (quatro apoios)":["Em quatro apoios, mãos abaixo dos ombros e joelhos abaixo do quadril, coluna neutra.","Estenda um braço à frente e a perna oposta para trás, segure 2 s e volte; alterne os lados.","Girar o quadril, arquear a lombar.","Faça devagar; boa opção para quem tem dor lombar leve.","Abdômen, eretores da coluna e glúteos"],
+"Abdominal supra na bola suíça":["Sentado na bola, caminhe à frente até a lombar ficar apoiada nela, pés firmes no chão, mãos no peito.","Suba o tronco contraindo o abdômen e desça devagar até alongar sobre a bola.","Puxar o pescoço, perder o equilíbrio subindo rápido.","Mantenha os pés afastados para estabilidade.","Reto abdominal"]
 };
 const BREATH={peito:"Puxe o ar na descida e solte ao empurrar.",triceps:"Solte o ar ao estender o cotovelo e puxe na volta.",antebraco:"Respire de forma contínua, sem prender o ar.",costas:"Solte o ar ao puxar e puxe o ar ao voltar.",biceps:"Solte o ar ao subir e puxe ao descer.",ombro:"Solte o ar ao subir e puxe ao descer.",quad:"Puxe o ar antes de descer e solte ao subir.",pant:"Respire de forma contínua, soltando o ar na subida.",post:"Puxe o ar na descida e solte ao subir contraindo o glúteo.",caminhada:"Respire pelo nariz e solte pela boca, num ritmo confortável.",gluteo:"Solte o ar ao subir contraindo o glúteo e puxe na descida.",abdomen:"Solte o ar no esforço e puxe na volta, sem prender a respiração.",cardio:"Respire pelo nariz e solte pela boca, num ritmo em que dê para conversar."};
 const GAIN={hipertrofia:"o estímulo de tensão com carga desafiadora faz esse músculo crescer ao longo das semanas",emagrecimento:"trabalhar esse músculo aumenta o gasto calórico do treino e preserva a massa magra enquanto você perde gordura",forca:"progredir a carga neste exercício deixa você mais forte no movimento",condicionamento:"as repetições mais altas melhoram a resistência desse músculo para você cansar menos",saude:"fortalece músculos e articulações, melhora a postura e deixa o dia a dia mais fácil"};

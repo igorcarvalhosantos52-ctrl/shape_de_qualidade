@@ -91,7 +91,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
   ok(videosMod.catalogo().includes('Prancha abdominal') && videosMod.catalogo().includes("World's greatest stretch (afundo com rotação)") && !videosMod.catalogo().includes('Remada cavalinho'), 'o catálogo de vídeos é o da ficha, sem exercício livre');
   const slugsCat = require('../src/video-slugs.json'), promptsCat = require('../src/video-prompts.json');
   const nomesCat = videosMod.catalogo();
-  ok(nomesCat.length === 225 && nomesCat.includes('Remada cavalinho (T-bar)') && nomesCat.includes('Puxada frontal pegada neutra no pulley') && nomesCat.includes('Rosca punho na polia'), 'a biblioteca passa a ter as variações novas, sem mudar o nome livre');
+  ok(nomesCat.length === 268 && nomesCat.includes('Remada cavalinho (T-bar)') && nomesCat.includes('Puxada frontal pegada neutra no pulley') && nomesCat.includes('Rosca punho na polia') && nomesCat.includes('Hand grip') && nomesCat.includes('Abdominal com rodinha') && nomesCat.includes('Levantamento terra com barra') && nomesCat.includes('Flexão nórdica') && nomesCat.includes('Pullover com halter'), 'a biblioteca ganha os 43 exercícios novos, sem mudar o nome livre');
   ok(slugsCat.length === 229 && new Set(slugsCat.map(x => x.slug)).size === 225 && slugsCat.every(x => videosMod.slug(x.n) === x.slug && nomesCat.includes(x.n)), 'o arquivo de slugs cobre as 229 entradas do catálogo');
   ok(promptsCat.length === 229 && promptsCat.every(x => typeof x.video_prompt === 'string' && x.video_prompt.length > 20) && !fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8').includes('video_prompt'), 'os prompts de vídeo ficam fora do app do aluno');
   ok(Object.keys(videosMod.padroes()).length === 0 && fs.existsSync(path.join(__dirname, '..', 'public', 'videos', 'prancha-abdominal.mp4')) && fs.existsSync(path.join(__dirname, '..', 'public', 'videos', 'index.json')), 'os mp4 de demonstração ficam no repositório e o app não os entrega');
@@ -233,9 +233,9 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       }
       const sw = await (await fetch('/sw.js')).text();
       const head = document.head.firstElementChild;
-      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v46/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), fora: /pathname\.startsWith\("\/videos\/"\)/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
+      return { name: j.name, display: j.display, id: j.id, start: j.start_url, icons, ver: /sq-v47/.test(sw), pre: !/videos/.test(sw.slice(0, sw.indexOf('addEventListener'))), fora: /pathname\.startsWith\("\/videos\/"\)/.test(sw), baixar: sw.includes('"/baixar.js"'), fetch: sw.includes('addEventListener("fetch"'), offline: sw.includes('caches.match("/")'), early: !!(head && head.tagName === 'SCRIPT' && /__pwaPrompt/.test(head.textContent) && /serviceWorker\.register\("\/sw\.js"\)/.test(head.textContent)) };
     });
-    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.fora && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v46 sem pré-cache de vídeo');
+    ok(man.name === 'Shape de Qualidade' && man.display === 'standalone' && man.id === '/' && man.start === '/' && man.early && man.ver && man.pre && man.fora && man.baixar && man.fetch && man.offline && man.icons.some(i => i.sizes === '192x192' && i.w === 192 && i.h === 192 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '512x512' && i.w === 512 && i.h === 512 && i.png && i.purpose === 'any' && /png/.test(i.type)) && man.icons.some(i => i.sizes === '192x192' && i.purpose === 'maskable') && man.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable') && !man.icons.some(i => i.purpose === 'any maskable'), 'o manifest tem id, start_url, ícones PNG de 192 e 512 separados em any e maskable, e o service worker sq-v47 sem pré-cache de vídeo');
     const conviteHtml = await (await fetch(URL + '/convite/TESTE123')).text();
     ok(conviteHtml.indexOf('__pwaPrompt') > 0 && conviteHtml.indexOf('__pwaPrompt') < conviteHtml.indexOf('rel="manifest"') && /serviceWorker\.register\("\/sw\.js"\)/.test(conviteHtml), 'o /convite registra o prompt e o service worker no começo do head');
     const ctxIos = await browser.createBrowserContext(), ios = await ctxIos.newPage();
@@ -779,15 +779,19 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
     const nomeVid = await a.$eval('#detDrawer h3', e => e.textContent.trim());
     const yt0 = await a.$eval('#detDrawer a.dvid', el => el.getAttribute('href'));
     const ytTodos = await a.evaluate(() => {
+      const want = { antebraco: 16, pant: 16, cardio: 17, mobilidade: 21, peito: 23, triceps: 19, costas: 32, biceps: 18, ombro: 24, quad: 24, post: 20, gluteo: 21, abdomen: 21 };
       const nomes = [];
+      const grupos = Object.keys(want).every(g => (EX[g] || []).length === want[g]);
       Object.keys(EX).forEach(g => (EX[g] || []).forEach(x => { if (x && x.n && !nomes.includes(x.n)) nomes.push(x.n); }));
-      return nomes.length >= 200 && nomes.every(n => {
+      const youtube = nomes.length === 268 && nomes.every(n => {
         const html = detHTML({ n, g: 'peito', s: 3, r: '10', d: '60s' });
         const q = encodeURIComponent(String(n).trim() + ' execução');
-        return html.includes('https://www.youtube.com/results?search_query=' + q) && !html.includes('/videos/');
+        return html.includes('https://www.youtube.com/results?search_query=' + q) && !html.includes('/videos/') && !html.includes('Ajuste o equipamento ao seu corpo');
       });
+      const passo = !!HOW['Hand grip'] && HOW['Hand grip'].length === 5 && !!HOW['Abdominal com rodinha'] && !!HOW['Levantamento terra com barra'] && EQUIP.includes('Hand grip') && EQUIP.includes('Roda abdominal');
+      return grupos && youtube && passo;
     });
-    ok(/Como fazer/.test(await a.$eval('#detDrawer', e => e.innerText)) && ytTodos && yt0 === 'https://www.youtube.com/results?search_query=' + encodeURIComponent(nomeVid + ' execução') && !(await a.$('#detDrawer video')) && !(await a.$('#detDrawer .dvidBox')), 'Detalhes abre a busca no YouTube em todo o catálogo e não toca o vídeo de demonstração');
+    ok(/Como fazer/.test(await a.$eval('#detDrawer', e => e.innerText)) && ytTodos && yt0 === 'https://www.youtube.com/results?search_query=' + encodeURIComponent(nomeVid + ' execução') && !(await a.$('#detDrawer video')) && !(await a.$('#detDrawer .dvidBox')), 'Detalhes abre a busca no YouTube e o passo a passo de todo o catálogo, sem o vídeo de demonstração');
     if (fs.existsSync('/opt/cursor/artifacts')) {
       const dv = await ctxA.newPage();
       await dv.setViewport({ width: 1100, height: 800, deviceScaleFactor: 1 });
@@ -919,7 +923,7 @@ const ok = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('✔
       const comLombar = nome => { const x = EX.costas.find(z => z.n === nome); return !!x && (x.t || '').split(' ').includes('lombar'); };
       return { barra: barra && barra.e, fora: fora.length, n: EX.costas.length, livre, poupa, how: !!(HOW['Gato-camelo no colchonete'] && HOW['Remada cavalinho (T-bar)']), comLombar: poupa.filter(comLombar), neutra: poupa.includes('Puxada frontal pegada neutra no pulley') };
     });
-    ok(gerado.n === 29 && gerado.fora === 0 && gerado.barra === 'Barra fixa/Paralelas' && gerado.how && gerado.livre[0] === 'Puxada frontal no pulley' && !gerado.comLombar.length && gerado.neutra && !gerado.poupa.includes('Remada curvada com barra'), 'o gerador mantém a ordem, a Barra fixa pede o equipamento e pula a restrição lombar');
+    ok(gerado.n === 32 && gerado.fora === 0 && gerado.barra === 'Barra fixa/Paralelas' && gerado.how && gerado.livre[0] === 'Puxada frontal no pulley' && !gerado.comLombar.length && gerado.neutra && !gerado.poupa.includes('Remada curvada com barra'), 'o gerador mantém a ordem, a Barra fixa pede o equipamento e pula a restrição lombar');
     if (fs.existsSync('/opt/cursor/artifacts')) {
       const vp = p.viewport();
       await p.setViewport({ width: 480, height: 980, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
